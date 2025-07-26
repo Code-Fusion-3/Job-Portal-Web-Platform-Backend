@@ -55,18 +55,27 @@ model EmployerRequest {
   message        String?
   selectedUserId Int?
   selectedUser   User?     @relation(fields: [selectedUserId], references: [id])
+  status         String    @default("pending") // pending, in_progress, completed, cancelled
+  priority       String    @default("normal") // low, normal, high, urgent
   createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
   messages       Message[]
 }
 
-// Messages between admin and employer
+// Enhanced Messages between admin and employer
 model Message {
   id                Int             @id @default(autoincrement())
   employerRequestId Int
   fromAdmin         Boolean
   employerEmail     String
   content           String
+  messageType       String          @default("text") // text, file, system
+  attachmentUrl     String? // For file attachments
+  attachmentName    String? // Original filename
+  isRead            Boolean         @default(false)
+  readAt            DateTime?
   createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   employerRequest   EmployerRequest @relation(fields: [employerRequestId], references: [id])
 }
 

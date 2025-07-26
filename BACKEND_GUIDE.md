@@ -68,3 +68,4 @@ A web-based platform connecting job seekers with employers. The system allows jo
 - Hash passwords (bcrypt or similar)
 - Validate and sanitize all inputs
 - Hide sensitive info in public APIs
+ 

@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { redisClient } = require('./utils/redis');
+
 const app = express();
 
 app.use(express.json());
@@ -25,6 +27,8 @@ app.use('/categories', require('./routes/categoryRoutes'));
 app.use('/public', require('./routes/publicRoutes'));
 // Dashboard routes
 app.use('/dashboard', require('./routes/dashboardRoutes'));
+// Messaging routes
+app.use('/messaging', require('./routes/messagingRoutes'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
