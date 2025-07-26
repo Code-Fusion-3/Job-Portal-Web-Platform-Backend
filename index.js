@@ -15,6 +15,8 @@ app.get('/', (req, res) => {
 
 // Auth routes
 app.use('/', require('./routes/authRoutes'));
+// Profile routes
+app.use('/profile', require('./routes/profileRoutes'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
