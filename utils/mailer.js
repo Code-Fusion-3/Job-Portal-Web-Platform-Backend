@@ -305,9 +305,128 @@ const sendEmployerReplyNotification = async (employerEmail, employerName, employ
   }
 };
 
+// Send password reset email
+const sendPasswordResetEmail = async (email, firstName, resetUrl) => {
+  try {
+    const mailOptions = {
+      from: `"Job Portal Security" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: 'Password Reset Request - Job Portal',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8f9fa; padding: 20px;">
+          <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h1 style="color: #e74c3c; text-align: center; margin-bottom: 30px;">Password Reset Request 🔐</h1>
+            
+            <p style="color: #34495e; font-size: 16px; line-height: 1.6;">Dear ${firstName},</p>
+            
+            <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
+              We received a request to reset your password for your Job Portal account. 
+              If you didn't make this request, you can safely ignore this email.
+            </p>
+            
+            <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+              <h3 style="color: #856404; margin-top: 0;">⚠️ Important Security Notice</h3>
+              <p style="color: #856404; font-size: 14px; margin-bottom: 0;">
+                This password reset link will expire in 1 hour for your security.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" 
+                 style="background-color: #e74c3c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Reset My Password
+              </a>
+            </div>
+            
+            <p style="color: #7f8c8d; font-size: 14px; text-align: center;">
+              If the button doesn't work, copy and paste this link into your browser:<br>
+              <a href="${resetUrl}" style="color: #3498db; word-break: break-all;">${resetUrl}</a>
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 30px 0;">
+            
+            <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
+              <p><strong>Job Portal Security Team</strong></p>
+              <p>If you didn't request this password reset, please contact us immediately.</p>
+              <p>Email: security@jobportal.com | Phone: +250 788 123 456</p>
+              <p>© 2024 Job Portal. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+    
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Password reset email sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    return false;
+  }
+};
+
+// Send password reset confirmation email
+const sendPasswordResetConfirmation = async (email) => {
+  try {
+    const mailOptions = {
+      from: `"Job Portal Security" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: 'Password Reset Successful - Job Portal',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8f9fa; padding: 20px;">
+          <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h1 style="color: #27ae60; text-align: center; margin-bottom: 30px;">Password Reset Successful ✅</h1>
+            
+            <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
+              Your password has been successfully reset. Your account is now secure with your new password.
+            </p>
+            
+            <div style="background-color: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #27ae60;">
+              <h3 style="color: #155724; margin-top: 0;">🔒 Security Actions Taken</h3>
+              <ul style="color: #155724; font-size: 14px;">
+                <li>Your password has been updated</li>
+                <li>All active sessions have been terminated</li>
+                <li>You'll need to log in again with your new password</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/login" 
+                 style="background-color: #27ae60; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Login with New Password
+              </a>
+            </div>
+            
+            <p style="color: #7f8c8d; font-size: 14px; text-align: center;">
+              If you didn't perform this password reset, please contact our security team immediately.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 30px 0;">
+            
+            <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
+              <p><strong>Job Portal Security Team</strong></p>
+              <p>Email: security@jobportal.com | Phone: +250 788 123 456</p>
+              <p>© 2024 Job Portal. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+    
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Password reset confirmation email sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending password reset confirmation email:', error);
+    return false;
+  }
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendEmployerRequestNotification,
   sendAdminReplyNotification,
-  sendEmployerReplyNotification
+  sendEmployerReplyNotification,
+  sendPasswordResetEmail,
+  sendPasswordResetConfirmation
 }; 

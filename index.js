@@ -29,6 +29,12 @@ app.use('/public', require('./routes/publicRoutes'));
 app.use('/dashboard', require('./routes/dashboardRoutes'));
 // Messaging routes
 app.use('/messaging', require('./routes/messagingRoutes'));
+// Search routes
+app.use('/search', require('./routes/searchRoutes'));
+// Settings routes
+app.use('/settings', require('./routes/settingsRoutes'));
+// Security routes
+app.use('/security', require('./routes/securityRoutes'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
