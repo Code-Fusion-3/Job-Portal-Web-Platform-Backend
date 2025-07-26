@@ -7,18 +7,109 @@
   },
   "item": [
     {
-      "name": "User Registration (Job Seeker)",
+      "name": "User Registration (Job Seeker) - With Photo",
       "request": {
         "method": "POST",
         "header": [
           {
             "key": "Content-Type",
-            "value": "application/json"
+            "value": "multipart/form-data"
           }
         ],
         "body": {
-          "mode": "raw",
-          "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"yourpassword\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"description\": \"Experienced software developer with 5 years of experience in web development\",\n  \"skills\": \"Node.js, Express, React, PostgreSQL\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788123456\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Available upon request\",\n  \"experience\": \"5 years\",\n  \"jobCategoryId\": 1\n}"
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "email",
+              "value": "sarah.johnson@example.com",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "securepassword123",
+              "type": "text"
+            },
+            {
+              "key": "firstName",
+              "value": "Sarah",
+              "type": "text"
+            },
+            {
+              "key": "lastName",
+              "value": "Johnson",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "value": "Experienced full-stack developer with 7 years of experience in modern web technologies.",
+              "type": "text"
+            },
+            {
+              "key": "skills",
+              "value": "JavaScript, React, Node.js, Python, Django, PostgreSQL, AWS, Docker, Git",
+              "type": "text"
+            },
+            {
+              "key": "gender",
+              "value": "Female",
+              "type": "text"
+            },
+            {
+              "key": "dateOfBirth",
+              "value": "1992-08-15",
+              "type": "text"
+            },
+            {
+              "key": "idNumber",
+              "value": "1234567890123456",
+              "type": "text"
+            },
+            {
+              "key": "contactNumber",
+              "value": "+250788987654",
+              "type": "text"
+            },
+            {
+              "key": "maritalStatus",
+              "value": "Married",
+              "type": "text"
+            },
+            {
+              "key": "location",
+              "value": "Kigali, Rwanda",
+              "type": "text"
+            },
+            {
+              "key": "city",
+              "value": "Kigali",
+              "type": "text"
+            },
+            {
+              "key": "country",
+              "value": "Rwanda",
+              "type": "text"
+            },
+            {
+              "key": "references",
+              "value": "Available upon request. Previous employers: TechCorp Rwanda, Digital Solutions Ltd.",
+              "type": "text"
+            },
+            {
+              "key": "experience",
+              "value": "7 years in software development",
+              "type": "text"
+            },
+            {
+              "key": "jobCategoryId",
+              "value": "1",
+              "type": "text"
+            },
+            {
+              "key": "photo",
+              "type": "file",
+              "src": []
+            }
+          ]
         },
         "url": {
           "raw": "http://localhost:3000/register",
@@ -27,22 +118,33 @@
           "port": "3000",
           "path": ["register"]
         },
-        "description": "Register a new job seeker. Required: email, password, firstName, lastName. Optional: description, skills, gender, dateOfBirth, idNumber, contactNumber, maritalStatus, location, city, country, references, experience, jobCategoryId. Returns user info with profile (no password). A welcome email will be sent to the registered email address. Includes comprehensive validation for ID number (16 digits), age (18+ years), and other fields."
+        "description": "Register a new job seeker with optional photo upload. Use multipart/form-data. Required: email, password, firstName, lastName. Optional: photo, description, skills, gender, dateOfBirth, idNumber, contactNumber, maritalStatus, location, city, country, references, experience, jobCategoryId. Returns user info with profile (no password). A welcome email will be sent to the registered email address. Photo must be an image file under 5MB."
       },
       "response": [
         {
-          "name": "Success",
+          "name": "Success with Photo",
           "originalRequest": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "multipart/form-data"
               }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"yourpassword\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"description\": \"Experienced software developer with 5 years of experience in web development\",\n  \"skills\": \"Node.js, Express, React, PostgreSQL\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"idNumber\": \"1234567890123456\",\n  \"references\": \"Available upon request\",\n  \"experience\": \"5 years\",\n  \"jobCategoryId\": 1\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "sarah.johnson@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
             },
             "url": {
               "raw": "http://localhost:3000/register",
@@ -58,7 +160,27 @@
           "header": [
             { "key": "Content-Type", "value": "application/json" }
           ],
-          "body": "{\n  \"id\": 1,\n  \"email\": \"john.doe@example.com\",\n  \"role\": \"jobseeker\",\n  \"profile\": {\n    \"id\": 1,\n    \"userId\": 1,\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"description\": \"Experienced software developer with 5 years of experience in web development\",\n    \"skills\": \"Node.js, Express, React, PostgreSQL\",\n    \"gender\": \"Male\",\n    \"dateOfBirth\": \"1990-05-15T00:00:00.000Z\",\n    \"idNumber\": \"1234567890123456\",\n    \"contactNumber\": \"+250788123456\",\n    \"maritalStatus\": \"Single\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request\",\n    \"experience\": \"5 years\",\n    \"jobCategoryId\": 1,\n    \"createdAt\": \"2024-07-25T12:00:00.000Z\",\n    \"updatedAt\": \"2024-07-25T12:00:00.000Z\"\n  },\n  \"createdAt\": \"2024-07-25T12:00:00.000Z\",\n  \"updatedAt\": \"2024-07-25T12:00:00.000Z\"\n}"
+          "body": "{\n  \"id\": 2,\n  \"email\": \"sarah.johnson@example.com\",\n  \"role\": \"jobseeker\",\n  \"profile\": {\n    \"id\": 2,\n    \"userId\": 2,\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"description\": \"Experienced full-stack developer with 7 years of experience in modern web technologies.\",\n    \"skills\": \"JavaScript, React, Node.js, Python, Django, PostgreSQL, AWS, Docker, Git\",\n    \"gender\": \"Female\",\n    \"photo\": \"uploads/profiles/profile-1732546800000-123456789.jpg\",\n    \"dateOfBirth\": \"1992-08-15T00:00:00.000Z\",\n    \"idNumber\": \"1234567890123456\",\n    \"contactNumber\": \"+250788987654\",\n    \"maritalStatus\": \"Married\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request. Previous employers: TechCorp Rwanda, Digital Solutions Ltd.\",\n    \"experience\": \"7 years in software development\",\n    \"jobCategoryId\": 1,\n    \"createdAt\": \"2024-07-26T05:56:48.000Z\",\n    \"updatedAt\": \"2024-07-26T05:56:48.000Z\"\n  },\n  \"createdAt\": \"2024-07-26T05:56:48.000Z\",\n  \"updatedAt\": \"2024-07-26T05:56:48.000Z\"\n}"
+        },
+        {
+          "name": "File Too Large",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"File too large\",\n  \"details\": [\n    {\n      \"field\": \"photo\",\n      \"message\": \"Photo must be less than 5MB\"\n    }\n  ]\n}"
+        },
+        {
+          "name": "Invalid File Type",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"Upload failed\",\n  \"details\": [\n    {\n      \"field\": \"photo\",\n      \"message\": \"Only image files are allowed!\"\n    }\n  ]\n}"
         },
         {
           "name": "Validation Error - Invalid ID Number",
@@ -71,26 +193,6 @@
           "body": "{\n  \"error\": \"Validation failed\",\n  \"details\": [\n    {\n      \"field\": \"idNumber\",\n      \"message\": \"ID number must be exactly 16 digits\"\n    }\n  ]\n}"
         },
         {
-          "name": "Validation Error - Under 18",
-          "status": "Bad Request",
-          "code": 400,
-          "_postman_previewlanguage": "json",
-          "header": [
-            { "key": "Content-Type", "value": "application/json" }
-          ],
-          "body": "{\n  \"error\": \"Validation failed\",\n  \"details\": [\n    {\n      \"field\": \"dateOfBirth\",\n      \"message\": \"You must be at least 18 years old to register\"\n    }\n  ]\n}"
-        },
-        {
-          "name": "Validation Error - Invalid Email",
-          "status": "Bad Request",
-          "code": 400,
-          "_postman_previewlanguage": "json",
-          "header": [
-            { "key": "Content-Type", "value": "application/json" }
-          ],
-          "body": "{\n  \"error\": \"Validation failed\",\n  \"details\": [\n    {\n      \"field\": \"email\",\n      \"message\": \"Please provide a valid email address\"\n    }\n  ]\n}"
-        },
-        {
           "name": "Email Already Registered",
           "status": "Conflict",
           "code": 409,
@@ -99,16 +201,6 @@
             { "key": "Content-Type", "value": "application/json" }
           ],
           "body": "{\n  \"error\": \"Email already registered.\"\n}"
-        },
-        {
-          "name": "Registration Failed",
-          "status": "Internal Server Error",
-          "code": 500,
-          "_postman_previewlanguage": "json",
-          "header": [
-            { "key": "Content-Type", "value": "application/json" }
-          ],
-          "body": "{\n  \"error\": \"Registration failed.\"\n}"
         }
       ]
     }

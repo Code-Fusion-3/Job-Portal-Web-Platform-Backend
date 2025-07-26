@@ -31,6 +31,16 @@ exports.registerJobSeeker = async (req, res) => {
     }
     
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Handle photo upload
+    let photoPath = null;
+    if (req.file) {
+      photoPath = `uploads/profiles/${req.file.filename}`;
+    }
+    
+    // Convert jobCategoryId to integer if provided
+    const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : null;
+    
     const user = await prisma.user.create({
       data: {
         email,
@@ -43,6 +53,7 @@ exports.registerJobSeeker = async (req, res) => {
             description,
             skills,
             gender,
+            photo: photoPath,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
             idNumber,
             contactNumber,
@@ -52,7 +63,7 @@ exports.registerJobSeeker = async (req, res) => {
             country,
             references,
             experience,
-            jobCategoryId,
+            jobCategoryId: categoryId,
           }
         }
       },
