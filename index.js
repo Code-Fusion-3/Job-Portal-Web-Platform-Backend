@@ -21,6 +21,10 @@ app.use('/profile', require('./routes/profileRoutes'));
 app.use('/employer', require('./routes/employerRoutes'));
 // Category routes
 app.use('/categories', require('./routes/categoryRoutes'));
+// Public routes
+app.use('/public', require('./routes/publicRoutes'));
+// Dashboard routes
+app.use('/dashboard', require('./routes/dashboardRoutes'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

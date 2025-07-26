@@ -890,6 +890,145 @@
           "body": "{\n  \"error\": \"Cannot delete job category. It is being used by job seekers.\",\n  \"profilesCount\": 5\n}"
         }
       ]
+    },
+    {
+      "name": "Get Public Job Seekers (Anonymized)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/public/job-seekers?page=1&limit=10&categoryId=1&skills=JavaScript&location=Kigali",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["public", "job-seekers"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" },
+            { "key": "categoryId", "value": "1" },
+            { "key": "skills", "value": "JavaScript" },
+            { "key": "location", "value": "Kigali" }
+          ]
+        },
+        "description": "Public endpoint to browse job seekers with anonymized data. Supports filtering by category, skills, experience, and location."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"jobSeekers\": [\n    {\n      \"id\": \"JS0001\",\n      \"firstName\": \"J****\",\n      \"lastName\": \"D***\",\n      \"skills\": \"JavaScript, React, Node.js\",\n      \"experience\": \"5 years\",\n      \"location\": \"Kigali, Rwanda\",\n      \"city\": \"Kigali\",\n      \"country\": \"Rwanda\",\n      \"jobCategory\": {\n        \"name_en\": \"Software Development\",\n        \"name_rw\": \"Ubwubatsi bwa Software\"\n      },\n      \"memberSince\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 25,\n    \"totalPages\": 3\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Public Statistics",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/public/statistics",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["public", "statistics"]
+        },
+        "description": "Public endpoint to get job seeker statistics for the platform overview."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"totalJobSeekers\": 150,\n  \"totalCategories\": 8,\n  \"topCategories\": [\n    {\n      \"name_en\": \"Software Development\",\n      \"name_rw\": \"Ubwubatsi bwa Software\",\n      \"_count\": {\n        \"profiles\": 45\n      }\n    }\n  ],\n  \"topLocations\": [\n    {\n      \"city\": \"Kigali\",\n      \"count\": 80\n    }\n  ],\n  \"recentRegistrations\": 12\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get Available Filters",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/public/filters",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["public", "filters"]
+        },
+        "description": "Public endpoint to get available filters for job seeker search (categories, locations, skills)."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"categories\": [\n    {\n      \"id\": 1,\n      \"name_en\": \"Software Development\",\n      \"name_rw\": \"Ubwubatsi bwa Software\"\n    }\n  ],\n  \"locations\": [\"Kigali\", \"Huye\", \"Musanze\"],\n  \"skills\": [\"JavaScript\", \"React\", \"Node.js\", \"Python\", \"Java\"]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Get Dashboard Statistics",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/dashboard/stats",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["dashboard", "stats"]
+        },
+        "description": "Admin gets comprehensive dashboard statistics including overview, recent activity, distributions, and trends."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"overview\": {\n    \"totalJobSeekers\": 150,\n    \"totalEmployerRequests\": 25,\n    \"totalCategories\": 8,\n    \"pendingEmployerRequests\": 8\n  },\n  \"recentActivity\": {\n    \"recentJobSeekers\": [\n      {\n        \"id\": 1,\n        \"name\": \"John Doe\",\n        \"skills\": \"JavaScript, React\",\n        \"registeredAt\": \"2024-01-01T00:00:00.000Z\"\n      }\n    ],\n    \"recentEmployerRequests\": [\n      {\n        \"id\": 1,\n        \"name\": \"TechCorp Rwanda\",\n        \"email\": \"hr@techcorp.rw\",\n        \"message\": \"We are looking for experienced software developers...\",\n        \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n      }\n    ]\n  },\n  \"distributions\": {\n    \"categories\": [\n      {\n        \"name\": \"Software Development\",\n        \"nameRw\": \"Ubwubatsi bwa Software\",\n        \"count\": 45\n      }\n    ],\n    \"locations\": [\n      {\n        \"city\": \"Kigali\",\n        \"count\": 80\n      }\n    ]\n  },\n  \"trends\": {\n    \"monthlyRegistrations\": {\n      \"2024-01\": 15,\n      \"2024-02\": 20\n    },\n    \"topSkills\": [\n      {\n        \"skill\": \"JavaScript\",\n        \"count\": 35\n      }\n    ]\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Get Analytics",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/dashboard/analytics?period=30",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["dashboard", "analytics"],
+          "query": [
+            { "key": "period", "value": "30" }
+          ]
+        },
+        "description": "Admin gets detailed analytics for a specific period (default 30 days). Includes growth trends, category performance, and skill demand."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"period\": \"30\",\n  \"growth\": {\n    \"jobSeekers\": [\n      {\n        \"date\": \"2024-01-01T00:00:00.000Z\",\n        \"count\": 5\n      }\n    ],\n    \"employerRequests\": [\n      {\n        \"date\": \"2024-01-01T00:00:00.000Z\",\n        \"count\": 2\n      }\n    ]\n  },\n  \"categories\": {\n    \"all\": [\n      {\n        \"name\": \"Software Development\",\n        \"nameRw\": \"Ubwubatsi bwa Software\",\n        \"count\": 45\n      }\n    ],\n    \"top\": [\n      {\n        \"name\": \"Software Development\",\n        \"nameRw\": \"Ubwubatsi bwa Software\",\n        \"count\": 45\n      }\n    ]\n  },\n  \"locations\": [\n    {\n      \"city\": \"Kigali\",\n      \"count\": 80\n    }\n  ],\n  \"skills\": [\n    {\n      \"skill\": \"JavaScript\",\n      \"count\": 35\n    }\n  ]\n}"
+        }
+      ]
     }
   ]
 } 
