@@ -1,0 +1,71 @@
+// Prisma setup
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model: for both job seekers and admins
+model User {
+  id              Int               @id @default(autoincrement())
+  email           String            @unique
+  password        String
+  role            String // 'jobseeker' or 'admin'
+  profile         Profile?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  EmployerRequest EmployerRequest[]
+}
+
+// Profile: extra info for job seekers
+model Profile {
+  id            Int          @id @default(autoincrement())
+  userId        Int          @unique
+  bio           String?
+  skills        String?
+  photo         String?
+  gender        String?
+  age           Int?
+  experience    String?
+  jobCategoryId Int?
+  jobCategory   JobCategory? @relation(fields: [jobCategoryId], references: [id])
+  user          User         @relation(fields: [userId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+// Requests from employers (public, no login)
+model EmployerRequest {
+  id             Int       @id @default(autoincrement())
+  name           String
+  email          String
+  message        String?
+  selectedUserId Int?
+  selectedUser   User?     @relation(fields: [selectedUserId], references: [id])
+  createdAt      DateTime  @default(now())
+  messages       Message[]
+}
+
+// Messages between admin and employer
+model Message {
+  id                Int             @id @default(autoincrement())
+  employerRequestId Int
+  fromAdmin         Boolean
+  employerEmail     String
+  content           String
+  createdAt         DateTime        @default(now())
+  employerRequest   EmployerRequest @relation(fields: [employerRequestId], references: [id])
+}
+
+// Job categories, with translation support
+model JobCategory {
+  id        Int       @id @default(autoincrement())
+  name_en   String
+  name_rw   String
+  createdAt DateTime  @default(now())
+  profiles  Profile[]
+}

@@ -1,0 +1,116 @@
+{
+  "info": {
+    "_postman_id": "job-portal-backend-collection-1",
+    "name": "Job Portal Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "API collection for Job Portal Backend. Import into Postman to test endpoints."
+  },
+  "item": [
+    {
+      "name": "User Registration (Job Seeker)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"yourpassword\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"description\": \"Experienced software developer with 5 years of experience in web development\",\n  \"skills\": \"Node.js, Express, React, PostgreSQL\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788123456\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Available upon request\",\n  \"experience\": \"5 years\",\n  \"jobCategoryId\": 1\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/register",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["register"]
+        },
+        "description": "Register a new job seeker. Required: email, password, firstName, lastName. Optional: description, skills, gender, dateOfBirth, idNumber, contactNumber, maritalStatus, location, city, country, references, experience, jobCategoryId. Returns user info with profile (no password). A welcome email will be sent to the registered email address. Includes comprehensive validation for ID number (16 digits), age (18+ years), and other fields."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"yourpassword\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"description\": \"Experienced software developer with 5 years of experience in web development\",\n  \"skills\": \"Node.js, Express, React, PostgreSQL\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"idNumber\": \"1234567890123456\",\n  \"references\": \"Available upon request\",\n  \"experience\": \"5 years\",\n  \"jobCategoryId\": 1\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["register"]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"id\": 1,\n  \"email\": \"john.doe@example.com\",\n  \"role\": \"jobseeker\",\n  \"profile\": {\n    \"id\": 1,\n    \"userId\": 1,\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"description\": \"Experienced software developer with 5 years of experience in web development\",\n    \"skills\": \"Node.js, Express, React, PostgreSQL\",\n    \"gender\": \"Male\",\n    \"dateOfBirth\": \"1990-05-15T00:00:00.000Z\",\n    \"idNumber\": \"1234567890123456\",\n    \"contactNumber\": \"+250788123456\",\n    \"maritalStatus\": \"Single\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request\",\n    \"experience\": \"5 years\",\n    \"jobCategoryId\": 1,\n    \"createdAt\": \"2024-07-25T12:00:00.000Z\",\n    \"updatedAt\": \"2024-07-25T12:00:00.000Z\"\n  },\n  \"createdAt\": \"2024-07-25T12:00:00.000Z\",\n  \"updatedAt\": \"2024-07-25T12:00:00.000Z\"\n}"
+        },
+        {
+          "name": "Validation Error - Invalid ID Number",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"Validation failed\",\n  \"details\": [\n    {\n      \"field\": \"idNumber\",\n      \"message\": \"ID number must be exactly 16 digits\"\n    }\n  ]\n}"
+        },
+        {
+          "name": "Validation Error - Under 18",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"Validation failed\",\n  \"details\": [\n    {\n      \"field\": \"dateOfBirth\",\n      \"message\": \"You must be at least 18 years old to register\"\n    }\n  ]\n}"
+        },
+        {
+          "name": "Validation Error - Invalid Email",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"Validation failed\",\n  \"details\": [\n    {\n      \"field\": \"email\",\n      \"message\": \"Please provide a valid email address\"\n    }\n  ]\n}"
+        },
+        {
+          "name": "Email Already Registered",
+          "status": "Conflict",
+          "code": 409,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"Email already registered.\"\n}"
+        },
+        {
+          "name": "Registration Failed",
+          "status": "Internal Server Error",
+          "code": 500,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"Registration failed.\"\n}"
+        }
+      ]
+    }
+  ]
+} 
