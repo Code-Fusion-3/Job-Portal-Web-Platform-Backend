@@ -160,7 +160,7 @@
           "header": [
             { "key": "Content-Type", "value": "application/json" }
           ],
-          "body": "{\n  \"id\": 2,\n  \"email\": \"sarah.johnson@example.com\",\n  \"role\": \"jobseeker\",\n  \"profile\": {\n    \"id\": 2,\n    \"userId\": 2,\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"description\": \"Experienced full-stack developer with 7 years of experience in modern web technologies.\",\n    \"skills\": \"JavaScript, React, Node.js, Python, Django, PostgreSQL, AWS, Docker, Git\",\n    \"gender\": \"Female\",\n    \"photo\": \"uploads/profiles/profile-1732546800000-123456789.jpg\",\n    \"dateOfBirth\": \"1992-08-15T00:00:00.000Z\",\n    \"idNumber\": \"1234567890123456\",\n    \"contactNumber\": \"+250788987654\",\n    \"maritalStatus\": \"Married\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request. Previous employers: TechCorp Rwanda, Digital Solutions Ltd.\",\n    \"experience\": \"7 years in software development\",\n    \"jobCategoryId\": 1,\n    \"createdAt\": \"2024-07-26T05:56:48.000Z\",\n    \"updatedAt\": \"2024-07-26T05:56:48.000Z\"\n  },\n  \"createdAt\": \"2024-07-26T05:56:48.000Z\",\n  \"updatedAt\": \"2024-07-26T05:56:48.000Z\"\n}"
+          "body": "{\n  \"id\": 2,\n  \"email\": \"sarah.johnson@example.com\",\n  \"role\": \"jobseeker\",\n  \"profile\": {\n    \"id\": 2,\n    \"userId\": 2,\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"description\": \"Experienced full-stack developer with 7 years of experience in modern web technologies.\",\n    \"skills\": \"JavaScript, React, Node.js, Python, Django, PostgreSQL, AWS, Docker, Git\",\n    \"gender\": \"Female\",\n    \"photo\": \"uploads/profiles/profile-1732546800000-123456789.png\",\n    \"dateOfBirth\": \"1992-08-15T00:00:00.000Z\",\n    \"idNumber\": \"1234567890123456\",\n    \"contactNumber\": \"+250788987654\",\n    \"maritalStatus\": \"Married\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request. Previous employers: TechCorp Rwanda, Digital Solutions Ltd.\",\n    \"experience\": \"7 years in software development\",\n    \"jobCategoryId\": 1,\n    \"createdAt\": \"2024-07-26T05:56:48.000Z\",\n    \"updatedAt\": \"2024-07-26T05:56:48.000Z\"\n  },\n  \"createdAt\": \"2024-07-26T05:56:48.000Z\",\n  \"updatedAt\": \"2024-07-26T05:56:48.000Z\"\n}"
         },
         {
           "name": "File Too Large",
@@ -201,6 +201,148 @@
             { "key": "Content-Type", "value": "application/json" }
           ],
           "body": "{\n  \"error\": \"Email already registered.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@jobportal.com\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["login"]
+        },
+        "description": "Login as admin user. Use the seeded admin credentials: admin@jobportal.com / admin123. Returns JWT token for authentication."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@jobportal.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["login"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"message\": \"Login successful\",\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"admin@jobportal.com\",\n    \"role\": \"admin\",\n    \"profile\": null,\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  },\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5Aam9icG9ydGFsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTczMjU0NjgwMCwiZXhwIjoxNzMyNjMzMjAwfQ.example\"\n}"
+        },
+        {
+          "name": "Invalid Credentials",
+          "status": "Unauthorized",
+          "code": 401,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"Invalid email or password.\"\n}"
+        },
+        {
+          "name": "Missing Fields",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"Email and password are required.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Job Seeker Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"sarah.johnson@example.com\",\n  \"password\": \"securepassword123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/login",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["login"]
+        },
+        "description": "Login as job seeker user. Use registered job seeker credentials. Returns JWT token and user profile information."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sarah.johnson@example.com\",\n  \"password\": \"securepassword123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["login"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"message\": \"Login successful\",\n  \"user\": {\n    \"id\": 2,\n    \"email\": \"sarah.johnson@example.com\",\n    \"role\": \"jobseeker\",\n    \"profile\": {\n      \"id\": 2,\n      \"userId\": 2,\n      \"firstName\": \"Sarah\",\n      \"lastName\": \"Johnson\",\n      \"description\": \"Experienced full-stack developer with 7 years of experience in modern web technologies.\",\n      \"skills\": \"JavaScript, React, Node.js, Python, Django, PostgreSQL, AWS, Docker, Git\",\n      \"gender\": \"Female\",\n      \"photo\": \"uploads/profiles/profile-1732546800000-123456789.png\",\n      \"dateOfBirth\": \"1992-08-15T00:00:00.000Z\",\n      \"idNumber\": \"1234567890123456\",\n      \"contactNumber\": \"+250788987654\",\n      \"maritalStatus\": \"Married\",\n      \"location\": \"Kigali, Rwanda\",\n      \"city\": \"Kigali\",\n      \"country\": \"Rwanda\",\n      \"references\": \"Available upon request. Previous employers: TechCorp Rwanda, Digital Solutions Ltd.\",\n      \"experience\": \"7 years in software development\",\n      \"jobCategoryId\": 1,\n      \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n      \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n    },\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  },\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImVtYWlsIjoic2FyYWguanNvbnNvbkBleGFtcGxlLmNvbSIsInJvbGUiOiJqb2JzZWVrZXIiLCJpYXQiOjE3MzI1NDY4MDAsImV4cCI6MTczMjYzMzIwMH0.example\"\n}"
+        },
+        {
+          "name": "Invalid Credentials",
+          "status": "Unauthorized",
+          "code": 401,
+          "_postman_previewlanguage": "json",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "body": "{\n  \"error\": \"Invalid email or password.\"\n}"
         }
       ]
     }

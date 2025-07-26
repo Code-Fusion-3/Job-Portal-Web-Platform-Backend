@@ -1,5 +1,6 @@
 const { PrismaClient } = require('../generated/prisma');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { sendWelcomeEmail } = require('../utils/mailer');
 const prisma = new PrismaClient();
 
@@ -88,5 +89,56 @@ exports.registerJobSeeker = async (req, res) => {
     res.status(201).json(user);
   } catch (err) {
     res.status(500).json({ error: err.message || 'Registration failed.' });
+  }
+};
+
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+
+  try {
+    // Find user with profile
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        profile: true
+      }
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        email: user.email, 
+        role: user.role 
+      },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    // Return user info (without password) and token
+    const { password: _, ...userWithoutPassword } = user;
+    
+    res.json({
+      message: 'Login successful',
+      user: userWithoutPassword,
+      token
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Login failed.' });
   }
 }; 
