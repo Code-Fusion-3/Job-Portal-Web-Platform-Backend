@@ -17,6 +17,10 @@ app.get('/', (req, res) => {
 app.use('/', require('./routes/authRoutes'));
 // Profile routes
 app.use('/profile', require('./routes/profileRoutes'));
+// Employer routes
+app.use('/employer', require('./routes/employerRoutes'));
+// Category routes
+app.use('/categories', require('./routes/categoryRoutes'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

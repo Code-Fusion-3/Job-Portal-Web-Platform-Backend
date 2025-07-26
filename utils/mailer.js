@@ -201,6 +201,74 @@ const sendWelcomeEmail = async (userEmail, userName = 'User') => {
   }
 };
 
+// Send notification email to admin when employer submits request
+const sendEmployerRequestNotification = async (employerName, employerEmail, message) => {
+  try {
+    const mailOptions = {
+      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      to: process.env.ADMIN_EMAIL || process.env.GMAIL_USER, // Send to admin
+      subject: 'New Employer Request - Job Portal',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2c3e50;">New Employer Request</h2>
+          <p><strong>Employer Name:</strong> ${employerName}</p>
+          <p><strong>Employer Email:</strong> ${employerEmail}</p>
+          <p><strong>Message:</strong></p>
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            ${message || 'No message provided'}
+          </div>
+          <p>Please log in to your admin dashboard to respond to this request.</p>
+          <p style="color: #7f8c8d; font-size: 12px;">
+            This is an automated notification from Job Portal.
+          </p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Employer request notification sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending employer request notification:', error);
+    return false;
+  }
+};
+
+// Send notification email to employer when admin replies
+const sendAdminReplyNotification = async (employerEmail, employerName, adminMessage) => {
+  try {
+    const mailOptions = {
+      from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
+      to: employerEmail,
+      subject: 'Response to Your Job Request - Job Portal',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2c3e50;">Response to Your Job Request</h2>
+          <p>Dear ${employerName},</p>
+          <p>We have received your job request and would like to provide you with a response:</p>
+          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
+            ${adminMessage}
+          </div>
+          <p>If you have any questions or need further assistance, please don't hesitate to contact us.</p>
+          <p>Best regards,<br>Job Portal Team</p>
+          <p style="color: #7f8c8d; font-size: 12px;">
+            This is an automated response from Job Portal.
+          </p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Admin reply notification sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending admin reply notification:', error);
+    return false;
+  }
+};
+
 module.exports = {
-  sendWelcomeEmail
+  sendWelcomeEmail,
+  sendEmployerRequestNotification,
+  sendAdminReplyNotification
 }; 

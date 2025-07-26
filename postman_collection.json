@@ -491,6 +491,405 @@
           "body": "{\n  \"error\": \"Job seeker not found.\"\n}"
         }
       ]
+    },
+    {
+      "name": "Submit Employer Request (Public)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"TechCorp Rwanda\",\n  \"email\": \"hr@techcorp.rw\",\n  \"message\": \"We are looking for experienced software developers with React and Node.js skills. Please provide candidates who match our requirements.\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/employer/request",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["employer", "request"]
+        },
+        "description": "Public endpoint for employers to submit job requests. No authentication required."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"message\": \"Employer request submitted successfully\",\n  \"request\": {\n    \"id\": 1,\n    \"name\": \"TechCorp Rwanda\",\n    \"email\": \"hr@techcorp.rw\",\n    \"message\": \"We are looking for experienced software developers...\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+        },
+        {
+          "name": "Missing Required Fields",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"error\": \"Name and email are required.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Get All Employer Requests",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/employer/requests?page=1&limit=10",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["employer", "requests"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        },
+        "description": "Admin gets all employer requests with pagination. Includes selected job seekers and latest messages."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"requests\": [\n    {\n      \"id\": 1,\n      \"name\": \"TechCorp Rwanda\",\n      \"email\": \"hr@techcorp.rw\",\n      \"message\": \"We are looking for experienced software developers...\",\n      \"selectedUserId\": 2,\n      \"selectedUser\": {\n        \"id\": 2,\n        \"email\": \"developer@example.com\",\n        \"profile\": {\n          \"firstName\": \"John\",\n          \"lastName\": \"Doe\",\n          \"skills\": \"React, Node.js, JavaScript\"\n        }\n      },\n      \"messages\": [\n        {\n          \"id\": 1,\n          \"content\": \"Thank you for your request. We have selected a candidate for you.\",\n          \"fromAdmin\": true,\n          \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n        }\n      ],\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 5,\n    \"totalPages\": 1\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Get Specific Employer Request",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/employer/requests/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["employer", "requests", "1"]
+        },
+        "description": "Admin gets a specific employer request with all messages and selected job seeker details."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"id\": 1,\n  \"name\": \"TechCorp Rwanda\",\n  \"email\": \"hr@techcorp.rw\",\n  \"message\": \"We are looking for experienced software developers...\",\n  \"selectedUserId\": 2,\n  \"selectedUser\": {\n    \"id\": 2,\n    \"email\": \"developer@example.com\",\n    \"profile\": {\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"skills\": \"React, Node.js, JavaScript\",\n      \"experience\": \"5 years\",\n      \"contactNumber\": \"+250788123456\"\n    }\n  },\n  \"messages\": [\n    {\n      \"id\": 1,\n      \"employerRequestId\": 1,\n      \"fromAdmin\": true,\n      \"employerEmail\": \"hr@techcorp.rw\",\n      \"content\": \"Thank you for your request. We have selected a candidate for you.\",\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+        },
+        {
+          "name": "Not Found",
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"error\": \"Employer request not found.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Reply to Employer Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Thank you for your request. We have found several qualified candidates who match your requirements. We will contact you shortly with their details.\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/employer/requests/1/reply",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["employer", "requests", "1", "reply"]
+        },
+        "description": "Admin replies to an employer request. Sends email notification to employer."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"message\": \"Reply sent successfully\",\n  \"messageData\": {\n    \"id\": 2,\n    \"employerRequestId\": 1,\n    \"fromAdmin\": true,\n    \"employerEmail\": \"hr@techcorp.rw\",\n    \"content\": \"Thank you for your request...\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+        },
+        {
+          "name": "Missing Content",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"error\": \"Message content is required.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Select Job Seeker for Request",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"selectedUserId\": 2\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/employer/requests/1/select",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["employer", "requests", "1", "select"]
+        },
+        "description": "Admin selects a job seeker for an employer request. The selected job seeker's details will be shared with the employer."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"message\": \"Job seeker selected successfully\",\n  \"request\": {\n    \"id\": 1,\n    \"name\": \"TechCorp Rwanda\",\n    \"email\": \"hr@techcorp.rw\",\n    \"selectedUserId\": 2,\n    \"selectedUser\": {\n      \"id\": 2,\n      \"email\": \"developer@example.com\",\n      \"profile\": {\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"skills\": \"React, Node.js, JavaScript\",\n        \"experience\": \"5 years\",\n        \"contactNumber\": \"+250788123456\"\n      }\n    }\n  }\n}"
+        },
+        {
+          "name": "Job Seeker Not Found",
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"error\": \"Selected job seeker not found.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get All Job Categories (Public)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/categories",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["categories"]
+        },
+        "description": "Public endpoint to get all job categories. No authentication required."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "[\n  {\n    \"id\": 1,\n    \"name_en\": \"Software Development\",\n    \"name_rw\": \"Ubwubatsi bwa Software\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  },\n  {\n    \"id\": 2,\n    \"name_en\": \"Data Science\",\n    \"name_rw\": \"Ubumenyi bw'Amakuru\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n]"
+        }
+      ]
+    },
+    {
+      "name": "Admin Create Job Category",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name_en\": \"Graphic Design\",\n  \"name_rw\": \"Ubwubatsi bw'Amashusho\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/categories",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["categories"]
+        },
+        "description": "Admin creates a new job category with both English and Kinyarwanda names."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"message\": \"Job category created successfully\",\n  \"category\": {\n    \"id\": 3,\n    \"name_en\": \"Graphic Design\",\n    \"name_rw\": \"Ubwubatsi bw'Amashusho\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+        },
+        {
+          "name": "Category Already Exists",
+          "status": "Conflict",
+          "code": 409,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"error\": \"Job category already exists.\"\n}"
+        },
+        {
+          "name": "Missing Required Fields",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"error\": \"Both English and Kinyarwanda names are required.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Get All Job Categories",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/categories/admin?page=1&limit=10",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["categories", "admin"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        },
+        "description": "Admin gets all job categories with pagination and profile counts."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"categories\": [\n    {\n      \"id\": 1,\n      \"name_en\": \"Software Development\",\n      \"name_rw\": \"Ubwubatsi bwa Software\",\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n      \"_count\": {\n        \"profiles\": 5\n      }\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 8,\n    \"totalPages\": 1\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Get Specific Job Category",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/categories/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["categories", "1"]
+        },
+        "description": "Admin gets a specific job category with all associated profiles."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"id\": 1,\n  \"name_en\": \"Software Development\",\n  \"name_rw\": \"Ubwubatsi bwa Software\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"profiles\": [\n    {\n      \"id\": 1,\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"skills\": \"JavaScript, React, Node.js\",\n      \"experience\": \"5 years\"\n    }\n  ],\n  \"_count\": {\n    \"profiles\": 5\n  }\n}"
+        },
+        {
+          "name": "Not Found",
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"error\": \"Job category not found.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Update Job Category",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name_en\": \"Software Engineering\",\n  \"name_rw\": \"Ubwubatsi bwa Software\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/categories/1",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["categories", "1"]
+        },
+        "description": "Admin updates a job category name."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"message\": \"Job category updated successfully\",\n  \"category\": {\n    \"id\": 1,\n    \"name_en\": \"Software Engineering\",\n    \"name_rw\": \"Ubwubatsi bwa Software\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+        },
+        {
+          "name": "Name Already Exists",
+          "status": "Conflict",
+          "code": 409,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"error\": \"Job category name already exists.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Admin Delete Job Category",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{admin_token}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/categories/3",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["categories", "3"]
+        },
+        "description": "Admin deletes a job category. Cannot delete if profiles are using it."
+      },
+      "response": [
+        {
+          "name": "Success",
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"message\": \"Job category deleted successfully.\"\n}"
+        },
+        {
+          "name": "Category in Use",
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [ { "key": "Content-Type", "value": "application/json" } ],
+          "body": "{\n  \"error\": \"Cannot delete job category. It is being used by job seekers.\",\n  \"profilesCount\": 5\n}"
+        }
+      ]
     }
   ]
 } 
