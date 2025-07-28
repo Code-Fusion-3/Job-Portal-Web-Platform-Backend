@@ -1,5 +1,5 @@
 // Test setup file for Jest
-const { PrismaClient } = require('../generated/prisma');
+const { PrismaClient } = require("@prisma/client");
 
 // Set test environment variables
 process.env.NODE_ENV = 'test';

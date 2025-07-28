@@ -1,4 +1,4 @@
-const { PrismaClient } = require('../generated/prisma');
+const { PrismaClient } = require("@prisma/client");
 const { sendAdminReplyNotification, sendEmployerReplyNotification } = require('../utils/mailer');
 const { messageCache, realTimeMessaging, rateLimiter } = require('../utils/redis');
 const { v4: uuidv4 } = require('uuid');

@@ -1,5 +1,4 @@
 const redis = require('redis');
-const { promisify } = require('util');
 
 // Redis client configuration
 const redisClient = redis.createClient({
@@ -22,19 +21,6 @@ const redisClient = redis.createClient({
   }
 });
 
-// Promisify Redis commands
-const getAsync = promisify(redisClient.get).bind(redisClient);
-const setAsync = promisify(redisClient.set).bind(redisClient);
-const delAsync = promisify(redisClient.del).bind(redisClient);
-const hgetAsync = promisify(redisClient.hget).bind(redisClient);
-const hsetAsync = promisify(redisClient.hset).bind(redisClient);
-const hdelAsync = promisify(redisClient.hdel).bind(redisClient);
-const lpushAsync = promisify(redisClient.lpush).bind(redisClient);
-const lrangeAsync = promisify(redisClient.lrange).bind(redisClient);
-const llenAsync = promisify(redisClient.llen).bind(redisClient);
-const expireAsync = promisify(redisClient.expire).bind(redisClient);
-const publishAsync = promisify(redisClient.publish).bind(redisClient);
-
 // Connect to Redis
 redisClient.on('connect', () => {
   console.log('✅ Redis connected successfully');
@@ -49,7 +35,7 @@ const messageCache = {
   // Cache message for 1 hour
   async cacheMessage(messageId, messageData) {
     try {
-      await setAsync(`message:${messageId}`, JSON.stringify(messageData), 'EX', 3600);
+      await redisClient.setEx(`message:${messageId}`, 3600, JSON.stringify(messageData));
     } catch (error) {
       console.error('Redis cache error:', error);
     }
@@ -58,7 +44,7 @@ const messageCache = {
   // Get cached message
   async getCachedMessage(messageId) {
     try {
-      const cached = await getAsync(`message:${messageId}`);
+      const cached = await redisClient.get(`message:${messageId}`);
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
       console.error('Redis get cache error:', error);
@@ -69,7 +55,7 @@ const messageCache = {
   // Cache conversation for 30 minutes
   async cacheConversation(requestId, messages) {
     try {
-      await setAsync(`conversation:${requestId}`, JSON.stringify(messages), 'EX', 1800);
+      await redisClient.setEx(`conversation:${requestId}`, 1800, JSON.stringify(messages));
     } catch (error) {
       console.error('Redis conversation cache error:', error);
     }
@@ -78,7 +64,7 @@ const messageCache = {
   // Get cached conversation
   async getCachedConversation(requestId) {
     try {
-      const cached = await getAsync(`conversation:${requestId}`);
+      const cached = await redisClient.get(`conversation:${requestId}`);
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
       console.error('Redis get conversation cache error:', error);
@@ -92,8 +78,8 @@ const realTimeMessaging = {
   // Store user's online status
   async setUserOnline(userId, socketId) {
     try {
-      await hsetAsync('online_users', userId.toString(), socketId);
-      await expireAsync('online_users', 3600); // 1 hour
+      await redisClient.hSet('online_users', userId.toString(), socketId);
+      await redisClient.expire('online_users', 3600); // 1 hour
     } catch (error) {
       console.error('Redis set online error:', error);
     }
@@ -102,7 +88,7 @@ const realTimeMessaging = {
   // Get user's socket ID
   async getUserSocket(userId) {
     try {
-      return await hgetAsync('online_users', userId.toString());
+      return await redisClient.hGet('online_users', userId.toString());
     } catch (error) {
       console.error('Redis get socket error:', error);
       return null;
@@ -112,7 +98,7 @@ const realTimeMessaging = {
   // Remove user from online list
   async setUserOffline(userId) {
     try {
-      await hdelAsync('online_users', userId.toString());
+      await redisClient.hDel('online_users', userId.toString());
     } catch (error) {
       console.error('Redis set offline error:', error);
     }
@@ -121,28 +107,27 @@ const realTimeMessaging = {
   // Publish message to channel
   async publishMessage(channel, message) {
     try {
-      await publishAsync(channel, JSON.stringify(message));
+      await redisClient.publish(channel, JSON.stringify(message));
     } catch (error) {
       console.error('Redis publish error:', error);
     }
   },
 
-  // Store unread message count
+  // Increment unread count
   async incrementUnreadCount(userId, requestId) {
     try {
       const key = `unread:${userId}:${requestId}`;
-      const current = await getAsync(key) || '0';
-      await setAsync(key, (parseInt(current) + 1).toString(), 'EX', 86400); // 24 hours
+      await redisClient.incr(key);
+      await redisClient.expire(key, 86400); // 24 hours
     } catch (error) {
       console.error('Redis increment unread error:', error);
     }
   },
 
-  // Get unread message count
+  // Get unread count
   async getUnreadCount(userId, requestId) {
     try {
-      const key = `unread:${userId}:${requestId}`;
-      const count = await getAsync(key);
+      const count = await redisClient.get(`unread:${userId}:${requestId}`);
       return count ? parseInt(count) : 0;
     } catch (error) {
       console.error('Redis get unread error:', error);
@@ -153,10 +138,9 @@ const realTimeMessaging = {
   // Mark messages as read
   async markAsRead(userId, requestId) {
     try {
-      const key = `unread:${userId}:${requestId}`;
-      await delAsync(key);
+      await redisClient.del(`unread:${userId}:${requestId}`);
     } catch (error) {
-      console.error('Redis mark read error:', error);
+      console.error('Redis mark as read error:', error);
     }
   }
 };
@@ -166,19 +150,19 @@ const sessionManager = {
   // Store session data
   async setSession(sessionId, sessionData) {
     try {
-      await setAsync(`session:${sessionId}`, JSON.stringify(sessionData), 'EX', 86400); // 24 hours
+      await redisClient.setEx(sessionId, 3600, JSON.stringify(sessionData)); // 1 hour
     } catch (error) {
-      console.error('Redis session set error:', error);
+      console.error('Redis set session error:', error);
     }
   },
 
   // Get session data
   async getSession(sessionId) {
     try {
-      const session = await getAsync(`session:${sessionId}`);
+      const session = await redisClient.get(sessionId);
       return session ? JSON.parse(session) : null;
     } catch (error) {
-      console.error('Redis session get error:', error);
+      console.error('Redis get session error:', error);
       return null;
     }
   },
@@ -186,9 +170,9 @@ const sessionManager = {
   // Delete session
   async deleteSession(sessionId) {
     try {
-      await delAsync(`session:${sessionId}`);
+      await redisClient.del(sessionId);
     } catch (error) {
-      console.error('Redis session delete error:', error);
+      console.error('Redis delete session error:', error);
     }
   }
 };
@@ -198,17 +182,20 @@ const rateLimiter = {
   // Check rate limit
   async checkRateLimit(key, limit, window) {
     try {
-      const current = await getAsync(`rate_limit:${key}`);
+      const current = await redisClient.get(key);
       if (current && parseInt(current) >= limit) {
         return false; // Rate limit exceeded
       }
       
-      const newCount = (parseInt(current) || 0) + 1;
-      await setAsync(`rate_limit:${key}`, newCount.toString(), 'EX', window);
+      await redisClient.multi()
+        .incr(key)
+        .expire(key, window)
+        .exec();
+      
       return true; // Within rate limit
     } catch (error) {
       console.error('Redis rate limit error:', error);
-      return true; // Allow if Redis fails
+      return true; // Allow on error
     }
   }
 };

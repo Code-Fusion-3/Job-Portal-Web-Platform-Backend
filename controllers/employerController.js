@@ -1,4 +1,4 @@
-const { PrismaClient } = require('../generated/prisma');
+const { PrismaClient } = require("@prisma/client");
 const { sendEmployerRequestNotification, sendAdminReplyNotification } = require('../utils/mailer');
 
 const prisma = new PrismaClient();

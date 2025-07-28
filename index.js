@@ -35,6 +35,8 @@ app.use('/search', require('./routes/searchRoutes'));
 app.use('/settings', require('./routes/settingsRoutes'));
 // Security routes
 app.use('/security', require('./routes/securityRoutes'));
+// Contact routes
+app.use('/contact', require('./routes/contactRoutes'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
