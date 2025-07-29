@@ -113,7 +113,7 @@
 						}
 					]
 				},
-				"url": "http://localhost:3000/register",
+				"url": "https://job-portal-backend-cfk4.onrender.com/register",
 				"description": "Register a new job seeker with optional photo upload. Use multipart/form-data. Required: email, password, firstName, lastName. Optional: photo, description, skills, gender, dateOfBirth, idNumber, contactNumber, maritalStatus, location, city, country, references, experience, jobCategoryId. Returns user info with profile (no password). A welcome email will be sent to the registered email address. Photo must be an image file under 5MB."
 			},
 			"response": [
@@ -142,7 +142,7 @@
 								}
 							]
 						},
-						"url": "http://localhost:3000/register"
+						"url": "https://job-portal-backend-cfk4.onrender.com/register"
 					},
 					"status": "Created",
 					"code": 201,
@@ -261,7 +261,7 @@
 								}
 							]
 						},
-						"url": "http://localhost:3000/register",
+						"url": "https://job-portal-backend-cfk4.onrender.com/register",
 						"description": "Register a new job seeker with optional photo upload. Use multipart/form-data. Required: email, password, firstName, lastName. Optional: photo, description, skills, gender, dateOfBirth, idNumber, contactNumber, maritalStatus, location, city, country, references, experience, jobCategoryId. Returns user info with profile (no password). A welcome email will be sent to the registered email address. Photo must be an image file under 5MB."
 					},
 					"status": "Bad Request",
@@ -381,7 +381,7 @@
 								}
 							]
 						},
-						"url": "http://localhost:3000/register",
+						"url": "https://job-portal-backend-cfk4.onrender.com/register",
 						"description": "Register a new job seeker with optional photo upload. Use multipart/form-data. Required: email, password, firstName, lastName. Optional: photo, description, skills, gender, dateOfBirth, idNumber, contactNumber, maritalStatus, location, city, country, references, experience, jobCategoryId. Returns user info with profile (no password). A welcome email will be sent to the registered email address. Photo must be an image file under 5MB."
 					},
 					"status": "Bad Request",
@@ -501,7 +501,7 @@
 								}
 							]
 						},
-						"url": "http://localhost:3000/register",
+						"url": "https://job-portal-backend-cfk4.onrender.com/register",
 						"description": "Register a new job seeker with optional photo upload. Use multipart/form-data. Required: email, password, firstName, lastName. Optional: photo, description, skills, gender, dateOfBirth, idNumber, contactNumber, maritalStatus, location, city, country, references, experience, jobCategoryId. Returns user info with profile (no password). A welcome email will be sent to the registered email address. Photo must be an image file under 5MB."
 					},
 					"status": "Bad Request",
@@ -621,7 +621,7 @@
 								}
 							]
 						},
-						"url": "http://localhost:3000/register",
+						"url": "https://job-portal-backend-cfk4.onrender.com/register",
 						"description": "Register a new job seeker with optional photo upload. Use multipart/form-data. Required: email, password, firstName, lastName. Optional: photo, description, skills, gender, dateOfBirth, idNumber, contactNumber, maritalStatus, location, city, country, references, experience, jobCategoryId. Returns user info with profile (no password). A welcome email will be sent to the registered email address. Photo must be an image file under 5MB."
 					},
 					"status": "Conflict",
@@ -652,7 +652,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"email\": \"admin@jobportal.com\",\n  \"password\": \"admin123\"\n}"
 				},
-				"url": "http://localhost:3000/login",
+				"url": "https://job-portal-backend-cfk4.onrender.com/login",
 				"description": "Login as admin user. Use the seeded admin credentials: admin@jobportal.com / admin123. Returns JWT token for authentication."
 			},
 			"response": [
@@ -670,7 +670,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"email\": \"admin@jobportal.com\",\n  \"password\": \"admin123\"\n}"
 						},
-						"url": "http://localhost:3000/login"
+						"url": "https://job-portal-backend-cfk4.onrender.com/login"
 					},
 					"status": "OK",
 					"code": 200,
@@ -698,7 +698,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"email\": \"admin@jobportal.com\",\n  \"password\": \"admin123\"\n}"
 						},
-						"url": "http://localhost:3000/login",
+						"url": "https://job-portal-backend-cfk4.onrender.com/login",
 						"description": "Login as admin user. Use the seeded admin credentials: admin@jobportal.com / admin123. Returns JWT token for authentication."
 					},
 					"status": "Unauthorized",
@@ -727,7 +727,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"email\": \"admin@jobportal.com\",\n  \"password\": \"admin123\"\n}"
 						},
-						"url": "http://localhost:3000/login",
+						"url": "https://job-portal-backend-cfk4.onrender.com/login",
 						"description": "Login as admin user. Use the seeded admin credentials: admin@jobportal.com / admin123. Returns JWT token for authentication."
 					},
 					"status": "Bad Request",
@@ -758,7 +758,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"email\": \"sarah.johnson@example.com\",\n  \"password\": \"securepassword123\"\n}"
 				},
-				"url": "http://localhost:3000/login",
+				"url": "https://job-portal-backend-cfk4.onrender.com/login",
 				"description": "Login as job seeker user. Use registered job seeker credentials. Returns JWT token and user profile information."
 			},
 			"response": [
@@ -776,7 +776,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"email\": \"sarah.johnson@example.com\",\n  \"password\": \"securepassword123\"\n}"
 						},
-						"url": "http://localhost:3000/login"
+						"url": "https://job-portal-backend-cfk4.onrender.com/login"
 					},
 					"status": "OK",
 					"code": 200,
@@ -804,7 +804,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"email\": \"sarah.johnson@example.com\",\n  \"password\": \"securepassword123\"\n}"
 						},
-						"url": "http://localhost:3000/login",
+						"url": "https://job-portal-backend-cfk4.onrender.com/login",
 						"description": "Login as job seeker user. Use registered job seeker credentials. Returns JWT token and user profile information."
 					},
 					"status": "Unauthorized",
@@ -839,7 +839,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"email\": \"worker1@example.com\",\n  \"firstName\": \"Worker\",\n  \"lastName\": \"One\",\n  \"skills\": \"Plumbing, Carpentry\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788000001\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Available upon request\",\n  \"experience\": \"3 years\",\n  \"jobCategoryId\": 1\n}"
 				},
-				"url": "http://localhost:3000/profile",
+				"url": "https://job-portal-backend-cfk4.onrender.com/profile",
 				"description": "Admin creates a job seeker (worker) account. Only email, firstName, and lastName are required. Default password is 'JobPortal@123'."
 			},
 			"response": [
@@ -861,7 +861,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"email\": \"worker1@example.com\",\n  \"firstName\": \"Worker\",\n  \"lastName\": \"One\",\n  \"skills\": \"Plumbing, Carpentry\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788000001\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Available upon request\",\n  \"experience\": \"3 years\",\n  \"jobCategoryId\": 1\n}"
 						},
-						"url": "http://localhost:3000/profile",
+						"url": "https://job-portal-backend-cfk4.onrender.com/profile",
 						"description": "Admin creates a job seeker (worker) account. Only email, firstName, and lastName are required. Default password is 'JobPortal@123'."
 					},
 					"status": "Created",
@@ -894,7 +894,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"email\": \"worker1@example.com\",\n  \"firstName\": \"Worker\",\n  \"lastName\": \"One\",\n  \"skills\": \"Plumbing, Carpentry\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788000001\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Available upon request\",\n  \"experience\": \"3 years\",\n  \"jobCategoryId\": 1\n}"
 						},
-						"url": "http://localhost:3000/profile",
+						"url": "https://job-portal-backend-cfk4.onrender.com/profile",
 						"description": "Admin creates a job seeker (worker) account. Only email, firstName, and lastName are required. Default password is 'JobPortal@123'."
 					},
 					"status": "Conflict",
@@ -922,7 +922,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/profile/all?page=1&limit=10",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/all?page=1&limit=10",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -957,7 +957,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:3000/profile/all?page=1&limit=10",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/profile/all?page=1&limit=10",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1012,7 +1012,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"skills\": \"Updated skills\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788000001\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Updated references\",\n  \"experience\": \"5 years\",\n  \"jobCategoryId\": 2\n}"
 				},
-				"url": "http://localhost:3000/profile/2",
+				"url": "https://job-portal-backend-cfk4.onrender.com/profile/2",
 				"description": "Admin updates any job seeker's profile by user ID. All fields are optional."
 			},
 			"response": [
@@ -1034,7 +1034,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"skills\": \"Updated skills\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788000001\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Updated references\",\n  \"experience\": \"5 years\",\n  \"jobCategoryId\": 2\n}"
 						},
-						"url": "http://localhost:3000/profile/2",
+						"url": "https://job-portal-backend-cfk4.onrender.com/profile/2",
 						"description": "Admin updates any job seeker's profile by user ID. All fields are optional."
 					},
 					"status": "OK",
@@ -1067,7 +1067,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\",\n  \"skills\": \"Updated skills\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788000001\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Updated references\",\n  \"experience\": \"5 years\",\n  \"jobCategoryId\": 2\n}"
 						},
-						"url": "http://localhost:3000/profile/2",
+						"url": "https://job-portal-backend-cfk4.onrender.com/profile/2",
 						"description": "Admin updates any job seeker's profile by user ID. All fields are optional."
 					},
 					"status": "Not Found",
@@ -1094,7 +1094,7 @@
 						"value": "Bearer {{admin_token}}"
 					}
 				],
-				"url": "http://localhost:3000/profile/2",
+				"url": "https://job-portal-backend-cfk4.onrender.com/profile/2",
 				"description": "Admin deletes a job seeker (worker) by user ID."
 			},
 			"response": [
@@ -1108,7 +1108,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/profile/2",
+						"url": "https://job-portal-backend-cfk4.onrender.com/profile/2",
 						"description": "Admin deletes a job seeker (worker) by user ID."
 					},
 					"status": "OK",
@@ -1133,7 +1133,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/profile/2",
+						"url": "https://job-portal-backend-cfk4.onrender.com/profile/2",
 						"description": "Admin deletes a job seeker (worker) by user ID."
 					},
 					"status": "Not Found",
@@ -1164,7 +1164,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"name\": \"Abirebeye Abayo Sincere\",\n  \"email\": \"abayosincere11@gmail.co\",\n  \"phoneNumber\": \"+250788123456\",\n  \"message\": \"We are looking for a housemaid with experience in childcare and cooking. Please connect us with Francine Mukamana.\",\n  \"requestedCandidateId\": 1\n}"
 				},
-				"url": "http://localhost:3000/employer/request",
+				"url": "https://job-portal-backend-cfk4.onrender.com/employer/request",
 				"description": "Public endpoint for employers to submit job requests with candidate-specific requests. Supports phone number and requested candidate ID. No authentication required."
 			},
 			"response": [
@@ -1182,7 +1182,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"TechCorp Rwanda\",\n  \"email\": \"hr@techcorp.rw\",\n  \"message\": \"We are looking for experienced software developers with React and Node.js skills. Please provide candidates who match our requirements.\"\n}"
 						},
-						"url": "http://localhost:3000/employer/request",
+						"url": "https://job-portal-backend-cfk4.onrender.com/employer/request",
 						"description": "Public endpoint for employers to submit job requests. No authentication required."
 					},
 					"status": "Created",
@@ -1211,7 +1211,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"TechCorp Rwanda\",\n  \"email\": \"hr@techcorp.rw\",\n  \"message\": \"We are looking for experienced software developers with React and Node.js skills. Please provide candidates who match our requirements.\"\n}"
 						},
-						"url": "http://localhost:3000/employer/request",
+						"url": "https://job-portal-backend-cfk4.onrender.com/employer/request",
 						"description": "Public endpoint for employers to submit job requests. No authentication required."
 					},
 					"status": "Bad Request",
@@ -1239,7 +1239,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/employer/requests?page=1&limit=10",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/employer/requests?page=1&limit=10",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -1274,7 +1274,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:3000/employer/requests?page=1&limit=10",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/employer/requests?page=1&limit=10",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1321,7 +1321,7 @@
 						"value": "Bearer {{admin_token}}"
 					}
 				],
-				"url": "http://localhost:3000/employer/requests/1",
+				"url": "https://job-portal-backend-cfk4.onrender.com/employer/requests/1",
 				"description": "Admin gets a specific employer request with all messages, selected job seeker details, phone number, and requested candidate information."
 			},
 			"response": [
@@ -1335,7 +1335,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/employer/requests/1",
+						"url": "https://job-portal-backend-cfk4.onrender.com/employer/requests/1",
 						"description": "Admin gets a specific employer request with all messages and selected job seeker details."
 					},
 					"status": "OK",
@@ -1360,7 +1360,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/employer/requests/1",
+						"url": "https://job-portal-backend-cfk4.onrender.com/employer/requests/1",
 						"description": "Admin gets a specific employer request with all messages and selected job seeker details."
 					},
 					"status": "Not Found",
@@ -1395,7 +1395,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"content\": \"Thank you for your request. We have found several qualified candidates who match your requirements. We will contact you shortly with their details.\"\n}"
 				},
-				"url": "http://localhost:3000/employer/requests/1/reply",
+				"url": "https://job-portal-backend-cfk4.onrender.com/employer/requests/1/reply",
 				"description": "Admin replies to an employer request. Sends email notification to employer."
 			},
 			"response": [
@@ -1417,7 +1417,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"content\": \"Thank you for your request. We have found several qualified candidates who match your requirements. We will contact you shortly with their details.\"\n}"
 						},
-						"url": "http://localhost:3000/employer/requests/1/reply",
+						"url": "https://job-portal-backend-cfk4.onrender.com/employer/requests/1/reply",
 						"description": "Admin replies to an employer request. Sends email notification to employer."
 					},
 					"status": "Created",
@@ -1450,7 +1450,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"content\": \"Thank you for your request. We have found several qualified candidates who match your requirements. We will contact you shortly with their details.\"\n}"
 						},
-						"url": "http://localhost:3000/employer/requests/1/reply",
+						"url": "https://job-portal-backend-cfk4.onrender.com/employer/requests/1/reply",
 						"description": "Admin replies to an employer request. Sends email notification to employer."
 					},
 					"status": "Bad Request",
@@ -1485,7 +1485,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"selectedUserId\": 2\n}"
 				},
-				"url": "http://localhost:3000/employer/requests/1/select",
+				"url": "https://job-portal-backend-cfk4.onrender.com/employer/requests/1/select",
 				"description": "Admin selects a job seeker for an employer request. The selected job seeker's details will be shared with the employer."
 			},
 			"response": [
@@ -1507,7 +1507,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"selectedUserId\": 2\n}"
 						},
-						"url": "http://localhost:3000/employer/requests/1/select",
+						"url": "https://job-portal-backend-cfk4.onrender.com/employer/requests/1/select",
 						"description": "Admin selects a job seeker for an employer request. The selected job seeker's details will be shared with the employer."
 					},
 					"status": "OK",
@@ -1540,7 +1540,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"selectedUserId\": 2\n}"
 						},
-						"url": "http://localhost:3000/employer/requests/1/select",
+						"url": "https://job-portal-backend-cfk4.onrender.com/employer/requests/1/select",
 						"description": "Admin selects a job seeker for an employer request. The selected job seeker's details will be shared with the employer."
 					},
 					"status": "Not Found",
@@ -1562,7 +1562,7 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": "http://localhost:3000/categories",
+				"url": "https://job-portal-backend-cfk4.onrender.com/categories",
 				"description": "Public endpoint to get all job categories. No authentication required."
 			},
 			"response": [
@@ -1571,7 +1571,7 @@
 					"originalRequest": {
 						"method": "GET",
 						"header": [],
-						"url": "http://localhost:3000/categories",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories",
 						"description": "Public endpoint to get all job categories. No authentication required."
 					},
 					"status": "OK",
@@ -1606,7 +1606,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"name_en\": \"Graphic Design\",\n  \"name_rw\": \"Ubwubatsi bw'Amashusho\"\n}"
 				},
-				"url": "http://localhost:3000/categories",
+				"url": "https://job-portal-backend-cfk4.onrender.com/categories",
 				"description": "Admin creates a new job category with both English and Kinyarwanda names."
 			},
 			"response": [
@@ -1628,7 +1628,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name_en\": \"Graphic Design\",\n  \"name_rw\": \"Ubwubatsi bw'Amashusho\"\n}"
 						},
-						"url": "http://localhost:3000/categories",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories",
 						"description": "Admin creates a new job category with both English and Kinyarwanda names."
 					},
 					"status": "Created",
@@ -1661,7 +1661,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name_en\": \"Graphic Design\",\n  \"name_rw\": \"Ubwubatsi bw'Amashusho\"\n}"
 						},
-						"url": "http://localhost:3000/categories",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories",
 						"description": "Admin creates a new job category with both English and Kinyarwanda names."
 					},
 					"status": "Conflict",
@@ -1694,7 +1694,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name_en\": \"Graphic Design\",\n  \"name_rw\": \"Ubwubatsi bw'Amashusho\"\n}"
 						},
-						"url": "http://localhost:3000/categories",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories",
 						"description": "Admin creates a new job category with both English and Kinyarwanda names."
 					},
 					"status": "Bad Request",
@@ -1722,7 +1722,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/categories/admin?page=1&limit=10",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/categories/admin?page=1&limit=10",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -1757,7 +1757,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:3000/categories/admin?page=1&limit=10",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/categories/admin?page=1&limit=10",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1804,7 +1804,7 @@
 						"value": "Bearer {{admin_token}}"
 					}
 				],
-				"url": "http://localhost:3000/categories/1",
+				"url": "https://job-portal-backend-cfk4.onrender.com/categories/1",
 				"description": "Admin gets a specific job category with all associated profiles."
 			},
 			"response": [
@@ -1818,7 +1818,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/categories/1",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories/1",
 						"description": "Admin gets a specific job category with all associated profiles."
 					},
 					"status": "OK",
@@ -1843,7 +1843,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/categories/1",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories/1",
 						"description": "Admin gets a specific job category with all associated profiles."
 					},
 					"status": "Not Found",
@@ -1878,7 +1878,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"name_en\": \"Software Engineering\",\n  \"name_rw\": \"Ubwubatsi bwa Software\"\n}"
 				},
-				"url": "http://localhost:3000/categories/1",
+				"url": "https://job-portal-backend-cfk4.onrender.com/categories/1",
 				"description": "Admin updates a job category name."
 			},
 			"response": [
@@ -1900,7 +1900,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name_en\": \"Software Engineering\",\n  \"name_rw\": \"Ubwubatsi bwa Software\"\n}"
 						},
-						"url": "http://localhost:3000/categories/1",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories/1",
 						"description": "Admin updates a job category name."
 					},
 					"status": "OK",
@@ -1933,7 +1933,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"name_en\": \"Software Engineering\",\n  \"name_rw\": \"Ubwubatsi bwa Software\"\n}"
 						},
-						"url": "http://localhost:3000/categories/1",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories/1",
 						"description": "Admin updates a job category name."
 					},
 					"status": "Conflict",
@@ -1960,7 +1960,7 @@
 						"value": "Bearer {{admin_token}}"
 					}
 				],
-				"url": "http://localhost:3000/categories/3",
+				"url": "https://job-portal-backend-cfk4.onrender.com/categories/3",
 				"description": "Admin deletes a job category. Cannot delete if profiles are using it."
 			},
 			"response": [
@@ -1974,7 +1974,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/categories/3",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories/3",
 						"description": "Admin deletes a job category. Cannot delete if profiles are using it."
 					},
 					"status": "OK",
@@ -1999,7 +1999,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/categories/3",
+						"url": "https://job-portal-backend-cfk4.onrender.com/categories/3",
 						"description": "Admin deletes a job category. Cannot delete if profiles are using it."
 					},
 					"status": "Bad Request",
@@ -2022,7 +2022,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3000/public/job-seekers?page=1&limit=10&categoryId=1&skills=JavaScript&location=Kigali",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/public/job-seekers?page=1&limit=10&categoryId=1&skills=JavaScript&location=Kigali",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -2064,7 +2064,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/public/job-seekers?page=1&limit=10&categoryId=1&skills=JavaScript&location=Kigali",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/public/job-seekers?page=1&limit=10&categoryId=1&skills=JavaScript&location=Kigali",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -2118,7 +2118,7 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": "http://localhost:3000/public/statistics",
+				"url": "https://job-portal-backend-cfk4.onrender.com/public/statistics",
 				"description": "Public endpoint to get job seeker statistics for the platform overview."
 			},
 			"response": [
@@ -2127,7 +2127,7 @@
 					"originalRequest": {
 						"method": "GET",
 						"header": [],
-						"url": "http://localhost:3000/public/statistics",
+						"url": "https://job-portal-backend-cfk4.onrender.com/public/statistics",
 						"description": "Public endpoint to get job seeker statistics for the platform overview."
 					},
 					"status": "OK",
@@ -2149,7 +2149,7 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": "http://localhost:3000/public/filters",
+				"url": "https://job-portal-backend-cfk4.onrender.com/public/filters",
 				"description": "Public endpoint to get available filters for job seeker search (categories, locations, skills)."
 			},
 			"response": [
@@ -2158,7 +2158,7 @@
 					"originalRequest": {
 						"method": "GET",
 						"header": [],
-						"url": "http://localhost:3000/public/filters",
+						"url": "https://job-portal-backend-cfk4.onrender.com/public/filters",
 						"description": "Public endpoint to get available filters for job seeker search (categories, locations, skills)."
 					},
 					"status": "OK",
@@ -2185,7 +2185,7 @@
 						"value": "Bearer {{admin_token}}"
 					}
 				],
-				"url": "http://localhost:3000/dashboard/stats",
+				"url": "https://job-portal-backend-cfk4.onrender.com/dashboard/stats",
 				"description": "Admin gets comprehensive dashboard statistics including overview, recent activity, distributions, and trends."
 			},
 			"response": [
@@ -2199,7 +2199,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/dashboard/stats",
+						"url": "https://job-portal-backend-cfk4.onrender.com/dashboard/stats",
 						"description": "Admin gets comprehensive dashboard statistics including overview, recent activity, distributions, and trends."
 					},
 					"status": "OK",
@@ -2227,7 +2227,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/dashboard/analytics?period=30",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/dashboard/analytics?period=30",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -2258,7 +2258,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:3000/dashboard/analytics?period=30",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/dashboard/analytics?period=30",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -2325,7 +2325,7 @@
 						}
 					]
 				},
-				"url": "http://localhost:3000/messaging/admin/1/send",
+				"url": "https://job-portal-backend-cfk4.onrender.com/messaging/admin/1/send",
 				"description": "Admin sends a message to employer with optional file attachment. Supports text and file message types."
 			},
 			"response": [
@@ -2363,7 +2363,7 @@
 								}
 							]
 						},
-						"url": "http://localhost:3000/messaging/admin/1/send",
+						"url": "https://job-portal-backend-cfk4.onrender.com/messaging/admin/1/send",
 						"description": "Admin sends a message to employer with optional file attachment. Supports text and file message types."
 					},
 					"status": "Created",
@@ -2412,7 +2412,7 @@
 								}
 							]
 						},
-						"url": "http://localhost:3000/messaging/admin/1/send",
+						"url": "https://job-portal-backend-cfk4.onrender.com/messaging/admin/1/send",
 						"description": "Admin sends a message to employer with optional file attachment. Supports text and file message types."
 					},
 					"status": "Too Many Requests",
@@ -2464,7 +2464,7 @@
 						}
 					]
 				},
-				"url": "http://localhost:3000/messaging/employer/1/reply",
+				"url": "https://job-portal-backend-cfk4.onrender.com/messaging/employer/1/reply",
 				"description": "Employer replies to admin message with optional file attachment. Public endpoint requiring email verification."
 			},
 			"response": [
@@ -2503,7 +2503,7 @@
 								}
 							]
 						},
-						"url": "http://localhost:3000/messaging/employer/1/reply",
+						"url": "https://job-portal-backend-cfk4.onrender.com/messaging/employer/1/reply",
 						"description": "Employer replies to admin message with optional file attachment. Public endpoint requiring email verification."
 					},
 					"status": "Created",
@@ -2553,7 +2553,7 @@
 								}
 							]
 						},
-						"url": "http://localhost:3000/messaging/employer/1/reply",
+						"url": "https://job-portal-backend-cfk4.onrender.com/messaging/employer/1/reply",
 						"description": "Employer replies to admin message with optional file attachment. Public endpoint requiring email verification."
 					},
 					"status": "Not Found",
@@ -2580,7 +2580,7 @@
 						"value": "Bearer {{admin_token}}"
 					}
 				],
-				"url": "http://localhost:3000/messaging/conversation/1",
+				"url": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1",
 				"description": "Get conversation between admin and employer. Admin can access any conversation."
 			},
 			"response": [
@@ -2594,7 +2594,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/messaging/conversation/1",
+						"url": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1",
 						"description": "Get conversation between admin and employer. Admin can access any conversation."
 					},
 					"status": "OK",
@@ -2617,7 +2617,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3000/messaging/conversation/1?email=hr@techcorp.rw",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1?email=hr@techcorp.rw",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -2644,7 +2644,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/messaging/conversation/1?email=hr@techcorp.rw",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1?email=hr@techcorp.rw",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -2682,7 +2682,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:3000/messaging/conversation/1?email=hr@techcorp.rw",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1?email=hr@techcorp.rw",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -2734,7 +2734,7 @@
 					"mode": "raw",
 					"raw": "{\n  \"messageIds\": [1, 2, 3]\n}"
 				},
-				"url": "http://localhost:3000/messaging/conversation/1/read",
+				"url": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1/read",
 				"description": "Mark specific messages as read. Updates both database and Redis cache."
 			},
 			"response": [
@@ -2756,7 +2756,7 @@
 							"mode": "raw",
 							"raw": "{\n  \"messageIds\": [1, 2, 3]\n}"
 						},
-						"url": "http://localhost:3000/messaging/conversation/1/read",
+						"url": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1/read",
 						"description": "Mark specific messages as read. Updates both database and Redis cache."
 					},
 					"status": "OK",
@@ -2783,7 +2783,7 @@
 						"value": "Bearer {{admin_token}}"
 					}
 				],
-				"url": "http://localhost:3000/messaging/conversation/1/unread",
+				"url": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1/unread",
 				"description": "Get unread message count for a specific conversation."
 			},
 			"response": [
@@ -2797,7 +2797,7 @@
 								"value": "Bearer {{admin_token}}"
 							}
 						],
-						"url": "http://localhost:3000/messaging/conversation/1/unread",
+						"url": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1/unread",
 						"description": "Get unread message count for a specific conversation."
 					},
 					"status": "OK",
@@ -2825,7 +2825,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/messaging/admin/conversations?page=1&limit=10",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/admin/conversations?page=1&limit=10",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -2861,7 +2861,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:3000/messaging/admin/conversations?page=1&limit=10",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/admin/conversations?page=1&limit=10",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -2914,7 +2914,7 @@
 					"raw": "{\n  \"name\": \"John Smith\",\n  \"email\": \"john.smith@example.com\",\n  \"subject\": \"General Inquiry\",\n  \"message\": \"Hello, I would like to know more about your job portal services. Can you provide information about how employers can post jobs and how job seekers can apply?\",\n  \"category\": \"general\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:3000/contact/submit",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/contact/submit",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -2967,7 +2967,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/contact/admin/all?page=1&limit=10&status=unread&category=general&priority=normal&search=inquiry&sortBy=createdAt&sortOrder=desc",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/contact/admin/all?page=1&limit=10&status=unread&category=general&priority=normal&search=inquiry&sortBy=createdAt&sortOrder=desc",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3050,7 +3050,7 @@
 					"raw": "{\n  \"subject\": \"Re: General Inquiry\",\n  \"message\": \"Dear John Smith,\\n\\nThank you for contacting Job Portal. We appreciate your interest in our services.\\n\\nHere's how our platform works:\\n\\n1. **For Employers:**\\n   - Register an account or submit a request\\n   - Describe your job requirements\\n   - We'll match you with suitable candidates\\n\\n2. **For Job Seekers:**\\n   - Create a profile with your skills and experience\\n   - Browse available opportunities\\n   - Apply directly through our platform\\n\\nPlease let us know if you need any clarification or have additional questions.\\n\\nBest regards,\\nJob Portal Team\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:3000/contact/admin/1/respond",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/contact/admin/1/respond",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3092,7 +3092,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/contact/admin/statistics?period=30",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/contact/admin/statistics?period=30",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3134,7 +3134,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:3000/search/job-seekers?q=JavaScript&categoryId=1&location=Kigali&experience=5&skills=React&page=1&limit=10",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/search/job-seekers?q=JavaScript&categoryId=1&location=Kigali&experience=5&skills=React&page=1&limit=10",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3204,7 +3204,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/settings",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/settings",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3247,7 +3247,7 @@
 					"raw": "{\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:3000/security/refresh",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/refresh",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3304,7 +3304,7 @@
 					"raw": "{\n  \"email\": \"user@example.com\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:3000/security/reset-request",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/reset-request",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3365,7 +3365,7 @@
 					"raw": "{\n  \"currentPassword\": \"oldpassword123\",\n  \"newPassword\": \"newpassword456\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:3000/security/change-password",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/change-password",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3470,7 +3470,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/profile/me",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3557,7 +3557,7 @@
 					"raw": "{\n  \"email\": \"newadmin@example.com\",\n  \"firstName\": \"Updated Sarah\",\n  \"lastName\": \"Updated Johnson\",\n  \"description\": \"Updated description with new skills and experience.\",\n  \"skills\": \"JavaScript, React, Node.js, TypeScript, Next.js, AWS, Docker\",\n  \"gender\": \"Female\",\n  \"dateOfBirth\": \"1992-08-15\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788987654\",\n  \"maritalStatus\": \"Married\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Updated references with new employers.\",\n  \"experience\": \"8 years in software development\",\n  \"jobCategoryId\": 1\n}"
 				},
 				"url": {
-					"raw": "http://localhost:3000/profile/me",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3623,7 +3623,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/profile/me",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3706,7 +3706,7 @@
 					"raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"newPassword\": \"newpassword123\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:3000/security/reset-password",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/reset-password",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3798,7 +3798,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/security/logout",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/logout",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3851,7 +3851,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/security/user-sessions/1",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/user-sessions/1",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3918,7 +3918,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/security/user-sessions/1/session_123",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/user-sessions/1/session_123",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -3973,7 +3973,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/security/logs?page=1&limit=10",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/logs?page=1&limit=10",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -4036,7 +4036,7 @@
 					}
 				],
 				"url": {
-					"raw": "http://localhost:3000/profile/me",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -4097,7 +4097,7 @@
 					"raw": "{\n  \"email\": \"newadmin@jobportal.com\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"User\",\n  \"description\": \"System Administrator\",\n  \"skills\": \"Management, Leadership, System Administration\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"idNumber\": \"ADMIN123456\",\n  \"contactNumber\": \"+250788123456\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Available upon request\",\n  \"experience\": \"5 years in management\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:3000/profile/me",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -4158,7 +4158,7 @@
 					"raw": "{\n  \"currentPassword\": \"adminpassword123\",\n  \"newPassword\": \"newadminpassword456\"\n}"
 				},
 				"url": {
-					"raw": "http://localhost:3000/security/change-password",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/change-password",
 					"protocol": "http",
 					"host": [
 						"localhost"
