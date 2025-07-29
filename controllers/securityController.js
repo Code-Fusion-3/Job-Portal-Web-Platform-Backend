@@ -199,7 +199,7 @@ exports.resetPassword = async (req, res) => {
 exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id; // Changed from req.user.userId to req.user.id
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Current password and new password are required.' });
@@ -208,6 +208,11 @@ exports.changePassword = async (req, res) => {
     // Validate password strength
     if (newPassword.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+    }
+
+    // Check if new password is different from current password
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: 'New password must be different from current password.' });
     }
 
     // Get current user
@@ -234,8 +239,15 @@ exports.changePassword = async (req, res) => {
       data: { password: hashedPassword }
     });
 
-    // Revoke all refresh tokens for this user
-    await sessionManager.deleteSession(`refresh_token_${userId}`);
+    // Revoke all refresh tokens for this user (if sessionManager exists)
+    try {
+      if (sessionManager && sessionManager.deleteSession) {
+        await sessionManager.deleteSession(`refresh_token_${userId}`);
+      }
+    } catch (sessionError) {
+      console.error('Failed to revoke sessions:', sessionError);
+      // Continue even if session revocation fails
+    }
 
     res.json({ message: 'Password changed successfully.' });
   } catch (err) {

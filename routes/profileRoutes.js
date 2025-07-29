@@ -3,13 +3,13 @@ const router = express.Router();
 const profileController = require('../controllers/profileController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
-// Get current user's profile
+// Get current user's profile (job seeker or admin)
 router.get('/me', authenticateToken, profileController.getMyProfile);
 
-// Update current user's profile
+// Update current user's profile (job seeker or admin)
 router.put('/me', authenticateToken, profileController.updateMyProfile);
 
-// Delete current user's profile/account
+// Delete current user's profile/account (job seeker or admin)
 router.delete('/me', authenticateToken, profileController.deleteMyProfile);
 
 // Admin: Get all job seekers (with pagination)

@@ -3347,7 +3347,120 @@
 			]
 		},
 		{
-			"name": "Get My Profile (Job Seeker)",
+			"name": "Change Password",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jobseeker_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"currentPassword\": \"oldpassword123\",\n  \"newPassword\": \"newpassword456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/security/change-password",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"security",
+						"change-password"
+					]
+				},
+				"description": "Change user password. Requires current password verification. Works for both job seekers and admins. All sessions are revoked after password change."
+			},
+			"response": [
+				{
+					"name": "Success",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"message\": \"Password changed successfully.\"\n}"
+				},
+				{
+					"name": "Invalid Current Password",
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Current password is incorrect.\"\n}"
+				},
+				{
+					"name": "Weak Password",
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Password must be at least 6 characters long.\"\n}"
+				},
+				{
+					"name": "Same Password",
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"New password must be different from current password.\"\n}"
+				},
+				{
+					"name": "Missing Fields",
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Current password and new password are required.\"\n}"
+				},
+				{
+					"name": "Unauthorized",
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Access denied. Authentication required.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Get My Profile (Job Seeker/Admin)",
 			"request": {
 				"method": "GET",
 				"header": [
@@ -3368,11 +3481,11 @@
 						"me"
 					]
 				},
-				"description": "Job seeker gets their own profile information. Requires authentication."
+				"description": "Job seeker or admin gets their own profile information. Works for admins with or without profiles. Requires authentication."
 			},
 			"response": [
 				{
-					"name": "Success",
+					"name": "Success (Job Seeker)",
 					"status": "OK",
 					"code": 200,
 					"_postman_previewlanguage": "json",
@@ -3382,7 +3495,33 @@
 							"value": "application/json"
 						}
 					],
-					"body": "{\n  \"id\": 2,\n  \"userId\": 2,\n  \"firstName\": \"Sarah\",\n  \"lastName\": \"Johnson\",\n  \"description\": \"Experienced full-stack developer with 7 years of experience in modern web technologies.\",\n  \"skills\": \"JavaScript, React, Node.js, Python, Django, PostgreSQL, AWS, Docker, Git\",\n  \"gender\": \"Female\",\n  \"photo\": \"uploads/profiles/profile-1732546800000-123456789.png\",\n  \"dateOfBirth\": \"1992-08-15T00:00:00.000Z\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788987654\",\n  \"maritalStatus\": \"Married\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Available upon request. Previous employers: TechCorp Rwanda, Digital Solutions Ltd.\",\n  \"experience\": \"7 years in software development\",\n  \"jobCategoryId\": 1,\n  \"jobCategory\": {\n    \"id\": 1,\n    \"name_en\": \"Software Development\",\n    \"name_rw\": \"Ubwubatsi bwa Software\"\n  },\n  \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n  \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n}"
+					"body": "{\n  \"id\": 2,\n  \"email\": \"sarah.johnson@example.com\",\n  \"role\": \"jobseeker\",\n  \"profile\": {\n    \"id\": 2,\n    \"userId\": 2,\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"description\": \"Experienced full-stack developer with 7 years of experience in modern web technologies.\",\n    \"skills\": \"JavaScript, React, Node.js, Python, Django, PostgreSQL, AWS, Docker, Git\",\n    \"gender\": \"Female\",\n    \"photo\": \"uploads/profiles/profile-1732546800000-123456789.png\",\n    \"dateOfBirth\": \"1992-08-15T00:00:00.000Z\",\n    \"idNumber\": \"1234567890123456\",\n    \"contactNumber\": \"+250788987654\",\n    \"maritalStatus\": \"Married\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request. Previous employers: TechCorp Rwanda, Digital Solutions Ltd.\",\n    \"experience\": \"7 years in software development\",\n    \"jobCategoryId\": 1,\n    \"jobCategory\": {\n      \"id\": 1,\n      \"name_en\": \"Software Development\",\n      \"name_rw\": \"Ubwubatsi bwa Software\"\n    },\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  },\n  \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n  \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n}"
+				},
+				{
+					"name": "Success (Admin)",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"id\": 1,\n  \"email\": \"admin@jobportal.com\",\n  \"role\": \"admin\",\n  \"profile\": {\n    \"id\": 1,\n    \"userId\": 1,\n    \"firstName\": \"Admin\",\n    \"lastName\": \"User\",\n    \"description\": \"System Administrator\",\n    \"skills\": \"Management, Leadership, System Administration\",\n    \"gender\": \"Male\",\n    \"photo\": null,\n    \"dateOfBirth\": \"1990-01-01T00:00:00.000Z\",\n    \"idNumber\": \"ADMIN123456\",\n    \"contactNumber\": \"+250788123456\",\n    \"maritalStatus\": \"Single\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request\",\n    \"experience\": \"5 years in management\",\n    \"jobCategoryId\": null,\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  },\n  \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n  \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n}"
+				},
+				{
+					"name": "Success (Admin without Profile)",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"id\": 1,\n  \"email\": \"admin@jobportal.com\",\n  \"role\": \"admin\",\n  \"profile\": null,\n  \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n  \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n}"
 				},
 				{
 					"name": "Unauthorized",
@@ -3400,7 +3539,7 @@
 			]
 		},
 		{
-			"name": "Update My Profile (Job Seeker)",
+			"name": "Update My Profile (Job Seeker/Admin)",
 			"request": {
 				"method": "PUT",
 				"header": [
@@ -3415,7 +3554,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"firstName\": \"Updated Sarah\",\n  \"lastName\": \"Updated Johnson\",\n  \"description\": \"Updated description with new skills and experience.\",\n  \"skills\": \"JavaScript, React, Node.js, TypeScript, Next.js, AWS, Docker\",\n  \"gender\": \"Female\",\n  \"dateOfBirth\": \"1992-08-15\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788987654\",\n  \"maritalStatus\": \"Married\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Updated references with new employers.\",\n  \"experience\": \"8 years in software development\",\n  \"jobCategoryId\": 1\n}"
+					"raw": "{\n  \"email\": \"newadmin@example.com\",\n  \"firstName\": \"Updated Sarah\",\n  \"lastName\": \"Updated Johnson\",\n  \"description\": \"Updated description with new skills and experience.\",\n  \"skills\": \"JavaScript, React, Node.js, TypeScript, Next.js, AWS, Docker\",\n  \"gender\": \"Female\",\n  \"dateOfBirth\": \"1992-08-15\",\n  \"idNumber\": \"1234567890123456\",\n  \"contactNumber\": \"+250788987654\",\n  \"maritalStatus\": \"Married\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Updated references with new employers.\",\n  \"experience\": \"8 years in software development\",\n  \"jobCategoryId\": 1\n}"
 				},
 				"url": {
 					"raw": "http://localhost:3000/profile/me",
@@ -3429,11 +3568,11 @@
 						"me"
 					]
 				},
-				"description": "Job seeker updates their own profile. All fields are optional."
+				"description": "Job seeker or admin updates their own profile. Admins can update email and create profile if it doesn't exist. All fields are optional."
 			},
 			"response": [
 				{
-					"name": "Success",
+					"name": "Success (Job Seeker)",
 					"status": "OK",
 					"code": 200,
 					"_postman_previewlanguage": "json",
@@ -3444,6 +3583,19 @@
 						}
 					],
 					"body": "{\n  \"message\": \"Profile updated successfully\",\n  \"profile\": {\n    \"id\": 2,\n    \"userId\": 2,\n    \"firstName\": \"Updated Sarah\",\n    \"lastName\": \"Updated Johnson\",\n    \"description\": \"Updated description with new skills and experience.\",\n    \"skills\": \"JavaScript, React, Node.js, TypeScript, Next.js, AWS, Docker\",\n    \"gender\": \"Female\",\n    \"photo\": \"uploads/profiles/profile-1732546800000-123456789.png\",\n    \"dateOfBirth\": \"1992-08-15T00:00:00.000Z\",\n    \"idNumber\": \"1234567890123456\",\n    \"contactNumber\": \"+250788987654\",\n    \"maritalStatus\": \"Married\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Updated references with new employers.\",\n    \"experience\": \"8 years in software development\",\n    \"jobCategoryId\": 1,\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  }\n}"
+				},
+				{
+					"name": "Success (Admin)",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"message\": \"Admin profile updated successfully\",\n  \"profile\": {\n    \"id\": 1,\n    \"userId\": 1,\n    \"firstName\": \"Admin\",\n    \"lastName\": \"User\",\n    \"description\": \"System Administrator\",\n    \"skills\": \"Management, Leadership, System Administration\",\n    \"gender\": \"Male\",\n    \"photo\": null,\n    \"dateOfBirth\": \"1990-01-01T00:00:00.000Z\",\n    \"idNumber\": \"ADMIN123456\",\n    \"contactNumber\": \"+250788123456\",\n    \"maritalStatus\": \"Single\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request\",\n    \"experience\": \"5 years in management\",\n    \"jobCategoryId\": null,\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  }\n}"
 				},
 				{
 					"name": "Validation Error",
@@ -3461,7 +3613,7 @@
 			]
 		},
 		{
-			"name": "Delete My Profile (Job Seeker)",
+			"name": "Delete My Profile (Job Seeker/Admin)",
 			"request": {
 				"method": "DELETE",
 				"header": [
@@ -3482,11 +3634,11 @@
 						"me"
 					]
 				},
-				"description": "Job seeker deletes their own profile and account. This action cannot be undone."
+				"description": "Job seeker or admin deletes their own profile. For admins, only profile is deleted (account preserved). For job seekers, both profile and account are deleted. This action cannot be undone."
 			},
 			"response": [
 				{
-					"name": "Success",
+					"name": "Success (Job Seeker)",
 					"status": "OK",
 					"code": 200,
 					"_postman_previewlanguage": "json",
@@ -3496,7 +3648,33 @@
 							"value": "application/json"
 						}
 					],
-					"body": "{\n  \"message\": \"Profile and account deleted successfully\"\n}"
+					"body": "{\n  \"message\": \"Account and profile deleted successfully.\"\n}"
+				},
+				{
+					"name": "Success (Admin)",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"message\": \"Admin profile deleted successfully. Admin account preserved.\"\n}"
+				},
+				{
+					"name": "Success (Admin without Profile)",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"message\": \"No profile to delete for admin.\"\n}"
 				},
 				{
 					"name": "Unauthorized",
@@ -3510,6 +3688,515 @@
 						}
 					],
 					"body": "{\n  \"error\": \"Access denied. Authentication required.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Reset Password with Token",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"newPassword\": \"newpassword123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/security/reset-password",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"security",
+						"reset-password"
+					]
+				},
+				"description": "Reset password using token received via email. Token expires after 1 hour."
+			},
+			"response": [
+				{
+					"name": "Success",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"message\": \"Password has been reset successfully.\"\n}"
+				},
+				{
+					"name": "Invalid Token",
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Invalid or expired reset token.\"\n}"
+				},
+				{
+					"name": "Expired Token",
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Reset token has expired.\"\n}"
+				},
+				{
+					"name": "Weak Password",
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Password must be at least 6 characters long.\"\n}"
+				},
+				{
+					"name": "Missing Fields",
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Token and new password are required.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Logout/Revoke Token",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jobseeker_token}}"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/security/logout",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"security",
+						"logout"
+					]
+				},
+				"description": "Logout user and revoke refresh token. Requires authentication."
+			},
+			"response": [
+				{
+					"name": "Success",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"message\": \"Successfully logged out.\"\n}"
+				},
+				{
+					"name": "Unauthorized",
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Access denied. Authentication required.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Get User Sessions (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/security/user-sessions/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"security",
+						"user-sessions",
+						"1"
+					]
+				},
+				"description": "Admin gets all active sessions for a specific user. Admin access required."
+			},
+			"response": [
+				{
+					"name": "Success",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"sessions\": [\n    {\n      \"id\": \"session_123\",\n      \"userId\": 1,\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n      \"expiresAt\": \"2024-01-08T00:00:00.000Z\",\n      \"deviceInfo\": \"Chrome on Windows\"\n    }\n  ]\n}"
+				},
+				{
+					"name": "No Sessions",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"sessions\": []\n}"
+				},
+				{
+					"name": "Admin Access Required",
+					"status": "Forbidden",
+					"code": 403,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Admin access required.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Revoke User Session (Admin)",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/security/user-sessions/1/session_123",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"security",
+						"user-sessions",
+						"1",
+						"session_123"
+					]
+				},
+				"description": "Admin revokes a specific session for a user. Admin access required."
+			},
+			"response": [
+				{
+					"name": "Success",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"message\": \"Session revoked successfully.\"\n}"
+				},
+				{
+					"name": "Admin Access Required",
+					"status": "Forbidden",
+					"code": 403,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Admin access required.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Get Security Logs (Admin)",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/security/logs?page=1&limit=10",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"security",
+						"logs"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "10"
+						}
+					]
+				},
+				"description": "Admin gets security logs including login attempts and security events. Admin access required."
+			},
+			"response": [
+				{
+					"name": "Success",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"logs\": [\n    {\n      \"type\": \"login\",\n      \"userId\": 1,\n      \"email\": \"admin@jobportal.com\",\n      \"role\": \"admin\",\n      \"description\": \"User login: Admin User\",\n      \"timestamp\": \"2024-01-01T00:00:00.000Z\"\n    },\n    {\n      \"type\": \"login\",\n      \"userId\": 2,\n      \"email\": \"sarah.johnson@example.com\",\n      \"role\": \"jobseeker\",\n      \"description\": \"User login: Sarah Johnson\",\n      \"timestamp\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 2\n  }\n}"
+				},
+				{
+					"name": "Admin Access Required",
+					"status": "Forbidden",
+					"code": 403,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Admin access required.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Admin Profile Management Examples",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/profile/me",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"profile",
+						"me"
+					]
+				},
+				"description": "Admin-specific examples for profile management. Use admin_token for admin authentication."
+			},
+			"response": [
+				{
+					"name": "Admin Get Profile (with profile)",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"id\": 1,\n  \"email\": \"admin@jobportal.com\",\n  \"role\": \"admin\",\n  \"profile\": {\n    \"id\": 1,\n    \"userId\": 1,\n    \"firstName\": \"Admin\",\n    \"lastName\": \"User\",\n    \"description\": \"System Administrator\",\n    \"skills\": \"Management, Leadership, System Administration\",\n    \"gender\": \"Male\",\n    \"photo\": null,\n    \"dateOfBirth\": \"1990-01-01T00:00:00.000Z\",\n    \"idNumber\": \"ADMIN123456\",\n    \"contactNumber\": \"+250788123456\",\n    \"maritalStatus\": \"Single\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request\",\n    \"experience\": \"5 years in management\",\n    \"jobCategoryId\": null,\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  },\n  \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n  \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n}"
+				},
+				{
+					"name": "Admin Get Profile (without profile)",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"id\": 1,\n  \"email\": \"admin@jobportal.com\",\n  \"role\": \"admin\",\n  \"profile\": null,\n  \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n  \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Admin Update Profile (Create Profile)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"newadmin@jobportal.com\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"User\",\n  \"description\": \"System Administrator\",\n  \"skills\": \"Management, Leadership, System Administration\",\n  \"gender\": \"Male\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"idNumber\": \"ADMIN123456\",\n  \"contactNumber\": \"+250788123456\",\n  \"maritalStatus\": \"Single\",\n  \"location\": \"Kigali, Rwanda\",\n  \"city\": \"Kigali\",\n  \"country\": \"Rwanda\",\n  \"references\": \"Available upon request\",\n  \"experience\": \"5 years in management\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/profile/me",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"profile",
+						"me"
+					]
+				},
+				"description": "Admin creates or updates their profile. Can update email and create profile if it doesn't exist."
+			},
+			"response": [
+				{
+					"name": "Success (Profile Created)",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"message\": \"Admin profile updated successfully\",\n  \"profile\": {\n    \"id\": 1,\n    \"userId\": 1,\n    \"firstName\": \"Admin\",\n    \"lastName\": \"User\",\n    \"description\": \"System Administrator\",\n    \"skills\": \"Management, Leadership, System Administration\",\n    \"gender\": \"Male\",\n    \"photo\": null,\n    \"dateOfBirth\": \"1990-01-01T00:00:00.000Z\",\n    \"idNumber\": \"ADMIN123456\",\n    \"contactNumber\": \"+250788123456\",\n    \"maritalStatus\": \"Single\",\n    \"location\": \"Kigali, Rwanda\",\n    \"city\": \"Kigali\",\n    \"country\": \"Rwanda\",\n    \"references\": \"Available upon request\",\n    \"experience\": \"5 years in management\",\n    \"jobCategoryId\": null,\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  }\n}"
+				},
+				{
+					"name": "Email Already Exists",
+					"status": "Conflict",
+					"code": 409,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Email already registered.\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Admin Change Password",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{admin_token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"currentPassword\": \"adminpassword123\",\n  \"newPassword\": \"newadminpassword456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/security/change-password",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"security",
+						"change-password"
+					]
+				},
+				"description": "Admin changes their password. Requires current password verification. All sessions are revoked after password change."
+			},
+			"response": [
+				{
+					"name": "Success",
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"message\": \"Password changed successfully.\"\n}"
+				},
+				{
+					"name": "Invalid Current Password",
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json"
+						}
+					],
+					"body": "{\n  \"error\": \"Current password is incorrect.\"\n}"
 				}
 			]
 		}
