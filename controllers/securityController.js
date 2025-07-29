@@ -242,7 +242,7 @@ exports.changePassword = async (req, res) => {
     // Revoke all refresh tokens for this user (if sessionManager exists)
     try {
       if (sessionManager && sessionManager.deleteSession) {
-        await sessionManager.deleteSession(`refresh_token_${userId}`);
+    await sessionManager.deleteSession(`refresh_token_${userId}`);
       }
     } catch (sessionError) {
       console.error('Failed to revoke sessions:', sessionError);

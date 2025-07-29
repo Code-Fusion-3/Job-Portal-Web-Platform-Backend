@@ -181,7 +181,7 @@ exports.deleteMyProfile = async (req, res) => {
 
     // For job seekers, delete both profile and user
     if (user.profile) {
-      await prisma.profile.delete({ where: { userId } });
+    await prisma.profile.delete({ where: { userId } });
     }
     await prisma.user.delete({ where: { id: userId } });
     res.json({ message: 'Account and profile deleted successfully.' });

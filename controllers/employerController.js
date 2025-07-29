@@ -6,23 +6,37 @@ const prisma = new PrismaClient();
 // Public: Submit employer request (no login required)
 exports.submitEmployerRequest = async (req, res) => {
   try {
-    const { name, email, message } = req.body;
+    const { name, email, phoneNumber, message, requestedCandidateId } = req.body;
 
     if (!name || !email) {
       return res.status(400).json({ error: 'Name and email are required.' });
+    }
+
+    // Validate requested candidate if provided
+    if (requestedCandidateId) {
+      const candidate = await prisma.user.findUnique({
+        where: { id: parseInt(requestedCandidateId, 10) },
+        include: { profile: true }
+      });
+      
+      if (!candidate || candidate.role !== 'jobseeker') {
+        return res.status(400).json({ error: 'Invalid candidate ID or candidate not found.' });
+      }
     }
 
     const employerRequest = await prisma.employerRequest.create({
       data: {
         name,
         email,
-        message
+        phoneNumber,
+        message,
+        requestedCandidateId: requestedCandidateId ? parseInt(requestedCandidateId, 10) : null
       }
     });
 
     // Send notification email to admin
     try {
-      await sendEmployerRequestNotification(name, email, message);
+      await sendEmployerRequestNotification(name, email, message, phoneNumber, requestedCandidateId);
     } catch (emailError) {
       console.error('Failed to send employer request notification:', emailError);
       // Continue even if email fails
@@ -72,8 +86,37 @@ exports.getAllEmployerRequests = async (req, res) => {
       prisma.employerRequest.count()
     ]);
 
+    // Get requested candidate details for each request
+    const requestsWithCandidateDetails = await Promise.all(
+      requests.map(async (request) => {
+        if (request.requestedCandidateId) {
+          const candidate = await prisma.user.findUnique({
+            where: { id: request.requestedCandidateId },
+            include: {
+              profile: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  skills: true,
+                  experience: true,
+                  location: true,
+                  city: true,
+                  country: true
+                }
+              }
+            }
+          });
+          return {
+            ...request,
+            requestedCandidate: candidate
+          };
+        }
+        return request;
+      })
+    );
+
     res.json({
-      requests,
+      requests: requestsWithCandidateDetails,
       pagination: {
         page,
         limit,
@@ -119,7 +162,33 @@ exports.getEmployerRequest = async (req, res) => {
       return res.status(404).json({ error: 'Employer request not found.' });
     }
 
-    res.json(request);
+    // Get requested candidate details if available
+    let requestWithCandidate = request;
+    if (request.requestedCandidateId) {
+      const candidate = await prisma.user.findUnique({
+        where: { id: request.requestedCandidateId },
+        include: {
+          profile: {
+            select: {
+              firstName: true,
+              lastName: true,
+              skills: true,
+              experience: true,
+              location: true,
+              city: true,
+              country: true,
+              contactNumber: true
+            }
+          }
+        }
+      });
+      requestWithCandidate = {
+        ...request,
+        requestedCandidate: candidate
+      };
+    }
+
+    res.json(requestWithCandidate);
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to fetch employer request.' });
   }

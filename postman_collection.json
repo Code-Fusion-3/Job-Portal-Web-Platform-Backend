@@ -1162,10 +1162,10 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"name\": \"TechCorp Rwanda\",\n  \"email\": \"hr@techcorp.rw\",\n  \"message\": \"We are looking for experienced software developers with React and Node.js skills. Please provide candidates who match our requirements.\"\n}"
+					"raw": "{\n  \"name\": \"Abirebeye Abayo Sincere\",\n  \"email\": \"abayosincere11@gmail.co\",\n  \"phoneNumber\": \"+250788123456\",\n  \"message\": \"We are looking for a housemaid with experience in childcare and cooking. Please connect us with Francine Mukamana.\",\n  \"requestedCandidateId\": 1\n}"
 				},
 				"url": "http://localhost:3000/employer/request",
-				"description": "Public endpoint for employers to submit job requests. No authentication required."
+				"description": "Public endpoint for employers to submit job requests with candidate-specific requests. Supports phone number and requested candidate ID. No authentication required."
 			},
 			"response": [
 				{
@@ -1195,7 +1195,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n  \"message\": \"Employer request submitted successfully\",\n  \"request\": {\n    \"id\": 1,\n    \"name\": \"TechCorp Rwanda\",\n    \"email\": \"hr@techcorp.rw\",\n    \"message\": \"We are looking for experienced software developers...\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
+					"body": "{\n  \"message\": \"Employer request submitted successfully\",\n  \"request\": {\n    \"id\": 1,\n    \"name\": \"Abirebeye Abayo Sincere\",\n    \"email\": \"abayosincere11@gmail.co\",\n    \"phoneNumber\": \"+250788123456\",\n    \"message\": \"We are looking for a housemaid with experience in childcare and cooking. Please connect us with Francine Mukamana.\",\n    \"requestedCandidateId\": 1,\n    \"status\": \"pending\",\n    \"priority\": \"normal\",\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n    \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n  }\n}"
 				},
 				{
 					"name": "Missing Required Fields",
@@ -1260,7 +1260,7 @@
 						}
 					]
 				},
-				"description": "Admin gets all employer requests with pagination. Includes selected job seekers and latest messages."
+				"description": "Admin gets all employer requests with pagination. Includes selected job seekers, latest messages, phone numbers, and requested candidate details."
 			},
 			"response": [
 				{
@@ -1307,7 +1307,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n  \"requests\": [\n    {\n      \"id\": 1,\n      \"name\": \"TechCorp Rwanda\",\n      \"email\": \"hr@techcorp.rw\",\n      \"message\": \"We are looking for experienced software developers...\",\n      \"selectedUserId\": 2,\n      \"selectedUser\": {\n        \"id\": 2,\n        \"email\": \"developer@example.com\",\n        \"profile\": {\n          \"firstName\": \"John\",\n          \"lastName\": \"Doe\",\n          \"skills\": \"React, Node.js, JavaScript\"\n        }\n      },\n      \"messages\": [\n        {\n          \"id\": 1,\n          \"content\": \"Thank you for your request. We have selected a candidate for you.\",\n          \"fromAdmin\": true,\n          \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n        }\n      ],\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 5,\n    \"totalPages\": 1\n  }\n}"
+					"body": "{\n  \"requests\": [\n    {\n      \"id\": 1,\n      \"name\": \"Abirebeye Abayo Sincere\",\n      \"email\": \"abayosincere11@gmail.co\",\n      \"phoneNumber\": \"+250788123456\",\n      \"message\": \"We are looking for a housemaid with experience in childcare and cooking. Please connect us with Francine Mukamana.\",\n      \"requestedCandidateId\": 1,\n      \"requestedCandidate\": {\n        \"id\": 1,\n        \"profile\": {\n          \"firstName\": \"Francine\",\n          \"lastName\": \"Mukamana\",\n          \"skills\": \"House Cleaning, Laundry, Cooking, Childcare, Ironing\",\n          \"experience\": \"5 years\",\n          \"location\": \"Kigali, Rwanda\",\n          \"city\": \"Kigali\",\n          \"country\": \"Rwanda\"\n        }\n      },\n      \"selectedUserId\": 2,\n      \"selectedUser\": {\n        \"id\": 2,\n        \"email\": \"developer@example.com\",\n        \"profile\": {\n          \"firstName\": \"John\",\n          \"lastName\": \"Doe\",\n          \"skills\": \"React, Node.js, JavaScript\"\n        }\n      },\n      \"messages\": [\n        {\n          \"id\": 1,\n          \"content\": \"Thank you for your request. We have selected a candidate for you.\",\n          \"fromAdmin\": true,\n          \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n        }\n      ],\n      \"status\": \"pending\",\n      \"priority\": \"normal\",\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n      \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 5,\n    \"totalPages\": 1\n  }\n}"
 				}
 			]
 		},
@@ -1322,7 +1322,7 @@
 					}
 				],
 				"url": "http://localhost:3000/employer/requests/1",
-				"description": "Admin gets a specific employer request with all messages and selected job seeker details."
+				"description": "Admin gets a specific employer request with all messages, selected job seeker details, phone number, and requested candidate information."
 			},
 			"response": [
 				{
@@ -1348,7 +1348,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n  \"id\": 1,\n  \"name\": \"TechCorp Rwanda\",\n  \"email\": \"hr@techcorp.rw\",\n  \"message\": \"We are looking for experienced software developers...\",\n  \"selectedUserId\": 2,\n  \"selectedUser\": {\n    \"id\": 2,\n    \"email\": \"developer@example.com\",\n    \"profile\": {\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"skills\": \"React, Node.js, JavaScript\",\n      \"experience\": \"5 years\",\n      \"contactNumber\": \"+250788123456\"\n    }\n  },\n  \"messages\": [\n    {\n      \"id\": 1,\n      \"employerRequestId\": 1,\n      \"fromAdmin\": true,\n      \"employerEmail\": \"hr@techcorp.rw\",\n      \"content\": \"Thank you for your request. We have selected a candidate for you.\",\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+					"body": "{\n  \"id\": 1,\n  \"name\": \"Abirebeye Abayo Sincere\",\n  \"email\": \"abayosincere11@gmail.co\",\n  \"phoneNumber\": \"+250788123456\",\n  \"message\": \"We are looking for a housemaid with experience in childcare and cooking. Please connect us with Francine Mukamana.\",\n  \"requestedCandidateId\": 1,\n  \"requestedCandidate\": {\n    \"id\": 1,\n    \"profile\": {\n      \"firstName\": \"Francine\",\n      \"lastName\": \"Mukamana\",\n      \"skills\": \"House Cleaning, Laundry, Cooking, Childcare, Ironing\",\n      \"experience\": \"5 years\",\n      \"location\": \"Kigali, Rwanda\",\n      \"city\": \"Kigali\",\n      \"country\": \"Rwanda\",\n      \"contactNumber\": \"+250788987654\"\n    }\n  },\n  \"selectedUserId\": 2,\n  \"selectedUser\": {\n    \"id\": 2,\n    \"email\": \"developer@example.com\",\n    \"profile\": {\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"skills\": \"React, Node.js, JavaScript\",\n      \"experience\": \"5 years\",\n      \"contactNumber\": \"+250788123456\"\n    }\n  },\n  \"messages\": [\n    {\n      \"id\": 1,\n      \"employerRequestId\": 1,\n      \"fromAdmin\": true,\n      \"employerEmail\": \"abayosincere11@gmail.co\",\n      \"content\": \"Thank you for your request. We have selected a candidate for you.\",\n      \"createdAt\": \"2024-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"status\": \"pending\",\n  \"priority\": \"normal\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n}"
 				},
 				{
 					"name": "Not Found",

@@ -49,17 +49,19 @@ model Profile {
 
 // Requests from employers (public, no login)
 model EmployerRequest {
-  id             Int       @id @default(autoincrement())
-  name           String
-  email          String
-  message        String?
-  selectedUserId Int?
-  selectedUser   User?     @relation("SelectedUser", fields: [selectedUserId], references: [id])
-  status         String    @default("pending") // pending, in_progress, completed, cancelled
-  priority       String    @default("normal") // low, normal, high, urgent
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  messages       Message[]
+  id                   Int       @id @default(autoincrement())
+  name                 String
+  email                String
+  phoneNumber          String? // Phone number from request form
+  message              String?
+  requestedCandidateId Int? // Specific candidate requested (job seeker ID)
+  selectedUserId       Int?
+  selectedUser         User?     @relation("SelectedUser", fields: [selectedUserId], references: [id])
+  status               String    @default("pending") // pending, in_progress, completed, cancelled
+  priority             String    @default("normal") // low, normal, high, urgent
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  messages             Message[]
 }
 
 // Enhanced Messages between admin and employer

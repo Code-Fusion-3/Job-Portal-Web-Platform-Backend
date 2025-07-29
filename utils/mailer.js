@@ -202,8 +202,50 @@ const sendWelcomeEmail = async (userEmail, userName = 'User') => {
 };
 
 // Send notification email to admin when employer submits request
-const sendEmployerRequestNotification = async (employerName, employerEmail, message) => {
+const sendEmployerRequestNotification = async (employerName, employerEmail, message, phoneNumber, requestedCandidateId) => {
   try {
+    // Get candidate details if requested
+    let candidateInfo = '';
+    if (requestedCandidateId) {
+      try {
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        const candidate = await prisma.user.findUnique({
+          where: { id: parseInt(requestedCandidateId, 10) },
+          include: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+                skills: true,
+                experience: true,
+                location: true,
+                city: true,
+                country: true
+              }
+            }
+          }
+        });
+        
+        if (candidate && candidate.profile) {
+          const location = [candidate.profile.city, candidate.profile.country].filter(Boolean).join(', ');
+          candidateInfo = `
+            <h3 style="color: #2c3e50; margin-top: 20px;">Requested Candidate Details:</h3>
+            <div style="background-color: #e8f4fd; padding: 15px; border-radius: 5px; margin: 10px 0;">
+              <p><strong>Name:</strong> ${candidate.profile.firstName} ${candidate.profile.lastName}</p>
+              <p><strong>Experience:</strong> ${candidate.profile.experience || 'Not specified'}</p>
+              <p><strong>Location:</strong> ${location || 'Not specified'}</p>
+              <p><strong>Skills:</strong> ${candidate.profile.skills || 'Not specified'}</p>
+            </div>
+          `;
+        }
+      } catch (candidateError) {
+        console.error('Error fetching candidate details:', candidateError);
+      }
+    }
+
+    const phoneInfo = phoneNumber ? `<p><strong>Phone Number:</strong> ${phoneNumber}</p>` : '';
+
     const mailOptions = {
       from: `"Job Portal" <${process.env.GMAIL_USER}>`,
       to: process.env.ADMIN_EMAIL || process.env.GMAIL_USER, // Send to admin
@@ -213,10 +255,12 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
           <h2 style="color: #2c3e50;">New Employer Request</h2>
           <p><strong>Employer Name:</strong> ${employerName}</p>
           <p><strong>Employer Email:</strong> ${employerEmail}</p>
+          ${phoneInfo}
           <p><strong>Message:</strong></p>
           <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
             ${message || 'No message provided'}
           </div>
+          ${candidateInfo}
           <p>Please log in to your admin dashboard to respond to this request.</p>
           <p style="color: #7f8c8d; font-size: 12px;">
             This is an automated notification from Job Portal.
