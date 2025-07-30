@@ -55,7 +55,7 @@ exports.updateMyProfile = async (req, res) => {
     // Handle admin profile update
     if (user.role === 'admin') {
       const { email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-        maritalStatus, location, city, country, references, experience, jobCategoryId } = req.body;
+        maritalStatus, location, city, country, references, experience, monthlyRate, jobCategoryId } = req.body;
 
       // Check if email is being changed and if it's already taken
       if (email && email !== user.email) {
@@ -85,7 +85,7 @@ exports.updateMyProfile = async (req, res) => {
           data: {
             firstName, lastName, description, skills, gender,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-            idNumber, contactNumber, maritalStatus, location, city, country, references, experience,
+            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate,
             jobCategoryId: categoryId,
           },
         });
@@ -96,7 +96,7 @@ exports.updateMyProfile = async (req, res) => {
             userId,
             firstName, lastName, description, skills, gender,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-            idNumber, contactNumber, maritalStatus, location, city, country, references, experience,
+            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate,
             jobCategoryId: categoryId,
           },
         });
@@ -111,7 +111,7 @@ exports.updateMyProfile = async (req, res) => {
     // Handle job seeker profile update (existing logic)
     const {
       firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-      maritalStatus, location, city, country, references, experience, jobCategoryId
+      maritalStatus, location, city, country, references, experience, monthlyRate, jobCategoryId
     } = req.body;
 
     // Convert jobCategoryId to integer if provided
@@ -195,7 +195,7 @@ exports.adminCreateJobSeeker = async (req, res) => {
   try {
     const {
       email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-      maritalStatus, location, city, country, references, experience, jobCategoryId
+      maritalStatus, location, city, country, references, experience, monthlyRate, jobCategoryId
     } = req.body;
     if (!email || !firstName || !lastName) {
       return res.status(400).json({ error: 'Email, firstName, and lastName are required.' });
@@ -228,6 +228,7 @@ exports.adminCreateJobSeeker = async (req, res) => {
             country,
             references,
             experience,
+            monthlyRate,
             jobCategoryId: categoryId,
           }
         }

@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 // Public: Submit employer request (no login required)
 exports.submitEmployerRequest = async (req, res) => {
   try {
-    const { name, email, phoneNumber, message, requestedCandidateId } = req.body;
+    const { name, email, phoneNumber, companyName, message, requestedCandidateId } = req.body;
 
     if (!name || !email) {
       return res.status(400).json({ error: 'Name and email are required.' });
@@ -29,6 +29,7 @@ exports.submitEmployerRequest = async (req, res) => {
         name,
         email,
         phoneNumber,
+        companyName,
         message,
         requestedCandidateId: requestedCandidateId ? parseInt(requestedCandidateId, 10) : null
       }
@@ -36,7 +37,7 @@ exports.submitEmployerRequest = async (req, res) => {
 
     // Send notification email to admin
     try {
-      await sendEmployerRequestNotification(name, email, message, phoneNumber, requestedCandidateId);
+      await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId);
     } catch (emailError) {
       console.error('Failed to send employer request notification:', emailError);
       // Continue even if email fails

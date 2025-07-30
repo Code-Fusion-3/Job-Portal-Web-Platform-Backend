@@ -202,7 +202,7 @@ const sendWelcomeEmail = async (userEmail, userName = 'User') => {
 };
 
 // Send notification email to admin when employer submits request
-const sendEmployerRequestNotification = async (employerName, employerEmail, message, phoneNumber, requestedCandidateId) => {
+const sendEmployerRequestNotification = async (employerName, employerEmail, message, phoneNumber, companyName, requestedCandidateId) => {
   try {
     // Get candidate details if requested
     let candidateInfo = '';
@@ -245,6 +245,7 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
     }
 
     const phoneInfo = phoneNumber ? `<p><strong>Phone Number:</strong> ${phoneNumber}</p>` : '';
+    const companyInfo = companyName ? `<p><strong>Company Name:</strong> ${companyName}</p>` : '';
 
     const mailOptions = {
       from: `"Job Portal" <${process.env.GMAIL_USER}>`,
@@ -256,6 +257,7 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
           <p><strong>Employer Name:</strong> ${employerName}</p>
           <p><strong>Employer Email:</strong> ${employerEmail}</p>
           ${phoneInfo}
+          ${companyInfo}
           <p><strong>Message:</strong></p>
           <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
             ${message || 'No message provided'}

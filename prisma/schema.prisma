@@ -40,6 +40,7 @@ model Profile {
   country       String?
   references    String?
   experience    String?
+  monthlyRate   String? // NEW: Monthly rate/salary expectation
   jobCategoryId Int?
   jobCategory   JobCategory? @relation(fields: [jobCategoryId], references: [id])
   user          User         @relation(fields: [userId], references: [id])
@@ -53,6 +54,7 @@ model EmployerRequest {
   name                 String
   email                String
   phoneNumber          String? // Phone number from request form
+  companyName          String? // NEW: Company name (optional)
   message              String?
   requestedCandidateId Int? // Specific candidate requested (job seeker ID)
   selectedUserId       Int?
