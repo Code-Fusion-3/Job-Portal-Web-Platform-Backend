@@ -8,7 +8,7 @@ async function main() {
       name_rw: 'Ubwubatsi'
     }
   });
-  console.log('Seeded job category');
+  
 }
 
 main().finally(() => prisma.$disconnect());
