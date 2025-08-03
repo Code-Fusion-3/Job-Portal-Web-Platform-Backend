@@ -1,7 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
 const { redisClient } = require('./utils/redis');
+const WebSocketServer = require('./websocket');
 
 const app = express();
 
@@ -39,6 +42,14 @@ app.use('/security', require('./routes/securityRoutes'));
 app.use('/contact', require('./routes/contactRoutes'));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// Initialize WebSocket server
+const wsServer = new WebSocketServer(server);
+
+// Make WebSocket server available globally
+global.wsServer = wsServer;
+
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); 

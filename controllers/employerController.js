@@ -43,6 +43,12 @@ exports.submitEmployerRequest = async (req, res) => {
       // Continue even if email fails
     }
 
+    // Send WebSocket notification
+    if (global.wsServer) {
+      global.wsServer.notifyNewRequest(employerRequest);
+      global.wsServer.notifyDashboardUpdate();
+    }
+
     res.status(201).json({
       message: 'Employer request submitted successfully',
       request: employerRequest
@@ -598,6 +604,12 @@ exports.approveEmployerRequest = async (req, res) => {
     } catch (emailError) {
       console.error('Failed to send approval notification:', emailError);
       // Continue even if email fails
+    }
+
+    // Send WebSocket notification
+    if (global.wsServer) {
+      global.wsServer.notifyRequestStatusChange(requestId, 'approved');
+      global.wsServer.notifyDashboardUpdate();
     }
 
     res.json({

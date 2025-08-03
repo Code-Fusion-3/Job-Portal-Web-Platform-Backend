@@ -16,6 +16,7 @@ model User {
   role             String // 'jobseeker' or 'admin'
   profile          Profile?
   employerRequests EmployerRequest[] @relation("SelectedUser")
+  requestedIn      EmployerRequest[] @relation("RequestedCandidate")
   contacts         Contact[] // Admin responses to contacts
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -57,6 +58,7 @@ model EmployerRequest {
   companyName          String? // NEW: Company name (optional)
   message              String?
   requestedCandidateId Int? // Specific candidate requested (job seeker ID)
+  requestedCandidate   User?     @relation("RequestedCandidate", fields: [requestedCandidateId], references: [id])
   selectedUserId       Int?
   selectedUser         User?     @relation("SelectedUser", fields: [selectedUserId], references: [id])
   status               String    @default("pending") // pending, in_progress, approved, completed, cancelled

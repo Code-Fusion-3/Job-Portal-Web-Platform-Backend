@@ -48,11 +48,71 @@ exports.getDashboardStats = async (req, res) => {
         take: 5
       }),
       
-      // Recent employer requests (last 7 days)
-      prisma.employerRequest.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 5
-      }),
+      // Get recent employer requests using employer controller logic
+      (async () => {
+        const requests = await prisma.employerRequest.findMany({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+            }
+          },
+          include: {
+            selectedUser: {
+              select: {
+                id: true,
+                email: true,
+                profile: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    skills: true,
+                    experience: true,
+                    contactNumber: true
+                  }
+                }
+              }
+            },
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 1
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 5
+        });
+
+        // Get requested candidate details for each request (same as employer controller)
+        const requestsWithCandidateDetails = await Promise.all(
+          requests.map(async (request) => {
+            if (request.requestedCandidateId) {
+              const candidate = await prisma.user.findUnique({
+                where: { id: request.requestedCandidateId },
+                include: {
+                  profile: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                      skills: true,
+                      experience: true,
+                      location: true,
+                      city: true,
+                      country: true,
+                      contactNumber: true
+                    }
+                  }
+                }
+              });
+              return {
+                ...request,
+                requestedCandidate: candidate
+              };
+            }
+            return request;
+          })
+        );
+
+        return requestsWithCandidateDetails;
+      })(),
       
       // Pending employer requests (no selected user)
       prisma.employerRequest.count({
@@ -153,6 +213,22 @@ exports.getDashboardStats = async (req, res) => {
       .slice(0, 10)
       .map(([skill, count]) => ({ skill, count }));
 
+    // Test Prisma connection
+    const testUser = await prisma.user.findUnique({
+      where: { id: 2 },
+      include: {
+        profile: {
+          select: {
+            firstName: true,
+            lastName: true,
+            skills: true,
+            experience: true
+          }
+        }
+      }
+    });
+    console.log('Test user result:', testUser);
+
     res.json({
       overview: {
         totalJobSeekers,
@@ -171,8 +247,17 @@ exports.getDashboardStats = async (req, res) => {
           id: request.id,
           name: request.name,
           email: request.email,
+          phoneNumber: request.phoneNumber,
+          companyName: request.companyName,
           message: request.message?.substring(0, 100) + '...',
-          createdAt: request.createdAt
+          status: request.status,
+          priority: request.priority,
+          requestedCandidateId: request.requestedCandidateId,
+          selectedUserId: request.selectedUserId,
+          selectedUser: request.selectedUser,
+          requestedCandidate: request.requestedCandidate,
+          createdAt: request.createdAt,
+          updatedAt: request.updatedAt
         }))
       },
       distributions: {
