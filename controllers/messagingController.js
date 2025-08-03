@@ -34,6 +34,20 @@ exports.sendAdminMessage = async (req, res) => {
       return res.status(404).json({ error: 'Employer request not found.' });
     }
 
+    // Check if request is approved - block further communication
+    if (request.status === 'approved') {
+      return res.status(400).json({ 
+        error: 'Cannot send messages for approved requests. Communication is closed after approval.' 
+      });
+    }
+
+    // Check if request is cancelled or completed
+    if (request.status === 'cancelled' || request.status === 'completed') {
+      return res.status(400).json({ 
+        error: 'Cannot send messages for cancelled or completed requests.' 
+      });
+    }
+
     // Handle file attachment
     let attachmentUrl = null;
     let attachmentName = null;
@@ -123,6 +137,20 @@ exports.sendEmployerReply = async (req, res) => {
 
     if (!request || request.email !== email) {
       return res.status(404).json({ error: 'Employer request not found or email does not match.' });
+    }
+
+    // Check if request is approved - block further communication
+    if (request.status === 'approved') {
+      return res.status(400).json({ 
+        error: 'Cannot send messages for approved requests. Communication is closed after approval.' 
+      });
+    }
+
+    // Check if request is cancelled or completed
+    if (request.status === 'cancelled' || request.status === 'completed') {
+      return res.status(400).json({ 
+        error: 'Cannot send messages for cancelled or completed requests.' 
+      });
     }
 
     // Handle file attachment

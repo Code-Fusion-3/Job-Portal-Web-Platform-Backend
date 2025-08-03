@@ -59,7 +59,7 @@ model EmployerRequest {
   requestedCandidateId Int? // Specific candidate requested (job seeker ID)
   selectedUserId       Int?
   selectedUser         User?     @relation("SelectedUser", fields: [selectedUserId], references: [id])
-  status               String    @default("pending") // pending, in_progress, completed, cancelled
+  status               String    @default("pending") // pending, in_progress, approved, completed, cancelled
   priority             String    @default("normal") // low, normal, high, urgent
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt

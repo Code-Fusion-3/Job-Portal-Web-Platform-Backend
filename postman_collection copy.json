@@ -927,15 +927,25 @@
 					}
 				],
 				"url": {
-					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/all",
-					"protocol": "https",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/all?page=1&limit=10",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"profile",
 						"all"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "10"
+						}
 					]
 				},
 				"description": "Admin gets all job seekers with pagination. Query parameters: page (default: 1), limit (default: 10)."
@@ -952,12 +962,12 @@
 							}
 						],
 						"url": {
-							"raw": "https://job-portal-backend-cfk4.onrender.com/profile/all",
-							"protocol": "https",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/profile/all?page=1&limit=10",
+							"protocol": "http",
 							"host": [
-								"job-portal-backend-cfk4.onrender.com"
+								"localhost"
 							],
-							
+							"port": "3000",
 							"path": [
 								"profile",
 								"all"
@@ -1234,12 +1244,12 @@
 					}
 				],
 				"url": {
-					"raw": "https://job-portal-backend-cfk4.onrender.com/employer/requests",
-					"protocol": "https",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/employer/requests?page=1&limit=10",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"employer",
 						"requests"
@@ -1269,12 +1279,12 @@
 							}
 						],
 						"url": {
-							"raw": "https://job-portal-backend-cfk4.onrender.com/employer/requests",
-							"protocol": "https",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/employer/requests?page=1&limit=10",
+							"protocol": "http",
 							"host": [
-								"job-portal-backend-cfk4.onrender.com"
+								"localhost"
 							],
-							
+							"port": "3000",
 							"path": [
 								"employer",
 								"requests"
@@ -1717,12 +1727,12 @@
 					}
 				],
 				"url": {
-					"raw": "https://job-portal-backend-cfk4.onrender.com/categories/admin",
-					"protocol": "https",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/categories/admin?page=1&limit=10",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"categories",
 						"admin"
@@ -1752,12 +1762,12 @@
 							}
 						],
 						"url": {
-							"raw": "https://job-portal-backend-cfk4.onrender.com/categories/admin",
-							"protocol": "https",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/categories/admin?page=1&limit=10",
+							"protocol": "http",
 							"host": [
-								"job-portal-backend-cfk4.onrender.com"
+								"localhost"
 							],
-							
+							"port": "3000",
 							"path": [
 								"categories",
 								"admin"
@@ -2017,12 +2027,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "https://job-portal-backend-cfk4.onrender.com/public/job-seekers",
-					"protocol": "https",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/public/job-seekers?page=1&limit=10&categoryId=1&skills=JavaScript&location=Kigali",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"public",
 						"job-seekers"
@@ -2059,12 +2069,12 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "https://job-portal-backend-cfk4.onrender.com/public/job-seekers",
-							"protocol": "https",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/public/job-seekers?page=1&limit=10&categoryId=1&skills=JavaScript&location=Kigali",
+							"protocol": "http",
 							"host": [
-								"job-portal-backend-cfk4.onrender.com"
+								"localhost"
 							],
-							
+							"port": "3000",
 							"path": [
 								"public",
 								"job-seekers"
@@ -2223,11 +2233,11 @@
 				],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/dashboard/analytics?period=30",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"dashboard",
 						"analytics"
@@ -2254,11 +2264,11 @@
 						],
 						"url": {
 							"raw": "https://job-portal-backend-cfk4.onrender.com/dashboard/analytics?period=30",
-							"protocol": "https",
+							"protocol": "http",
 							"host": [
-								"job-portal-backend-cfk4.onrender.com"
+								"localhost"
 							],
-							
+							"port": "3000",
 							"path": [
 								"dashboard",
 								"analytics"
@@ -2613,11 +2623,11 @@
 				"header": [],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1?email=hr@techcorp.rw",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"messaging",
 						"conversation",
@@ -2640,11 +2650,11 @@
 						"header": [],
 						"url": {
 							"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1?email=hr@techcorp.rw",
-							"protocol": "https",
+							"protocol": "http",
 							"host": [
-								"job-portal-backend-cfk4.onrender.com"
+								"localhost"
 							],
-							
+							"port": "3000",
 							"path": [
 								"messaging",
 								"conversation",
@@ -2678,11 +2688,11 @@
 						"header": [],
 						"url": {
 							"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/conversation/1?email=hr@techcorp.rw",
-							"protocol": "https",
+							"protocol": "http",
 							"host": [
-								"job-portal-backend-cfk4.onrender.com"
+								"localhost"
 							],
-							
+							"port": "3000",
 							"path": [
 								"messaging",
 								"conversation",
@@ -2820,12 +2830,12 @@
 					}
 				],
 				"url": {
-					"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/admin/conversations",
-					"protocol": "https",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/admin/conversations?page=1&limit=10",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"messaging",
 						"admin",
@@ -2856,12 +2866,12 @@
 							}
 						],
 						"url": {
-							"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/admin/conversations",
-							"protocol": "https",
+							"raw": "https://job-portal-backend-cfk4.onrender.com/messaging/admin/conversations?page=1&limit=10",
+							"protocol": "http",
 							"host": [
-								"job-portal-backend-cfk4.onrender.com"
+								"localhost"
 							],
-							
+							"port": "3000",
 							"path": [
 								"messaging",
 								"admin",
@@ -2910,11 +2920,11 @@
 				},
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/contact/submit",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"contact",
 						"submit"
@@ -2962,12 +2972,12 @@
 					}
 				],
 				"url": {
-					"raw": "https://job-portal-backend-cfk4.onrender.com/contact/admin/all",
-					"protocol": "https",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/contact/admin/all?page=1&limit=10&status=unread&category=general&priority=normal&search=inquiry&sortBy=createdAt&sortOrder=desc",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"contact",
 						"admin",
@@ -3046,11 +3056,11 @@
 				},
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/contact/admin/1/respond",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"contact",
 						"admin",
@@ -3088,11 +3098,11 @@
 				],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/contact/admin/statistics?period=30",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"contact",
 						"admin",
@@ -3129,12 +3139,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "https://job-portal-backend-cfk4.onrender.com/search/job-seekers",
-					"protocol": "https",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/search/job-seekers?q=JavaScript&categoryId=1&location=Kigali&experience=5&skills=React&page=1&limit=10",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"search",
 						"job-seekers"
@@ -3200,11 +3210,11 @@
 				],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/settings",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"settings"
 					]
@@ -3243,11 +3253,11 @@
 				},
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/security/refresh",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"security",
 						"refresh"
@@ -3300,11 +3310,11 @@
 				},
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/security/reset-request",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"security",
 						"reset-request"
@@ -3361,11 +3371,11 @@
 				},
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/security/change-password",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"security",
 						"change-password"
@@ -3466,11 +3476,11 @@
 				],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"profile",
 						"me"
@@ -3553,11 +3563,11 @@
 				},
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"profile",
 						"me"
@@ -3619,11 +3629,11 @@
 				],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"profile",
 						"me"
@@ -3702,11 +3712,11 @@
 				},
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/security/reset-password",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"security",
 						"reset-password"
@@ -3794,11 +3804,11 @@
 				],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/security/logout",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"security",
 						"logout"
@@ -3847,11 +3857,11 @@
 				],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/security/user-sessions/1",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"security",
 						"user-sessions",
@@ -3914,11 +3924,11 @@
 				],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/security/user-sessions/1/session_123",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"security",
 						"user-sessions",
@@ -3968,12 +3978,12 @@
 					}
 				],
 				"url": {
-					"raw": "https://job-portal-backend-cfk4.onrender.com/security/logs",
-					"protocol": "https",
+					"raw": "https://job-portal-backend-cfk4.onrender.com/security/logs?page=1&limit=10",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"security",
 						"logs"
@@ -4032,11 +4042,11 @@
 				],
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"profile",
 						"me"
@@ -4093,11 +4103,11 @@
 				},
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/profile/me",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"profile",
 						"me"
@@ -4154,11 +4164,11 @@
 				},
 				"url": {
 					"raw": "https://job-portal-backend-cfk4.onrender.com/security/change-password",
-					"protocol": "https",
+					"protocol": "http",
 					"host": [
-						"job-portal-backend-cfk4.onrender.com"
+						"localhost"
 					],
-					
+					"port": "3000",
 					"path": [
 						"security",
 						"change-password"

@@ -280,7 +280,7 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
   }
 };
 
-// Send notification email to employer when admin replies
+// Send notification email to admin when admin replies
 const sendAdminReplyNotification = async (employerEmail, employerName, adminMessage, attachmentName = null) => {
   try {
     const attachmentText = attachmentName ? `\n\n📎 Attachment: ${attachmentName}` : '';
@@ -316,7 +316,7 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
   }
 };
 
-// Send notification email to admin when employer replies
+// Send notification email to employer when admin replies
 const sendEmployerReplyNotification = async (employerEmail, employerName, employerMessage, attachmentName = null) => {
   try {
     const attachmentText = attachmentName ? `\n\n📎 Attachment: ${attachmentName}` : '';
@@ -347,6 +347,169 @@ const sendEmployerReplyNotification = async (employerEmail, employerName, employ
     return true;
   } catch (error) {
     console.error('Error sending employer reply notification:', error);
+    return false;
+  }
+};
+
+// Send approval notification email to employer
+const sendRequestApprovalNotification = async (employerEmail, employerName, selectedUser, adminNotes = null) => {
+  try {
+    let candidateInfo = '';
+    if (selectedUser && selectedUser.profile) {
+      const location = [selectedUser.profile.city, selectedUser.profile.country].filter(Boolean).join(', ');
+      candidateInfo = `
+        <h3 style="color: #2c3e50; margin-top: 20px;">Selected Candidate Details:</h3>
+        <div style="background-color: #e8f4fd; padding: 15px; border-radius: 5px; margin: 10px 0;">
+          <p><strong>Name:</strong> ${selectedUser.profile.firstName} ${selectedUser.profile.lastName}</p>
+          <p><strong>Experience:</strong> ${selectedUser.profile.experience || 'Not specified'}</p>
+          <p><strong>Location:</strong> ${location || 'Not specified'}</p>
+          <p><strong>Skills:</strong> ${selectedUser.profile.skills || 'Not specified'}</p>
+          <p><strong>Contact:</strong> ${selectedUser.profile.contactNumber || 'Available through admin'}</p>
+        </div>
+      `;
+    }
+
+    const notesInfo = adminNotes ? `
+      <h3 style="color: #2c3e50; margin-top: 20px;">Admin Notes:</h3>
+      <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ffc107;">
+        ${adminNotes}
+      </div>
+    ` : '';
+
+    const mailOptions = {
+      from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
+      to: employerEmail,
+      subject: 'Your Job Request Has Been Approved - Job Portal',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">✅ Request Approved</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your job request has been approved</p>
+          </div>
+          
+          <div style="padding: 30px; background-color: #ffffff;">
+            <h2 style="color: #2c3e50;">Congratulations!</h2>
+            <p>Dear ${employerName},</p>
+            <p>We are pleased to inform you that your job request has been <strong>approved</strong> by our admin team.</p>
+            
+            <div style="background-color: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+              <h3 style="color: #155724; margin-top: 0;">What happens next?</h3>
+              <ul style="color: #155724; margin: 10px 0;">
+                <li>Our team will contact you within 24 hours to discuss next steps</li>
+                <li>We'll coordinate the introduction between you and the selected candidate</li>
+                <li>All further communication will be handled through our admin team</li>
+              </ul>
+            </div>
+            
+            ${candidateInfo}
+            ${notesInfo}
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #2c3e50; margin-top: 0;">Important Notice</h3>
+              <p style="color: #6c757d; margin: 0;">
+                <strong>Communication is now closed for this request.</strong> All further inquiries should be directed to our admin team through the main contact channels.
+              </p>
+            </div>
+            
+            <p>Thank you for choosing our platform for your hiring needs.</p>
+            <p>Best regards,<br><strong>Job Portal Team</strong></p>
+          </div>
+          
+          <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">
+              This is an automated notification from Job Portal. Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Request approval notification sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending request approval notification:', error);
+    return false;
+  }
+};
+
+// Send status update notification email to employer
+const sendStatusUpdateNotification = async (employerEmail, employerName, newStatus, adminNotes = null) => {
+  try {
+    const statusConfig = {
+      'in_progress': {
+        title: '🔄 Request In Progress',
+        color: '#007bff',
+        message: 'Your job request is now being processed by our team.'
+      },
+      'completed': {
+        title: '✅ Request Completed',
+        color: '#28a745',
+        message: 'Your job request has been completed successfully.'
+      },
+      'cancelled': {
+        title: '❌ Request Cancelled',
+        color: '#dc3545',
+        message: 'Your job request has been cancelled.'
+      }
+    };
+
+    const config = statusConfig[newStatus] || {
+      title: '📝 Status Updated',
+      color: '#6c757d',
+      message: `Your job request status has been updated to ${newStatus}.`
+    };
+
+    const notesInfo = adminNotes ? `
+      <h3 style="color: #2c3e50; margin-top: 20px;">Admin Notes:</h3>
+      <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ffc107;">
+        ${adminNotes}
+      </div>
+    ` : '';
+
+    const mailOptions = {
+      from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
+      to: employerEmail,
+      subject: `Job Request Status Update - ${newStatus.toUpperCase()} - Job Portal`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, ${config.color} 0%, ${config.color}dd 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">${config.title}</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">${config.message}</p>
+          </div>
+          
+          <div style="padding: 30px; background-color: #ffffff;">
+            <h2 style="color: #2c3e50;">Status Update</h2>
+            <p>Dear ${employerName},</p>
+            <p>We would like to inform you that the status of your job request has been updated to <strong>${newStatus}</strong>.</p>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #2c3e50; margin-top: 0;">Current Status: ${newStatus.toUpperCase()}</h3>
+              <p style="color: #6c757d; margin: 0;">
+                ${config.message}
+              </p>
+            </div>
+            
+            ${notesInfo}
+            
+            <p>If you have any questions about this status update, please contact our support team.</p>
+            <p>Best regards,<br><strong>Job Portal Team</strong></p>
+          </div>
+          
+          <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">
+              This is an automated notification from Job Portal. Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Status update notification sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending status update notification:', error);
     return false;
   }
 };
@@ -583,6 +746,8 @@ module.exports = {
   sendEmployerRequestNotification,
   sendAdminReplyNotification,
   sendEmployerReplyNotification,
+  sendRequestApprovalNotification,
+  sendStatusUpdateNotification,
   sendPasswordResetEmail,
   sendPasswordResetConfirmation,
   sendContactNotification,
