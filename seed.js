@@ -19,7 +19,7 @@ async function main() {
   await prisma.jobCategory.deleteMany();
   
   for (const category of categories) {
-    await prisma.jobCategory.create({
+  await prisma.jobCategory.create({
       data: category
     });
   }
@@ -125,8 +125,8 @@ async function main() {
             monthlyRate: monthlyRate ? monthlyRate.toString() : null
           }
         }
-      }
-    });
+    }
+  });
   }
 
   console.log('✅ Job seekers created');
