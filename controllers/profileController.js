@@ -319,7 +319,11 @@ exports.adminGetAllJobSeekers = async (req, res) => {
       prisma.user.findMany({
         where: whereClause,
         include: {
-          profile: true
+          profile: {
+            include: {
+              jobCategory: true
+            }
+          }
         },
         skip,
         take: limit,
@@ -356,7 +360,13 @@ exports.adminUpdateJobSeeker = async (req, res) => {
     // Check if user exists and is a job seeker
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true }
+      include: { 
+        profile: {
+          include: {
+            jobCategory: true
+          }
+        } 
+      }
     });
 
     if (!existingUser || existingUser.role !== 'jobseeker') {
@@ -374,6 +384,9 @@ exports.adminUpdateJobSeeker = async (req, res) => {
         idNumber, contactNumber, maritalStatus, location, city, country, references, experience,
         jobCategoryId: categoryId,
       },
+      include: {
+        jobCategory: true
+      }
     });
 
     res.json({ 
