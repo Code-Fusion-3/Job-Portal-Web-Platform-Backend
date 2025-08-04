@@ -227,7 +227,20 @@ exports.getDashboardStats = async (req, res) => {
         }
       }
     });
-    console.log('Test user result:', testUser);
+    // console.log('Test user result:', testUser);
+
+    // Get request status distribution
+    const requestStatusDistribution = await prisma.employerRequest.groupBy({
+      by: ['status'],
+      _count: {
+        status: true
+      }
+    });
+
+    const statusDistribution = requestStatusDistribution.reduce((acc, item) => {
+      acc[item.status] = item._count.status;
+      return acc;
+    }, {});
 
     res.json({
       overview: {
@@ -273,7 +286,8 @@ exports.getDashboardStats = async (req, res) => {
       },
       trends: {
         monthlyRegistrations: monthlyData,
-        topSkills: topSkillsList
+        topSkills: topSkillsList,
+        requestStatusDistribution: statusDistribution
       }
     });
   } catch (err) {
