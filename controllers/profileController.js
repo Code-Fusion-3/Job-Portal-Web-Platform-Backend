@@ -276,10 +276,48 @@ exports.adminGetAllJobSeekers = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const search = req.query.search || '';
+    const gender = req.query.gender || '';
+    const location = req.query.location || '';
+    const skills = req.query.skills || '';
+    
+    // Build where clause for filtering
+    const whereClause = {
+      role: 'jobseeker',
+      ...(search && {
+        OR: [
+          { email: { contains: search, mode: 'insensitive' } },
+          { profile: { firstName: { contains: search, mode: 'insensitive' } } },
+          { profile: { lastName: { contains: search, mode: 'insensitive' } } },
+          { profile: { skills: { contains: search, mode: 'insensitive' } } },
+          { profile: { location: { contains: search, mode: 'insensitive' } } }
+        ]
+      }),
+      ...(gender && { profile: { gender: gender } }),
+      ...(location && { profile: { location: { contains: location, mode: 'insensitive' } } }),
+      ...(skills && { profile: { skills: { contains: skills, mode: 'insensitive' } } })
+    };
+
+    // Build count where clause (same as above but without profile include)
+    const countWhereClause = {
+      role: 'jobseeker',
+      ...(search && {
+        OR: [
+          { email: { contains: search, mode: 'insensitive' } },
+          { profile: { firstName: { contains: search, mode: 'insensitive' } } },
+          { profile: { lastName: { contains: search, mode: 'insensitive' } } },
+          { profile: { skills: { contains: search, mode: 'insensitive' } } },
+          { profile: { location: { contains: search, mode: 'insensitive' } } }
+        ]
+      }),
+      ...(gender && { profile: { gender: gender } }),
+      ...(location && { profile: { location: { contains: location, mode: 'insensitive' } } }),
+      ...(skills && { profile: { skills: { contains: skills, mode: 'insensitive' } } })
+    };
     
     const [users, total] = await Promise.all([
       prisma.user.findMany({
-        where: { role: 'jobseeker' },
+        where: whereClause,
         include: {
           profile: true
         },
@@ -288,7 +326,7 @@ exports.adminGetAllJobSeekers = async (req, res) => {
         orderBy: { createdAt: 'desc' }
       }),
       prisma.user.count({
-        where: { role: 'jobseeker' }
+        where: countWhereClause
       })
     ]);
 
