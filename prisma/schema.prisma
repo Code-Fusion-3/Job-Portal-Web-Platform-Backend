@@ -11,7 +11,7 @@ datasource db {
 // User model: for both job seekers and admins
 model User {
   id               Int               @id @default(autoincrement())
-  email            String            @unique
+  email            String?           @unique // Made optional
   password         String
   role             String // 'jobseeker' or 'admin'
   profile          Profile?
@@ -34,7 +34,7 @@ model Profile {
   gender        String?
   dateOfBirth   DateTime?
   idNumber      String?
-  contactNumber String?
+  contactNumber String // Made required
   maritalStatus String?
   location      String?
   city          String?

@@ -197,19 +197,35 @@ exports.adminCreateJobSeeker = async (req, res) => {
       email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
       maritalStatus, location, city, country, references, experience, monthlyRate, jobCategoryId
     } = req.body;
-    if (!email || !firstName || !lastName) {
-      return res.status(400).json({ error: 'Email, firstName, and lastName are required.' });
+    
+    // Updated validation: contact number required, email optional
+    if (!firstName || !lastName || !contactNumber) {
+      return res.status(400).json({ error: 'First name, last name, and contact number are required.' });
     }
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return res.status(409).json({ error: 'Email already registered.' });
+
+    // Check if email is provided and if it's already taken
+    if (email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        return res.status(409).json({ error: 'Email already registered.' });
+      }
     }
+
+    // Check if contact number is already taken
+    const existingContact = await prisma.profile.findFirst({ 
+      where: { contactNumber } 
+    });
+    if (existingContact) {
+      return res.status(409).json({ error: 'Contact number already registered.' });
+    }
+
     const defaultPassword = 'JobPortal@123';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
     const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : null;
+    
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email || null, // Allow null email
         password: hashedPassword,
         role: 'jobseeker',
         profile: {
@@ -242,13 +258,22 @@ exports.adminCreateJobSeeker = async (req, res) => {
         updatedAt: true,
       },
     });
-    // Send welcome email with default password
-    try {
-      await sendWelcomeEmail(email, firstName);
-    } catch (emailError) {
-      // Continue even if email fails
+
+    // Send welcome email if email is provided
+    if (email) {
+      try {
+        await sendWelcomeEmail(email, firstName);
+      } catch (emailError) {
+        console.error('Error sending welcome email:', emailError);
+        // Continue even if email fails
+      }
     }
-    res.status(201).json({ message: 'Job seeker account created', user });
+
+    res.status(201).json({ 
+      message: 'Job seeker account created successfully', 
+      user,
+      note: email ? 'Welcome email sent' : 'No email provided - welcome email not sent'
+    });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to create job seeker.' });
   }
