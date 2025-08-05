@@ -40,6 +40,8 @@ app.use('/settings', require('./routes/settingsRoutes'));
 app.use('/security', require('./routes/securityRoutes'));
 // Contact routes
 app.use('/contact', require('./routes/contactRoutes'));
+// Admin routes
+app.use('/admin', require('./routes/adminRoutes'));
 
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
