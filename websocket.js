@@ -22,7 +22,7 @@ class WebSocketServer {
         return;
       }
 
-      console.log('WebSocket client connected');
+      // console.log('WebSocket client connected');
 
       // Set connection timeout
       ws.connectionTimeout = setTimeout(() => {
@@ -46,7 +46,7 @@ class WebSocketServer {
 
       ws.on('close', (code, reason) => {
         this.removeClient(ws);
-        console.log('WebSocket client disconnected', code, reason);
+        // console.log('WebSocket client disconnected', code, reason);
       });
 
       ws.on('error', (error) => {
