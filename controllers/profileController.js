@@ -410,7 +410,7 @@ exports.adminUpdateJobSeeker = async (req, res) => {
       return res.status(404).json({ error: 'Job seeker not found.' });
     }
 
-    console.log('🔍 Update request data:', { userId, email, existingUserEmail: existingUser.email });
+
     
     // Check if email is being updated and if it's already taken by another user
     if (email && email !== existingUser.email) {
@@ -423,7 +423,7 @@ exports.adminUpdateJobSeeker = async (req, res) => {
     // Convert jobCategoryId to integer if provided
     const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : undefined;
 
-    console.log('🔄 About to update with email:', email);
+
     
     // Update both user (email) and profile
     const [updatedUser, updatedProfile] = await Promise.all([
@@ -449,16 +449,11 @@ exports.adminUpdateJobSeeker = async (req, res) => {
       })
     ]);
 
-    console.log('✅ Updated user email:', updatedUser.email);
-    console.log('✅ Updated profile:', updatedProfile.id);
 
 
 
-    console.log('📤 Backend sending response:', { 
-      userEmail: updatedUser.email, 
-      profileId: updatedProfile.id,
-      message: 'Job seeker profile updated successfully'
-    });
+
+
     
     res.json({ 
       message: 'Job seeker profile updated successfully', 
