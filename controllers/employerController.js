@@ -73,7 +73,8 @@ exports.getAllEmployerRequests = async (req, res) => {
       sortBy = 'createdAt', 
       sortOrder = 'desc',
       dateFrom,
-      dateTo
+      dateTo,
+      category
     } = req.query;
 
     // Build where clause for filtering
@@ -104,6 +105,17 @@ exports.getAllEmployerRequests = async (req, res) => {
       if (dateTo) {
         whereClause.createdAt.lte = new Date(dateTo);
       }
+    }
+
+    // Handle category filtering
+    if (category) {
+      whereClause.requestedCandidate = {
+        profile: {
+          jobCategory: {
+            name_en: { equals: category, mode: 'insensitive' }
+          }
+        }
+      };
     }
 
     // Validate sort parameters
@@ -160,7 +172,16 @@ exports.getAllEmployerRequests = async (req, res) => {
                   location: true,
                   city: true,
                   country: true,
-                  contactNumber: true
+                  contactNumber: true,
+                  monthlyRate: true,
+                  jobCategoryId: true,
+                  jobCategory: {
+                    select: {
+                      id: true,
+                      name_en: true,
+                      name_rw: true
+                    }
+                  }
                 }
               }
             }
