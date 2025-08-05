@@ -1,6 +1,11 @@
 const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const bcrypt = require('bcrypt');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const PDFDocument = require('pdfkit');
+
+const prisma = new PrismaClient();
 
 // Admin: Export system data
 exports.exportSystemData = async (req, res) => {
@@ -538,4 +543,432 @@ exports.getPlatformStats = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to fetch platform statistics.' });
   }
+}; 
+
+// Admin Profile Management
+const getAdminProfile = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    
+    const admin = await prisma.user.findUnique({
+      where: { id: adminId },
+      include: {
+        profile: true
+      }
+    });
+
+    if (!admin) {
+      return res.status(404).json({ success: false, error: 'Admin profile not found' });
+    }
+
+    // If admin doesn't have a profile, create a default one
+    if (!admin.profile) {
+      const defaultProfile = await prisma.profile.create({
+        data: {
+          userId: adminId,
+          firstName: 'Admin',
+          lastName: 'User',
+          contactNumber: '',
+          experienceLevel: 'Administrator',
+          availability: 'Available',
+          educationLevel: 'Administrative',
+          languages: 'English',
+          certifications: 'System Administrator',
+          monthlyRate: '0',
+          description: 'System Administrator for Job Portal',
+          location: 'Kigali, Rwanda'
+        }
+      });
+
+      // Combine user and new profile data
+      const adminProfile = {
+        id: admin.id,
+        firstName: defaultProfile.firstName,
+        lastName: defaultProfile.lastName,
+        email: admin.email || '',
+        phone: defaultProfile.contactNumber || '',
+        location: defaultProfile.location || '',
+        bio: defaultProfile.description || '',
+        avatar: defaultProfile.photo || null,
+        role: admin.role,
+        createdAt: admin.createdAt,
+        updatedAt: admin.updatedAt
+      };
+
+      return res.json({ success: true, data: adminProfile });
+    }
+
+    // Combine user and profile data
+    const adminProfile = {
+      id: admin.id,
+      firstName: admin.profile?.firstName || 'Admin',
+      lastName: admin.profile?.lastName || 'User',
+      email: admin.email || '',
+      phone: admin.profile?.contactNumber || '',
+      location: admin.profile?.location || 'Kigali, Rwanda',
+      bio: admin.profile?.description || 'System Administrator for Job Portal',
+      avatar: admin.profile?.photo || null,
+      role: admin.role,
+      createdAt: admin.createdAt,
+      updatedAt: admin.updatedAt
+    };
+
+    res.json({ success: true, data: adminProfile });
+  } catch (error) {
+    console.error('Error fetching admin profile:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+const updateAdminProfile = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const { firstName, lastName, email, phone, location, bio } = req.body;
+
+    // Validate required fields
+    if (!firstName || !lastName || !email) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'First name, last name, and email are required' 
+      });
+    }
+
+    // Check if email is already taken by another user
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: email,
+        id: { not: adminId }
+      }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Email is already taken by another user' 
+      });
+    }
+
+    // Update user email
+    await prisma.user.update({
+      where: { id: adminId },
+      data: {
+        email,
+        updatedAt: new Date()
+      }
+    });
+
+    // Update or create profile
+    const updatedProfile = await prisma.profile.upsert({
+      where: { userId: adminId },
+      update: {
+        firstName,
+        lastName,
+        contactNumber: phone || null,
+        location: location || null,
+        description: bio || null,
+        updatedAt: new Date()
+      },
+      create: {
+        userId: adminId,
+        firstName,
+        lastName,
+        contactNumber: phone || null,
+        location: location || null,
+        description: bio || null,
+        contactNumber: phone || '',
+        experienceLevel: 'Beginner',
+        availability: 'Available',
+        educationLevel: 'High School',
+        languages: 'English',
+        certifications: '',
+        monthlyRate: '0'
+      }
+    });
+
+    // Get updated admin with profile
+    const updatedAdmin = await prisma.user.findUnique({
+      where: { id: adminId },
+      include: {
+        profile: true
+      }
+    });
+
+    // Combine user and profile data
+    const adminProfile = {
+      id: updatedAdmin.id,
+      firstName: updatedAdmin.profile?.firstName || '',
+      lastName: updatedAdmin.profile?.lastName || '',
+      email: updatedAdmin.email || '',
+      phone: updatedAdmin.profile?.contactNumber || '',
+      location: updatedAdmin.profile?.location || '',
+      bio: updatedAdmin.profile?.description || '',
+      avatar: updatedAdmin.profile?.photo || null,
+      role: updatedAdmin.role,
+      updatedAt: updatedAdmin.updatedAt
+    };
+
+    res.json({ 
+      success: true, 
+      data: adminProfile,
+      message: 'Profile updated successfully' 
+    });
+  } catch (error) {
+    console.error('Error updating admin profile:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+const changeAdminPassword = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Current password and new password are required' 
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'New password must be at least 8 characters long' 
+      });
+    }
+
+    // Get admin with current password
+    const admin = await prisma.user.findUnique({
+      where: { id: adminId },
+      select: { password: true }
+    });
+
+    if (!admin) {
+      return res.status(404).json({ success: false, error: 'Admin not found' });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Current password is incorrect' 
+      });
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: adminId },
+      data: {
+        password: hashedNewPassword,
+        updatedAt: new Date()
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Password changed successfully' 
+    });
+  } catch (error) {
+    console.error('Error changing admin password:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+const updateAdminAvatar = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No avatar file provided' 
+      });
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid file type. Only JPEG, PNG, and GIF are allowed' 
+      });
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (req.file.size > maxSize) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'File size too large. Maximum size is 5MB' 
+      });
+    }
+
+    // Generate unique filename
+    const fileExtension = path.extname(req.file.originalname);
+    const fileName = `admin_${adminId}_${Date.now()}${fileExtension}`;
+    const uploadPath = path.join(__dirname, '../uploads/avatars', fileName);
+
+    // Ensure uploads directory exists
+    const uploadsDir = path.join(__dirname, '../uploads/avatars');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Move file to uploads directory
+    fs.renameSync(req.file.path, uploadPath);
+
+    // Update admin avatar in database
+    const avatarUrl = `/uploads/avatars/${fileName}`;
+    await prisma.profile.upsert({
+      where: { userId: adminId },
+      update: {
+        photo: avatarUrl,
+        updatedAt: new Date()
+      },
+      create: {
+        userId: adminId,
+        photo: avatarUrl,
+        firstName: 'Admin',
+        lastName: 'User',
+        contactNumber: '',
+        experienceLevel: 'Beginner',
+        availability: 'Available',
+        educationLevel: 'High School',
+        languages: 'English',
+        certifications: '',
+        monthlyRate: '0'
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      avatar: avatarUrl,
+      message: 'Avatar updated successfully' 
+    });
+  } catch (error) {
+    console.error('Error updating admin avatar:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+// System Settings Management
+const getSystemSettings = async (req, res) => {
+  try {
+    // Get system statistics
+    const [
+      totalUsers,
+      totalRequests,
+      totalCategories,
+      totalProfiles
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.employerRequest.count(),
+      prisma.jobCategory.count(),
+      prisma.profile.count()
+    ]);
+
+    // Calculate system uptime (simplified - in real app, you'd track server start time)
+    const systemUptime = '7 days'; // Placeholder
+
+    // Get database size (simplified - in real app, you'd query actual DB size)
+    const databaseSize = '2.5 MB'; // Placeholder
+
+    // Get last backup time (simplified)
+    const lastBackup = '2 hours ago'; // Placeholder
+
+    // Active sessions (simplified - in real app, you'd track actual sessions)
+    const activeSessions = 3; // Placeholder
+
+    const settings = {
+      emailNotifications: true,
+      smsNotifications: false,
+      autoBackup: true,
+      maintenanceMode: false,
+      sessionTimeout: 30,
+      maxLoginAttempts: 5,
+      systemName: 'Job Portal Admin',
+      contactEmail: 'admin@jobportal.rw',
+      timezone: 'Africa/Kigali',
+      // System statistics
+      totalUsers,
+      totalRequests,
+      totalCategories,
+      totalProfiles,
+      systemUptime,
+      databaseSize,
+      lastBackup,
+      activeSessions
+    };
+
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('Error fetching system settings:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+const updateSystemSettings = async (req, res) => {
+  try {
+    const {
+      emailNotifications,
+      smsNotifications,
+      autoBackup,
+      maintenanceMode,
+      sessionTimeout,
+      maxLoginAttempts
+    } = req.body;
+
+    // Validate settings
+    if (sessionTimeout && (sessionTimeout < 5 || sessionTimeout > 120)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Session timeout must be between 5 and 120 minutes' 
+      });
+    }
+
+    if (maxLoginAttempts && (maxLoginAttempts < 3 || maxLoginAttempts > 10)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Max login attempts must be between 3 and 10' 
+      });
+    }
+
+    // In a real application, save these to a database
+    // For now, just return success
+    const updatedSettings = {
+      emailNotifications: emailNotifications ?? true,
+      smsNotifications: smsNotifications ?? false,
+      autoBackup: autoBackup ?? true,
+      maintenanceMode: maintenanceMode ?? false,
+      sessionTimeout: sessionTimeout ?? 30,
+      maxLoginAttempts: maxLoginAttempts ?? 5
+    };
+
+    res.json({ 
+      success: true, 
+      data: updatedSettings,
+      message: 'System settings updated successfully' 
+    });
+  } catch (error) {
+    console.error('Error updating system settings:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+module.exports = {
+  exportSystemData: exports.exportSystemData,
+  getSystemHealth: exports.getSystemHealth,
+  getSystemLogs: exports.getSystemLogs,
+  getPlatformStats: exports.getPlatformStats,
+  getAdminProfile,
+  updateAdminProfile,
+  changeAdminPassword,
+  updateAdminAvatar,
+  getSystemSettings,
+  updateSystemSettings
 }; 
