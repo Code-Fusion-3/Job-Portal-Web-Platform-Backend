@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/mailer');
+const { getAdminEmail } = require('../utils/adminUtils');
 
 const prisma = new PrismaClient();
 
@@ -35,9 +36,10 @@ exports.submitEmployerRequest = async (req, res) => {
       }
     });
 
-    // Send notification email to admin
+    // Get admin email and send notification
     try {
-      await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId);
+      const adminEmail = await getAdminEmail();
+      await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, adminEmail);
     } catch (emailError) {
       console.error('Failed to send employer request notification:', emailError);
       // Continue even if email fails

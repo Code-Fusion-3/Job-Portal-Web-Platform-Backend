@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const { sendContactNotification, sendContactConfirmation, sendContactResponse } = require('../utils/mailer');
+const { getAdminEmail } = require('../utils/adminUtils');
 
 const prisma = new PrismaClient();
 
@@ -39,6 +40,9 @@ exports.submitContact = async (req, res) => {
       });
     }
 
+    // Get admin email from database
+    const adminEmail = await getAdminEmail();
+
     // Create contact message
     const contact = await prisma.contact.create({
       data: {
@@ -53,7 +57,7 @@ exports.submitContact = async (req, res) => {
     });
 
     // Send notification email to admin
-    const adminEmailResult = await sendContactNotification(contact);
+    const adminEmailResult = await sendContactNotification(contact, adminEmail);
     
     // Send confirmation email to sender
     const senderEmailResult = await sendContactConfirmation(contact);

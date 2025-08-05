@@ -202,7 +202,7 @@ const sendWelcomeEmail = async (userEmail, userName = 'User') => {
 };
 
 // Send notification email to admin when employer submits request
-const sendEmployerRequestNotification = async (employerName, employerEmail, message, phoneNumber, companyName, requestedCandidateId) => {
+const sendEmployerRequestNotification = async (employerName, employerEmail, message, phoneNumber, companyName, requestedCandidateId, adminEmail = null) => {
   try {
     // Get candidate details if requested
     let candidateInfo = '';
@@ -247,9 +247,11 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
     const phoneInfo = phoneNumber ? `<p><strong>Phone Number:</strong> ${phoneNumber}</p>` : '';
     const companyInfo = companyName ? `<p><strong>Company Name:</strong> ${companyName}</p>` : '';
 
+    const recipientEmail = adminEmail || process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
+    
     const mailOptions = {
       from: `"Job Portal" <${process.env.GMAIL_USER}>`,
-      to: process.env.ADMIN_EMAIL || process.env.GMAIL_USER, // Send to admin
+      to: recipientEmail, // Send to admin
       subject: 'New Employer Request - Job Portal',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -673,11 +675,13 @@ const sendPasswordResetConfirmation = async (email) => {
 };
 
 // Send contact notification to admin
-const sendContactNotification = async (contact) => {
+const sendContactNotification = async (contact, adminEmail = null) => {
   try {
+    const recipientEmail = adminEmail || process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
+    
     const mailOptions = {
       from: `"Job Portal Contact System" <${process.env.GMAIL_USER}>`,
-      to: process.env.ADMIN_EMAIL || process.env.GMAIL_USER,
+      to: recipientEmail,
       subject: `New Contact Message: ${contact.subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8f9fa; padding: 20px;">

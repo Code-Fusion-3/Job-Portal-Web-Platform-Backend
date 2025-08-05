@@ -1,5 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const { sessionManager } = require('../utils/redis');
+const { getAdminEmail } = require('../utils/adminUtils');
 
 const prisma = new PrismaClient();
 
@@ -9,6 +10,9 @@ exports.getSystemSettings = async (req, res) => {
     if (!req.user || req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Admin access required.' });
     }
+
+    // Get admin email from database
+    const adminEmail = await getAdminEmail();
 
     // Get system statistics
     const [totalUsers, totalRequests, totalCategories, recentActivity] = await Promise.all([
@@ -40,7 +44,7 @@ exports.getSystemSettings = async (req, res) => {
         smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
         smtpPort: process.env.SMTP_PORT || 587,
         fromEmail: process.env.GMAIL_USER,
-        replyTo: process.env.ADMIN_EMAIL || process.env.GMAIL_USER
+        replyTo: adminEmail
       },
       security: {
         sessionTimeout: 24 * 60 * 60, // 24 hours
