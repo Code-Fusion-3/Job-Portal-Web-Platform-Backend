@@ -1,4 +1,3 @@
-// Prisma setup
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,107 +7,102 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User model: for both job seekers and admins
 model User {
   id               Int               @id @default(autoincrement())
-  email            String?           @unique // Made optional
+  email            String?           @unique
   password         String
-  role             String // 'jobseeker' or 'admin'
-  profile          Profile?
-  employerRequests EmployerRequest[] @relation("SelectedUser")
-  requestedIn      EmployerRequest[] @relation("RequestedCandidate")
-  contacts         Contact[] // Admin responses to contacts
+  role             String
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+  contacts         Contact[]
+  requestedIn      EmployerRequest[] @relation("RequestedCandidate")
+  employerRequests EmployerRequest[] @relation("SelectedUser")
+  profile          Profile?
 }
 
-// Profile: extra info for job seekers
 model Profile {
-  id             Int          @id @default(autoincrement())
-  userId         Int          @unique
-  firstName      String
-  lastName       String
-  description    String?
-  skills         String?
-  photo          String?
-  gender         String?
-  dateOfBirth    DateTime?
-  idNumber       String?
-  contactNumber  String // Made required
-  maritalStatus  String?
-  location       String?
-  city           String?
-  country        String?
-  references     String?
-  experience     String?
-  monthlyRate    String? // Monthly rate/salary expectation
-  educationLevel String? // NEW: Education level (e.g., High School, Bachelor's, Master's, PhD)
-  availability   String? // NEW: Availability status (e.g., Available, Part-time, Not Available)
-  languages      String? // NEW: Languages spoken (comma-separated)
-  certifications String? // NEW: Certifications and licenses
-  jobCategoryId  Int?
-  jobCategory    JobCategory? @relation(fields: [jobCategoryId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id              Int          @id @default(autoincrement())
+  userId          Int          @unique
+  skills          String?
+  photo           String?
+  gender          String?
+  experience      String?
+  jobCategoryId   Int?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  dateOfBirth     DateTime?
+  description     String?
+  firstName       String
+  idNumber        String?
+  lastName        String
+  references      String?
+  city            String?
+  contactNumber   String
+  country         String?
+  location        String?
+  maritalStatus   String?
+  monthlyRate     String?
+  availability    String?
+  certifications  String?
+  educationLevel  String?
+  languages       String?
+  experienceLevel String?
+  jobCategory     JobCategory? @relation(fields: [jobCategoryId], references: [id])
+  user            User         @relation(fields: [userId], references: [id])
 }
 
-// Requests from employers (public, no login)
 model EmployerRequest {
   id                   Int       @id @default(autoincrement())
   name                 String
   email                String
-  phoneNumber          String? // Phone number from request form
-  companyName          String? // NEW: Company name (optional)
   message              String?
-  requestedCandidateId Int? // Specific candidate requested (job seeker ID)
-  requestedCandidate   User?     @relation("RequestedCandidate", fields: [requestedCandidateId], references: [id])
   selectedUserId       Int?
-  selectedUser         User?     @relation("SelectedUser", fields: [selectedUserId], references: [id])
-  status               String    @default("pending") // pending, in_progress, approved, completed, cancelled
-  priority             String    @default("normal") // low, normal, high, urgent
   createdAt            DateTime  @default(now())
+  priority             String    @default("normal")
+  status               String    @default("pending")
   updatedAt            DateTime  @updatedAt
+  companyName          String?
+  phoneNumber          String?
+  requestedCandidateId Int?
+  requestedCandidate   User?     @relation("RequestedCandidate", fields: [requestedCandidateId], references: [id])
+  selectedUser         User?     @relation("SelectedUser", fields: [selectedUserId], references: [id])
   messages             Message[]
 }
 
-// Enhanced Messages between admin and employer
 model Message {
   id                Int             @id @default(autoincrement())
   employerRequestId Int
   fromAdmin         Boolean
   employerEmail     String
   content           String
-  messageType       String          @default("text") // text, file, system
-  attachmentUrl     String? // For file attachments
-  attachmentName    String? // Original filename
-  isRead            Boolean         @default(false)
-  readAt            DateTime?
   createdAt         DateTime        @default(now())
+  attachmentName    String?
+  attachmentUrl     String?
+  isRead            Boolean         @default(false)
+  messageType       String          @default("text")
+  readAt            DateTime?
   updatedAt         DateTime        @updatedAt
   employerRequest   EmployerRequest @relation(fields: [employerRequestId], references: [id])
 }
 
-// Contact messages from public users
 model Contact {
   id                   Int       @id @default(autoincrement())
   name                 String
   email                String
   subject              String
   message              String
-  status               String    @default("unread") // unread, read, responded, archived
-  priority             String    @default("normal") // low, normal, high, urgent
-  category             String    @default("general") // general, support, feedback, business, other
-  adminResponse        String? // Admin's response message
-  adminResponseSubject String? // Subject of admin's response
-  respondedBy          Int? // Admin user ID who responded
+  status               String    @default("unread")
+  priority             String    @default("normal")
+  category             String    @default("general")
+  adminResponse        String?
+  adminResponseSubject String?
+  respondedBy          Int?
   respondedAt          DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   admin                User?     @relation(fields: [respondedBy], references: [id])
 }
 
-// Job categories, with translation support
 model JobCategory {
   id        Int       @id @default(autoincrement())
   name_en   String

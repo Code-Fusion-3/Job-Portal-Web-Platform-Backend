@@ -55,7 +55,7 @@ exports.updateMyProfile = async (req, res) => {
     // Handle admin profile update
     if (user.role === 'admin') {
       const { email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-        maritalStatus, location, city, country, references, experience, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId } = req.body;
+        maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId } = req.body;
 
       // Check if email is being changed and if it's already taken
       if (email && email !== user.email) {
@@ -85,7 +85,7 @@ exports.updateMyProfile = async (req, res) => {
           data: {
             firstName, lastName, description, skills, gender,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
+            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
             educationLevel, availability, languages, certifications,
             jobCategoryId: categoryId,
           },
@@ -97,7 +97,7 @@ exports.updateMyProfile = async (req, res) => {
             userId,
             firstName, lastName, description, skills, gender,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
+            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
             educationLevel, availability, languages, certifications,
             jobCategoryId: categoryId,
           },
@@ -113,7 +113,7 @@ exports.updateMyProfile = async (req, res) => {
     // Handle job seeker profile update (existing logic)
     const {
       firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-      maritalStatus, location, city, country, references, experience, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
+      maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
 
     // Convert jobCategoryId to integer if provided
@@ -124,7 +124,7 @@ exports.updateMyProfile = async (req, res) => {
       data: {
         firstName, lastName, description, skills, gender,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
+        idNumber, contactNumber, maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
         educationLevel, availability, languages, certifications,
         jobCategoryId: categoryId,
       },
@@ -198,8 +198,10 @@ exports.adminCreateJobSeeker = async (req, res) => {
   try {
     const {
       email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-      maritalStatus, location, city, country, references, experience, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
+      maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
+
+
     
     // Updated validation: contact number required, email optional
     if (!firstName || !lastName || !contactNumber) {
@@ -247,6 +249,7 @@ exports.adminCreateJobSeeker = async (req, res) => {
             country,
             references,
             experience,
+            experienceLevel,
             monthlyRate: monthlyRate ? monthlyRate.toString() : null,
             educationLevel,
             availability,
@@ -385,9 +388,11 @@ exports.adminUpdateJobSeeker = async (req, res) => {
   try {
     const userId = parseInt(req.params.id, 10);
     const {
-      firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-      maritalStatus, location, city, country, references, experience, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
+      email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
+      maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
+
+
 
     // Check if user exists and is a job seeker
     const existingUser = await prisma.user.findUnique({
@@ -405,25 +410,60 @@ exports.adminUpdateJobSeeker = async (req, res) => {
       return res.status(404).json({ error: 'Job seeker not found.' });
     }
 
+    console.log('🔍 Update request data:', { userId, email, existingUserEmail: existingUser.email });
+    
+    // Check if email is being updated and if it's already taken by another user
+    if (email && email !== existingUser.email) {
+      const existingEmail = await prisma.user.findUnique({ where: { email } });
+      if (existingEmail && existingEmail.id !== userId) {
+        return res.status(409).json({ error: 'Email already registered by another user.' });
+      }
+    }
+
     // Convert jobCategoryId to integer if provided
     const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : undefined;
 
-    const updatedProfile = await prisma.profile.update({
-      where: { userId },
-      data: {
-        firstName, lastName, description, skills, gender,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
-        educationLevel, availability, languages, certifications,
-        jobCategoryId: categoryId,
-      },
-      include: {
-        jobCategory: true
-      }
-    });
+    console.log('🔄 About to update with email:', email);
+    
+    // Update both user (email) and profile
+    const [updatedUser, updatedProfile] = await Promise.all([
+      // Update user email if provided
+      email !== undefined ? prisma.user.update({
+        where: { id: userId },
+        data: { email: email || null }
+      }) : Promise.resolve(existingUser),
+      
+      // Update profile
+      prisma.profile.update({
+        where: { userId },
+        data: {
+          firstName, lastName, description, skills, gender,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+          idNumber, contactNumber, maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
+          educationLevel, availability, languages, certifications,
+          jobCategoryId: categoryId,
+        },
+        include: {
+          jobCategory: true
+        }
+      })
+    ]);
 
+    console.log('✅ Updated user email:', updatedUser.email);
+    console.log('✅ Updated profile:', updatedProfile.id);
+
+
+
+    console.log('📤 Backend sending response:', { 
+      userEmail: updatedUser.email, 
+      profileId: updatedProfile.id,
+      message: 'Job seeker profile updated successfully'
+    });
+    
     res.json({ 
       message: 'Job seeker profile updated successfully', 
+      email: updatedUser.email, // Include email at top level for frontend
+      user: updatedUser,
       profile: updatedProfile 
     });
   } catch (err) {
