@@ -1,5 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
-const { sendContactNotification, sendContactResponse } = require('../utils/mailer');
+const { sendContactNotification, sendContactConfirmation, sendContactResponse } = require('../utils/mailer');
 
 const prisma = new PrismaClient();
 
@@ -53,7 +53,10 @@ exports.submitContact = async (req, res) => {
     });
 
     // Send notification email to admin
-    await sendContactNotification(contact);
+    const adminEmailResult = await sendContactNotification(contact);
+    
+    // Send confirmation email to sender
+    const senderEmailResult = await sendContactConfirmation(contact);
 
     res.status(201).json({
       message: 'Contact message submitted successfully. We will respond to you soon.',
