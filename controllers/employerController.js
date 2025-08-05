@@ -1,5 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
-const { sendEmployerRequestNotification, sendAdminReplyNotification } = require('../utils/mailer');
+const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification } = require('../utils/mailer');
 
 const prisma = new PrismaClient();
 
@@ -502,9 +502,13 @@ exports.replyToEmployerRequest = async (req, res) => {
 exports.selectJobSeekerForRequest = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
-    const { selectedUserId } = req.body;
+    const { selectedUserId, detailsType = 'picture' } = req.body;
+    const adminUser = req.user; // Get admin user from auth middleware
+
+    console.log(`👤 Candidate selection attempt - Request ID: ${requestId}, Candidate: ${selectedUserId}, Details: ${detailsType}, Admin: ${adminUser?.email || 'Unknown'}`);
 
     if (!selectedUserId) {
+      console.log('❌ Selection failed: Missing selected user ID');
       return res.status(400).json({ error: 'Selected user ID is required.' });
     }
 
@@ -514,22 +518,71 @@ exports.selectJobSeekerForRequest = async (req, res) => {
     });
 
     if (!request) {
+      console.log(`❌ Selection failed: Request not found - ID: ${requestId}`);
       return res.status(404).json({ error: 'Employer request not found.' });
+    }
+
+    console.log(`📋 Request details - Employer: ${request.name} (${request.email}), Status: ${request.status}`);
+
+    // Check if request is already approved
+    if (request.status === 'approved') {
+      console.log(`❌ Selection blocked: Request already approved - ID: ${requestId}`);
+      return res.status(400).json({ 
+        error: 'Cannot select candidate for approved requests.' 
+      });
     }
 
     // Check if selected user exists and is a job seeker
     const selectedUser = await prisma.user.findUnique({
-      where: { id: selectedUserId }
+      where: { id: selectedUserId },
+      include: {
+        profile: {
+          select: {
+            firstName: true,
+            lastName: true,
+            skills: true,
+            experience: true,
+            experienceLevel: true,
+            educationLevel: true,
+            location: true,
+            city: true,
+            country: true,
+            contactNumber: true,
+            monthlyRate: true,
+            availability: true,
+            languages: true,
+            certifications: true,
+            description: true,
+            gender: true,
+            maritalStatus: true,
+            idNumber: true,
+            references: true,
+            jobCategory: {
+              select: {
+                id: true,
+                name_en: true,
+                name_rw: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!selectedUser || selectedUser.role !== 'jobseeker') {
+      console.log(`❌ Selection failed: Job seeker not found - ID: ${selectedUserId}`);
       return res.status(404).json({ error: 'Selected job seeker not found.' });
     }
+
+    console.log(`✅ Candidate found: ${selectedUser.profile?.firstName} ${selectedUser.profile?.lastName}`);
 
     // Update request with selected user
     const updatedRequest = await prisma.employerRequest.update({
       where: { id: requestId },
-      data: { selectedUserId },
+      data: { 
+        selectedUserId,
+        status: 'in_progress' // Update status to in progress
+      },
       include: {
         selectedUser: {
           select: {
@@ -541,7 +594,28 @@ exports.selectJobSeekerForRequest = async (req, res) => {
                 lastName: true,
                 skills: true,
                 experience: true,
-                contactNumber: true
+                experienceLevel: true,
+                educationLevel: true,
+                location: true,
+                city: true,
+                country: true,
+                contactNumber: true,
+                monthlyRate: true,
+                availability: true,
+                languages: true,
+                certifications: true,
+                description: true,
+                gender: true,
+                maritalStatus: true,
+                idNumber: true,
+                references: true,
+                jobCategory: {
+                  select: {
+                    id: true,
+                    name_en: true,
+                    name_rw: true
+                  }
+                }
               }
             }
           }
@@ -549,11 +623,42 @@ exports.selectJobSeekerForRequest = async (req, res) => {
       }
     });
 
+    console.log(`✅ Request updated with selected candidate - Request ID: ${requestId}`);
+
+    // Send email notification to employer based on details type
+    let emailSent = false;
+    try {
+      console.log(`📤 Sending candidate selection email to employer: ${request.email}`);
+      
+      if (detailsType === 'picture') {
+        await sendCandidatePictureNotification(request.email, request.name, selectedUser);
+      } else {
+        await sendCandidateFullDetailsNotification(request.email, request.name, selectedUser);
+      }
+      
+      emailSent = true;
+      console.log(`✅ Candidate selection email sent successfully to: ${request.email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send candidate selection notification:', emailError);
+      // Continue even if email fails
+    }
+
+    // Log the selection action
+    console.log(`📝 Candidate selection completed - Request: ${requestId}, Employer: ${request.name}, Candidate: ${selectedUser.profile?.firstName} ${selectedUser.profile?.lastName}, Details: ${detailsType}, Email: ${emailSent ? 'Sent' : 'Failed'}`);
+
     res.json({
       message: 'Job seeker selected successfully',
-      request: updatedRequest
+      request: {
+        ...updatedRequest,
+        emailSent,
+        detailsType,
+        employerName: request.name,
+        employerEmail: request.email,
+        candidateName: `${selectedUser.profile?.firstName} ${selectedUser.profile?.lastName}`
+      }
     });
   } catch (err) {
+    console.error('❌ Selection error:', err);
     res.status(500).json({ error: err.message || 'Failed to select job seeker.' });
   }
 };

@@ -741,6 +741,217 @@ const sendContactResponse = async (contact) => {
   }
 };
 
+// Send candidate picture notification to employer
+const sendCandidatePictureNotification = async (employerEmail, employerName, candidate) => {
+  try {
+    const candidateName = `${candidate.profile?.firstName || ''} ${candidate.profile?.lastName || ''}`.trim();
+    const candidateSkills = candidate.profile?.skills || 'General';
+    const candidateExperience = candidate.profile?.experience || 'Not specified';
+    
+    const mailOptions = {
+      from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
+      to: employerEmail,
+      subject: 'Candidate Profile Picture - Job Portal',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2c3e50;">Candidate Profile Picture</h2>
+          <p>Dear ${employerName},</p>
+          <p>We have selected a candidate for your job request. Here is their profile picture and basic information:</p>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <div style="width: 120px; height: 120px; background-color: #e9ecef; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #28a745;">
+                <span style="font-size: 48px; color: #6c757d;">👤</span>
+              </div>
+            </div>
+            
+            <h3 style="color: #28a745; margin-bottom: 15px;">${candidateName}</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+              <div>
+                <strong style="color: #495057;">Skills:</strong><br>
+                <span style="color: #6c757d;">${candidateSkills}</span>
+              </div>
+              <div>
+                <strong style="color: #495057;">Experience:</strong><br>
+                <span style="color: #6c757d;">${candidateExperience}</span>
+              </div>
+            </div>
+          </div>
+          
+          <p style="color: #6c757d; font-size: 14px;">
+            <strong>Note:</strong> This is a profile picture only. For full candidate details including contact information, 
+            education, certifications, and complete profile, please contact us.
+          </p>
+          
+          <p>If you would like to proceed with this candidate or need full details, please reply to this email or contact us.</p>
+          
+          <p>Best regards,<br>Job Portal Team</p>
+          <p style="color: #7f8c8d; font-size: 12px;">
+            This is an automated notification from Job Portal.
+          </p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Candidate picture notification sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending candidate picture notification:', error);
+    return false;
+  }
+};
+
+// Send candidate full details notification to employer
+const sendCandidateFullDetailsNotification = async (employerEmail, employerName, candidate) => {
+  try {
+    const candidateName = `${candidate.profile?.firstName || ''} ${candidate.profile?.lastName || ''}`.trim();
+    const candidateSkills = candidate.profile?.skills || 'General';
+    const candidateExperience = candidate.profile?.experience || 'Not specified';
+    const candidateExperienceLevel = candidate.profile?.experienceLevel || 'Not specified';
+    const candidateEducation = candidate.profile?.educationLevel || 'Not specified';
+    const candidateLocation = [candidate.profile?.city, candidate.profile?.country].filter(Boolean).join(', ') || 'Not specified';
+    const candidateContact = candidate.profile?.contactNumber || 'Available through admin';
+    const candidateEmail = candidate.email || 'Available through admin';
+    const candidateMonthlyRate = candidate.profile?.monthlyRate ? 
+      new Intl.NumberFormat('en-RW', {
+        style: 'currency',
+        currency: 'RWF',
+        minimumFractionDigits: 0
+      }).format(candidate.profile.monthlyRate) : 'Not specified';
+    const candidateAvailability = candidate.profile?.availability || 'Not specified';
+    const candidateLanguages = candidate.profile?.languages || 'Not specified';
+    const candidateCertifications = candidate.profile?.certifications || 'Not specified';
+    const candidateDescription = candidate.profile?.description || 'Not specified';
+    const candidateGender = candidate.profile?.gender || 'Not specified';
+    const candidateMaritalStatus = candidate.profile?.maritalStatus || 'Not specified';
+    const candidateIdNumber = candidate.profile?.idNumber || 'Not specified';
+    const candidateReferences = candidate.profile?.references || 'Not specified';
+    
+    const mailOptions = {
+      from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
+      to: employerEmail,
+      subject: 'Full Candidate Details - Job Portal',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2c3e50;">Full Candidate Details</h2>
+          <p>Dear ${employerName},</p>
+          <p>We have selected a candidate for your job request. Here are their complete details:</p>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <div style="width: 120px; height: 120px; background-color: #e9ecef; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #28a745;">
+                <span style="font-size: 48px; color: #6c757d;">👤</span>
+              </div>
+            </div>
+            
+            <h3 style="color: #28a745; margin-bottom: 15px;">${candidateName}</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+              <div>
+                <strong style="color: #495057;">Skills:</strong><br>
+                <span style="color: #6c757d;">${candidateSkills}</span>
+              </div>
+              <div>
+                <strong style="color: #495057;">Experience:</strong><br>
+                <span style="color: #6c757d;">${candidateExperience}</span>
+              </div>
+              <div>
+                <strong style="color: #495057;">Experience Level:</strong><br>
+                <span style="color: #6c757d;">${candidateExperienceLevel}</span>
+              </div>
+              <div>
+                <strong style="color: #495057;">Education:</strong><br>
+                <span style="color: #6c757d;">${candidateEducation}</span>
+              </div>
+              <div>
+                <strong style="color: #495057;">Location:</strong><br>
+                <span style="color: #6c757d;">${candidateLocation}</span>
+              </div>
+              <div>
+                <strong style="color: #495057;">Monthly Rate:</strong><br>
+                <span style="color: #6c757d;">${candidateMonthlyRate}</span>
+              </div>
+            </div>
+            
+            <div style="border-top: 1px solid #dee2e6; padding-top: 15px; margin-top: 15px;">
+              <h4 style="color: #495057; margin-bottom: 10px;">Contact Information</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <strong style="color: #495057;">Phone:</strong><br>
+                  <span style="color: #6c757d;">${candidateContact}</span>
+                </div>
+                <div>
+                  <strong style="color: #495057;">Email:</strong><br>
+                  <span style="color: #6c757d;">${candidateEmail}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div style="border-top: 1px solid #dee2e6; padding-top: 15px; margin-top: 15px;">
+              <h4 style="color: #495057; margin-bottom: 10px;">Additional Details</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <strong style="color: #495057;">Availability:</strong><br>
+                  <span style="color: #6c757d;">${candidateAvailability}</span>
+                </div>
+                <div>
+                  <strong style="color: #495057;">Languages:</strong><br>
+                  <span style="color: #6c757d;">${candidateLanguages}</span>
+                </div>
+                <div>
+                  <strong style="color: #495057;">Certifications:</strong><br>
+                  <span style="color: #6c757d;">${candidateCertifications}</span>
+                </div>
+                <div>
+                  <strong style="color: #495057;">Gender:</strong><br>
+                  <span style="color: #6c757d;">${candidateGender}</span>
+                </div>
+                <div>
+                  <strong style="color: #495057;">Marital Status:</strong><br>
+                  <span style="color: #6c757d;">${candidateMaritalStatus}</span>
+                </div>
+                <div>
+                  <strong style="color: #495057;">ID Number:</strong><br>
+                  <span style="color: #6c757d;">${candidateIdNumber}</span>
+                </div>
+              </div>
+            </div>
+            
+            ${candidateDescription !== 'Not specified' ? `
+            <div style="border-top: 1px solid #dee2e6; padding-top: 15px; margin-top: 15px;">
+              <h4 style="color: #495057; margin-bottom: 10px;">Description</h4>
+              <p style="color: #6c757d; line-height: 1.5;">${candidateDescription}</p>
+            </div>
+            ` : ''}
+            
+            ${candidateReferences !== 'Not specified' ? `
+            <div style="border-top: 1px solid #dee2e6; padding-top: 15px; margin-top: 15px;">
+              <h4 style="color: #495057; margin-bottom: 10px;">References</h4>
+              <p style="color: #6c757d; line-height: 1.5;">${candidateReferences}</p>
+            </div>
+            ` : ''}
+          </div>
+          
+          <p>You can now contact this candidate directly using the provided contact information.</p>
+          
+          <p>Best regards,<br>Job Portal Team</p>
+          <p style="color: #7f8c8d; font-size: 12px;">
+            This is an automated notification from Job Portal.
+          </p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Candidate full details notification sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending candidate full details notification:', error);
+    return false;
+  }
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendEmployerRequestNotification,
@@ -751,5 +962,7 @@ module.exports = {
   sendPasswordResetEmail,
   sendPasswordResetConfirmation,
   sendContactNotification,
-  sendContactResponse
+  sendContactResponse,
+  sendCandidatePictureNotification,
+  sendCandidateFullDetailsNotification
 }; 
