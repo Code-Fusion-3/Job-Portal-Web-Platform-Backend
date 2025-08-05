@@ -24,29 +24,33 @@ model User {
 
 // Profile: extra info for job seekers
 model Profile {
-  id            Int          @id @default(autoincrement())
-  userId        Int          @unique
-  firstName     String
-  lastName      String
-  description   String?
-  skills        String?
-  photo         String?
-  gender        String?
-  dateOfBirth   DateTime?
-  idNumber      String?
-  contactNumber String // Made required
-  maritalStatus String?
-  location      String?
-  city          String?
-  country       String?
-  references    String?
-  experience    String?
-  monthlyRate   String? // NEW: Monthly rate/salary expectation
-  jobCategoryId Int?
-  jobCategory   JobCategory? @relation(fields: [jobCategoryId], references: [id])
-  user          User         @relation(fields: [userId], references: [id])
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id             Int          @id @default(autoincrement())
+  userId         Int          @unique
+  firstName      String
+  lastName       String
+  description    String?
+  skills         String?
+  photo          String?
+  gender         String?
+  dateOfBirth    DateTime?
+  idNumber       String?
+  contactNumber  String // Made required
+  maritalStatus  String?
+  location       String?
+  city           String?
+  country        String?
+  references     String?
+  experience     String?
+  monthlyRate    String? // Monthly rate/salary expectation
+  educationLevel String? // NEW: Education level (e.g., High School, Bachelor's, Master's, PhD)
+  availability   String? // NEW: Availability status (e.g., Available, Part-time, Not Available)
+  languages      String? // NEW: Languages spoken (comma-separated)
+  certifications String? // NEW: Certifications and licenses
+  jobCategoryId  Int?
+  jobCategory    JobCategory? @relation(fields: [jobCategoryId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }
 
 // Requests from employers (public, no login)

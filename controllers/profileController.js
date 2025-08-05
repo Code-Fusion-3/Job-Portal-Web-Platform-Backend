@@ -55,7 +55,7 @@ exports.updateMyProfile = async (req, res) => {
     // Handle admin profile update
     if (user.role === 'admin') {
       const { email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-        maritalStatus, location, city, country, references, experience, monthlyRate, jobCategoryId } = req.body;
+        maritalStatus, location, city, country, references, experience, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId } = req.body;
 
       // Check if email is being changed and if it's already taken
       if (email && email !== user.email) {
@@ -85,7 +85,8 @@ exports.updateMyProfile = async (req, res) => {
           data: {
             firstName, lastName, description, skills, gender,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate,
+            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
+            educationLevel, availability, languages, certifications,
             jobCategoryId: categoryId,
           },
         });
@@ -96,7 +97,8 @@ exports.updateMyProfile = async (req, res) => {
             userId,
             firstName, lastName, description, skills, gender,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate,
+            idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
+            educationLevel, availability, languages, certifications,
             jobCategoryId: categoryId,
           },
         });
@@ -111,7 +113,7 @@ exports.updateMyProfile = async (req, res) => {
     // Handle job seeker profile update (existing logic)
     const {
       firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-      maritalStatus, location, city, country, references, experience, monthlyRate, jobCategoryId
+      maritalStatus, location, city, country, references, experience, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
 
     // Convert jobCategoryId to integer if provided
@@ -122,7 +124,8 @@ exports.updateMyProfile = async (req, res) => {
       data: {
         firstName, lastName, description, skills, gender,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        idNumber, contactNumber, maritalStatus, location, city, country, references, experience,
+        idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
+        educationLevel, availability, languages, certifications,
         jobCategoryId: categoryId,
       },
     });
@@ -195,7 +198,7 @@ exports.adminCreateJobSeeker = async (req, res) => {
   try {
     const {
       email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-      maritalStatus, location, city, country, references, experience, monthlyRate, jobCategoryId
+      maritalStatus, location, city, country, references, experience, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
     
     // Updated validation: contact number required, email optional
@@ -244,7 +247,11 @@ exports.adminCreateJobSeeker = async (req, res) => {
             country,
             references,
             experience,
-            monthlyRate,
+            monthlyRate: monthlyRate ? monthlyRate.toString() : null,
+            educationLevel,
+            availability,
+            languages,
+            certifications,
             jobCategoryId: categoryId,
           }
         }
@@ -379,7 +386,7 @@ exports.adminUpdateJobSeeker = async (req, res) => {
     const userId = parseInt(req.params.id, 10);
     const {
       firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
-      maritalStatus, location, city, country, references, experience, jobCategoryId
+      maritalStatus, location, city, country, references, experience, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
 
     // Check if user exists and is a job seeker
@@ -406,7 +413,8 @@ exports.adminUpdateJobSeeker = async (req, res) => {
       data: {
         firstName, lastName, description, skills, gender,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        idNumber, contactNumber, maritalStatus, location, city, country, references, experience,
+        idNumber, contactNumber, maritalStatus, location, city, country, references, experience, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
+        educationLevel, availability, languages, certifications,
         jobCategoryId: categoryId,
       },
       include: {
