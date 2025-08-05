@@ -169,12 +169,22 @@ exports.getAllEmployerRequests = async (req, res) => {
                   lastName: true,
                   skills: true,
                   experience: true,
+                  experienceLevel: true,
                   location: true,
                   city: true,
                   country: true,
                   contactNumber: true,
                   monthlyRate: true,
                   jobCategoryId: true,
+                  educationLevel: true,
+                  availability: true,
+                  languages: true,
+                  certifications: true,
+                  description: true,
+                  gender: true,
+                  maritalStatus: true,
+                  idNumber: true,
+                  references: true,
                   jobCategory: {
                     select: {
                       id: true,
@@ -408,8 +418,12 @@ exports.replyToEmployerRequest = async (req, res) => {
   try {
     const requestId = parseInt(req.params.id, 10);
     const { content } = req.body;
+    const adminUser = req.user; // Get admin user from auth middleware
+
+    console.log(`📧 Admin reply attempt - Request ID: ${requestId}, Admin: ${adminUser?.email || 'Unknown'}`);
 
     if (!content) {
+      console.log('❌ Reply failed: Missing content');
       return res.status(400).json({ error: 'Message content is required.' });
     }
 
@@ -419,11 +433,15 @@ exports.replyToEmployerRequest = async (req, res) => {
     });
 
     if (!request) {
+      console.log(`❌ Reply failed: Request not found - ID: ${requestId}`);
       return res.status(404).json({ error: 'Employer request not found.' });
     }
 
+    console.log(`📋 Request details - Employer: ${request.name} (${request.email}), Status: ${request.status}`);
+
     // Check if request is approved - block further communication
     if (request.status === 'approved') {
+      console.log(`❌ Reply blocked: Request already approved - ID: ${requestId}`);
       return res.status(400).json({ 
         error: 'Cannot send messages for approved requests. Communication is closed after approval.' 
       });
@@ -431,8 +449,9 @@ exports.replyToEmployerRequest = async (req, res) => {
 
     // Check if request is cancelled or completed
     if (request.status === 'cancelled' || request.status === 'completed') {
+      console.log(`❌ Reply blocked: Request ${request.status} - ID: ${requestId}`);
       return res.status(400).json({ 
-        error: 'Cannot send messages for cancelled or completed requests.' 
+        error: `Cannot send messages for ${request.status} requests.` 
       });
     }
 
@@ -442,23 +461,39 @@ exports.replyToEmployerRequest = async (req, res) => {
         employerRequestId: requestId,
         fromAdmin: true,
         employerEmail: request.email,
-        content
+        content,
+        messageType: 'admin_reply'
       }
     });
 
+    console.log(`✅ Message saved to database - Message ID: ${message.id}`);
+
     // Send email notification to employer
+    let emailSent = false;
     try {
+      console.log(`📤 Sending email to employer: ${request.email}`);
       await sendAdminReplyNotification(request.email, request.name, content);
+      emailSent = true;
+      console.log(`✅ Email sent successfully to: ${request.email}`);
     } catch (emailError) {
-      console.error('Failed to send admin reply notification:', emailError);
+      console.error('❌ Failed to send admin reply notification:', emailError);
       // Continue even if email fails
     }
 
+    // Log the reply action
+    console.log(`📝 Reply completed - Request: ${requestId}, Employer: ${request.name}, Email: ${emailSent ? 'Sent' : 'Failed'}`);
+
     res.status(201).json({
       message: 'Reply sent successfully',
-      messageData: message
+      messageData: {
+        ...message,
+        emailSent,
+        employerName: request.name,
+        employerEmail: request.email
+      }
     });
   } catch (err) {
+    console.error('❌ Reply error:', err);
     res.status(500).json({ error: err.message || 'Failed to send reply.' });
   }
 };
