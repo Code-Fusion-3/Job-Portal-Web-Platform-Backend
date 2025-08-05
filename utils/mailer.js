@@ -434,8 +434,22 @@ const sendRequestApprovalNotification = async (employerEmail, employerName, sele
 };
 
 // Send status update notification email to employer
-const sendStatusUpdateNotification = async (employerEmail, employerName, newStatus, adminNotes = null) => {
+const sendStatusUpdateNotification = async (employerEmail, employerName, newStatus, adminNotes = null, requestDetails = null) => {
   try {
+    console.log(`📧 Preparing status update email for: ${employerEmail}`);
+    console.log(`📋 Email details - Name: ${employerName}, Status: ${newStatus}, Notes: ${adminNotes || 'None'}`);
+    
+    // Check email configuration
+    console.log(`🔧 Email configuration check:`);
+    console.log(`   - GMAIL_USER: ${process.env.GMAIL_USER ? 'Set' : 'NOT SET'}`);
+    console.log(`   - GMAIL_APP_PASSWORD: ${process.env.GMAIL_APP_PASSWORD ? 'Set' : 'NOT SET'}`);
+    console.log(`   - Transporter ready: ${transporter ? 'Yes' : 'No'}`);
+    
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      console.error('❌ Email configuration missing - GMAIL_USER or GMAIL_APP_PASSWORD not set');
+      return false;
+    }
+    
     const statusConfig = {
       'in_progress': {
         title: '🔄 Request In Progress',
@@ -460,6 +474,19 @@ const sendStatusUpdateNotification = async (employerEmail, employerName, newStat
       message: `Your job request status has been updated to ${newStatus}.`
     };
 
+    // Request details section
+    const requestInfo = requestDetails ? `
+      <div style="background-color: #e8f4fd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+        <h3 style="color: #2c3e50; margin-top: 0;">Request Details:</h3>
+        ${requestDetails.companyName ? `<p><strong>Company:</strong> ${requestDetails.companyName}</p>` : ''}
+        ${requestDetails.phoneNumber ? `<p><strong>Phone:</strong> ${requestDetails.phoneNumber}</p>` : ''}
+        <p><strong>Original Message:</strong></p>
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; font-style: italic;">
+          ${requestDetails.message || 'No message provided'}
+        </div>
+      </div>
+    ` : '';
+
     const notesInfo = adminNotes ? `
       <h3 style="color: #2c3e50; margin-top: 20px;">Admin Notes:</h3>
       <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ffc107;">
@@ -470,7 +497,9 @@ const sendStatusUpdateNotification = async (employerEmail, employerName, newStat
     const mailOptions = {
       from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
       to: employerEmail,
-      subject: `Job Request Status Update - ${newStatus.toUpperCase()} - Job Portal`,
+      subject: adminNotes 
+        ? `Job Request Update - Admin Notes - Job Portal`
+        : `Job Request Status Update - ${newStatus.toUpperCase()} - Job Portal`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, ${config.color} 0%, ${config.color}dd 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
@@ -482,6 +511,8 @@ const sendStatusUpdateNotification = async (employerEmail, employerName, newStat
             <h2 style="color: #2c3e50;">Status Update</h2>
             <p>Dear ${employerName},</p>
             <p>We would like to inform you that the status of your job request has been updated to <strong>${newStatus}</strong>.</p>
+            
+            ${requestInfo}
             
             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="color: #2c3e50; margin-top: 0;">Current Status: ${newStatus.toUpperCase()}</h3>
@@ -505,11 +536,21 @@ const sendStatusUpdateNotification = async (employerEmail, employerName, newStat
       `
     };
 
+    console.log(`📤 Attempting to send email to: ${employerEmail}`);
+    console.log(`📧 From: ${process.env.GMAIL_USER}`);
+    console.log(`📧 Subject: ${mailOptions.subject}`);
+    
     const info = await transporter.sendMail(mailOptions);
-    console.log('Status update notification sent:', info.messageId);
+    console.log('✅ Status update notification sent successfully:', info.messageId);
+    console.log(`📧 Email sent to: ${employerEmail}`);
     return true;
   } catch (error) {
-    console.error('Error sending status update notification:', error);
+    console.error('❌ Error sending status update notification:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
     return false;
   }
 };

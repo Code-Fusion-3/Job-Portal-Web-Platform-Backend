@@ -1,5 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
-const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification } = require('../utils/mailer');
+const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/mailer');
 
 const prisma = new PrismaClient();
 
@@ -889,18 +889,29 @@ exports.updateRequestStatus = async (req, res) => {
     }
 
     // Send email notification for status changes (except for pending)
-    if (status !== 'pending' && status !== request.status) {
+    // Also send email if admin notes are provided, even if status hasn't changed
+    if ((status !== 'pending' && status !== request.status) || adminNotes) {
       try {
+        console.log(`📧 Sending status update email to: ${request.email}, Status: ${status}, Previous: ${request.status}, Has Notes: ${adminNotes ? 'Yes' : 'No'}`);
         await sendStatusUpdateNotification(
           request.email,
           request.name,
           status,
-          adminNotes
+          adminNotes,
+          {
+            id: request.id,
+            message: request.message,
+            companyName: request.companyName,
+            phoneNumber: request.phoneNumber
+          }
         );
+        console.log(`✅ Status update email sent successfully to: ${request.email}`);
       } catch (emailError) {
-        console.error('Failed to send status update notification:', emailError);
+        console.error('❌ Failed to send status update notification:', emailError);
         // Continue even if email fails
       }
+    } else {
+      console.log(`ℹ️ Skipping email notification - Status: ${status}, Previous: ${request.status}, No Notes`);
     }
 
     res.json({
