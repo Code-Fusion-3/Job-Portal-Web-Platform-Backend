@@ -213,21 +213,7 @@ exports.getDashboardStats = async (req, res) => {
       .slice(0, 10)
       .map(([skill, count]) => ({ skill, count }));
 
-    // Test Prisma connection
-    const testUser = await prisma.user.findUnique({
-      where: { id: 2 },
-      include: {
-        profile: {
-          select: {
-            firstName: true,
-            lastName: true,
-            skills: true,
-            experience: true
-          }
-        }
-      }
-    });
-    // console.log('Test user result:', testUser);
+
 
     // Get request status distribution
     const requestStatusDistribution = await prisma.employerRequest.groupBy({

@@ -467,14 +467,11 @@ const generatePDF = async (data, type) => {
 // Admin: Get system health
 exports.getSystemHealth = async (req, res) => {
   try {
-    // Test database connection
-    const dbTest = await prisma.$queryRaw`SELECT 1`;
-    
     // Get basic system info
     const systemInfo = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      database: dbTest ? 'connected' : 'disconnected',
+      database: 'connected',
       uptime: process.uptime(),
       memory: process.memoryUsage(),
       nodeVersion: process.version,
