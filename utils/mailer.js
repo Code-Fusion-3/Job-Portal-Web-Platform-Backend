@@ -247,34 +247,98 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
     const phoneInfo = phoneNumber ? `<p><strong>Phone Number:</strong> ${phoneNumber}</p>` : '';
     const companyInfo = companyName ? `<p><strong>Company Name:</strong> ${companyName}</p>` : '';
 
-    const recipientEmail = adminEmail || process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
+    // Helper to anonymize candidate name
+    function anonymizeName(name) {
+      if (!name || typeof name !== 'string') return '';
+      const parts = name.trim().split(' ');
+      if (parts.length >= 2) {
+        return `${parts[0].charAt(0)}${'*'.repeat(parts[0].length - 1)} ${parts[1].charAt(0)}${'*'.repeat(parts[1].length - 1)}`;
+      } else {
+        return `${parts[0].charAt(0)}${'*'.repeat(parts[0].length - 1)}`;
+      }
+    }
 
-    const mailOptions = {
+    // Only anonymize candidate name for employer email
+    let candidateInfoAnonymized = candidateInfo;
+    if (candidateInfo) {
+      candidateInfoAnonymized = candidateInfo.replace(/<p><strong>Name:<\/strong>\s*([^<]+)<\/p>/, (match, name) => {
+        return `<p><strong>Name:</strong> ${anonymizeName(name)}</p>`;
+      });
+    }
+
+    if (adminEmail && adminEmail !== employerEmail) {
+      // Send to admin: New Employer Request (no anonymization)
+      const adminMailOptions = {
+        from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+        to: adminEmail,
+        subject: 'New Employer Request - Job Portal',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2c3e50;">New Employer Request</h2>
+            <p>A new employer request has been submitted. Please review the details below:</p>
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Employer Name:</strong> ${employerName}</p>
+              <p><strong>Employer Email:</strong> ${employerEmail}</p>
+              ${phoneInfo}
+              ${companyInfo}
+              <p><strong>Priority:</strong> ${priority.charAt(0).toUpperCase() + priority.slice(1)}</p>
+              <p><strong>Message:</strong></p>
+              <div style="background-color: #fff; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                ${message || 'No message provided'}
+              </div>
+              ${candidateInfo}
+            </div>
+            <p>Please log in to your admin dashboard to respond to this request.</p>
+            <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
+              <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Job Portal. Please do not reply to this email.</p>
+            </div>
+          </div>
+        `
+      };
+      await transporter.sendMail(adminMailOptions);
+    }
+
+    // Send to employer: Request Received
+    const employerMailOptions = {
       from: `"Job Portal" <${process.env.GMAIL_USER}>`,
-      to: recipientEmail, // Send to admin
-      subject: 'New Employer Request - Job Portal',
+      to: employerEmail,
+      subject: 'Request Received - Job Portal',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2c3e50;">New Employer Request</h2>
-          <p><strong>Employer Name:</strong> ${employerName}</p>
-          <p><strong>Employer Email:</strong> ${employerEmail}</p>
-          ${phoneInfo}
-          ${companyInfo}
-          <p><strong>Priority:</strong> ${priority.charAt(0).toUpperCase() + priority.slice(1)}</p>
-          <p><strong>Message:</strong></p>
-          <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
-            ${message || 'No message provided'}
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">Request Received</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Your request has been received by our team.</p>
           </div>
-          ${candidateInfo}
-          <p>Please log in to your admin dashboard to respond to this request.</p>
-          <p style="color: #7f8c8d; font-size: 12px;">
-            This is an automated notification from Job Portal.
-          </p>
+          <div style="padding: 30px; background-color: #ffffff;">
+            <h2 style="color: #2c3e50;">Thank You for Your Submission!</h2>
+            <p>Dear ${employerName},</p>
+            <p>We have received your employer request and our team will review it and get back to you within <strong>24-48 business hours</strong>.</p>
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Submitted Details:</strong></p>
+              <p><strong>Email:</strong> ${employerEmail}</p>
+              ${phoneInfo}
+              ${companyInfo}
+              <p><strong>Priority:</strong> ${priority.charAt(0).toUpperCase() + priority.slice(1)}</p>
+              <p><strong>Message:</strong></p>
+              <div style="background-color: #fff; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                ${message || 'No message provided'}
+              </div>
+              ${candidateInfoAnonymized}
+            </div>
+            <p>If you have any questions, please reply to this email or contact our support team.</p>
+            <div class="signature" style="border-top: 2px solid #667eea; padding-top: 20px; margin-top: 30px;">
+              <p>Best regards,</p>
+              <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Job Portal Team</div>
+              <div class="signature-title" style="color: #667eea; font-size: 14px;">Customer Success Manager</div>
+            </div>
+          </div>
+          <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Job Portal. Please do not reply to this email.</p>
+          </div>
         </div>
       `
     };
-
-    const info = await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(employerMailOptions);
     console.log('Employer request notification sent:', info.messageId);
     return true;
   } catch (error) {
