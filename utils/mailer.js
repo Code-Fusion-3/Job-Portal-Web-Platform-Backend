@@ -202,7 +202,7 @@ const sendWelcomeEmail = async (userEmail, userName = 'User') => {
 };
 
 // Send notification email to admin when employer submits request
-const sendEmployerRequestNotification = async (employerName, employerEmail, message, phoneNumber, companyName, requestedCandidateId, adminEmail = null) => {
+const sendEmployerRequestNotification = async (employerName, employerEmail, message, phoneNumber, companyName, requestedCandidateId, adminEmail = null, priority = 'normal') => {
   try {
     // Get candidate details if requested
     let candidateInfo = '';
@@ -260,6 +260,7 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
           <p><strong>Employer Email:</strong> ${employerEmail}</p>
           ${phoneInfo}
           ${companyInfo}
+          <p><strong>Priority:</strong> ${priority.charAt(0).toUpperCase() + priority.slice(1)}</p>
           <p><strong>Message:</strong></p>
           <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
             ${message || 'No message provided'}
