@@ -4,6 +4,8 @@ const publicController = require('../controllers/publicController');
 
 // Public: Get anonymized job seekers with filtering
 router.get('/job-seekers', publicController.getPublicJobSeekers);
+// Public: Get a single anonymized job seeker by ID
+router.get('/job-seekers/:id', publicController.getPublicJobSeekerById);
 
 // Public: Get job seeker statistics
 router.get('/statistics', publicController.getPublicStatistics);

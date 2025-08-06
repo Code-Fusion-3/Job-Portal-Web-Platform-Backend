@@ -248,7 +248,7 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
     const companyInfo = companyName ? `<p><strong>Company Name:</strong> ${companyName}</p>` : '';
 
     const recipientEmail = adminEmail || process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
-    
+
     const mailOptions = {
       from: `"Job Portal" <${process.env.GMAIL_USER}>`,
       to: recipientEmail, // Send to admin
