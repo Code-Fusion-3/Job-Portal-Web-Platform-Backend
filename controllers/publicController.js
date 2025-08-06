@@ -276,7 +276,6 @@ exports.getPublicJobSeekerById = async (req, res) => {
             certifications: true,
             languages: true,
             availability: true,
-            dailyRate: true,
             monthlyRate: true,
             jobCategory: {
               select: {
@@ -308,7 +307,6 @@ exports.getPublicJobSeekerById = async (req, res) => {
       certifications: user.profile.certifications,
       languages: user.profile.languages,
       availability: user.profile.availability,
-      dailyRate: user.profile.dailyRate,
       monthlyRate: user.profile.monthlyRate
     };
     res.json(anonymizedUser);
