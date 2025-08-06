@@ -265,18 +265,32 @@ exports.getPublicJobSeekerById = async (req, res) => {
         id: true,
         profile: {
           select: {
-            firstName: true,
-            lastName: true,
+            // All Profile fields except contact information
+            id: true,
+            userId: true,
             skills: true,
+            photo: true,
+            gender: true,
             experience: true,
-            location: true,
+            jobCategoryId: true,
+            createdAt: true,
+            updatedAt: true,
+            dateOfBirth: true,
+            description: true,
+            firstName: true,
+            idNumber: true,
+            lastName: true,
+            references: true,
             city: true,
             country: true,
-            educationLevel: true,
-            certifications: true,
-            languages: true,
-            availability: true,
+            location: true,
+            maritalStatus: true,
             monthlyRate: true,
+            availability: true,
+            certifications: true,
+            educationLevel: true,
+            languages: true,
+            experienceLevel: true,
             jobCategory: {
               select: {
                 name_en: true,
@@ -291,23 +305,36 @@ exports.getPublicJobSeekerById = async (req, res) => {
     if (!user || !user.profile) {
       return res.status(404).json({ error: 'Job seeker not found.' });
     }
-    // Anonymize the data
+    // Anonymize the name, return all other profile fields except contact info
+    const profile = user.profile;
     const anonymizedUser = {
       id: `JS${user.id.toString().padStart(4, '0')}`,
-      firstName: user.profile.firstName.charAt(0) + '*'.repeat(user.profile.firstName.length - 1),
-      lastName: user.profile.lastName.charAt(0) + '*'.repeat(user.profile.lastName.length - 1),
-      skills: user.profile.skills,
-      experience: user.profile.experience,
-      location: user.profile.location,
-      city: user.profile.city,
-      country: user.profile.country,
-      jobCategory: user.profile.jobCategory,
-      memberSince: user.createdAt,
-      educationLevel: user.profile.educationLevel,
-      certifications: user.profile.certifications,
-      languages: user.profile.languages,
-      availability: user.profile.availability,
-      monthlyRate: user.profile.monthlyRate
+      firstName: profile.firstName.charAt(0) + '*'.repeat(profile.firstName.length - 1),
+      lastName: profile.lastName.charAt(0) + '*'.repeat(profile.lastName.length - 1),
+      // All other fields except contactNumber
+      idNumber: profile.idNumber,
+      gender: profile.gender,
+      dateOfBirth: profile.dateOfBirth,
+      photo: profile.photo,
+      description: profile.description,
+      skills: profile.skills,
+      experience: profile.experience,
+      experienceLevel: profile.experienceLevel,
+      jobCategoryId: profile.jobCategoryId,
+      jobCategory: profile.jobCategory,
+      city: profile.city,
+      country: profile.country,
+      location: profile.location,
+      maritalStatus: profile.maritalStatus,
+      monthlyRate: profile.monthlyRate,
+      availability: profile.availability,
+      certifications: profile.certifications,
+      educationLevel: profile.educationLevel,
+      languages: profile.languages,
+      references: profile.references,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+      memberSince: user.createdAt
     };
     res.json(anonymizedUser);
   } catch (err) {

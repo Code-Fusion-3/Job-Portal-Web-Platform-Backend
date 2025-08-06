@@ -48,7 +48,7 @@ exports.submitEmployerRequest = async (req, res) => {
     // Send WebSocket notification
     if (global.wsServer) {
       global.wsServer.notifyNewRequest(employerRequest);
-      global.wsServer.notifyDashboardUpdate();
+      // global.wsServer.notifyDashboardUpdate();
     }
 
     res.status(201).json({
@@ -772,7 +772,7 @@ exports.approveEmployerRequest = async (req, res) => {
     // Send WebSocket notification
     if (global.wsServer) {
       global.wsServer.notifyRequestStatusChange(requestId, 'approved');
-      global.wsServer.notifyDashboardUpdate();
+      // global.wsServer.notifyDashboardUpdate();
     }
 
     res.json({
