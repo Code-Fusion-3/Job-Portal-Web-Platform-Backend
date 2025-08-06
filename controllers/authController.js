@@ -27,11 +27,13 @@ exports.registerJobSeeker = async (req, res) => {
   } = req.body;
   
   try {
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return res.status(409).json({ error: 'Email already registered.' });
+    // Only check for existing user by email if email is provided
+    if (email) {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        return res.status(409).json({ error: 'Email already registered.' });
+      }
     }
-    
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Handle photo upload

@@ -2,8 +2,9 @@ const { body, validationResult } = require('express-validator');
 
 // Validation rules for job seeker registration
 const validateJobSeekerRegistration = [
-  // Required fields
+  // Email is optional, but if present must be valid
   body('email')
+    .optional({ checkFalsy: true })
     .isEmail()
     .withMessage('Please provide a valid email address')
     .normalizeEmail(),
@@ -57,11 +58,18 @@ const validateJobSeekerRegistration = [
       return true;
     }),
   
-  // Contact number validation
+  // Contact number validation (accept local formats e.g. 078xxxxxxx, 079xxxxxxx, 072xxxxxxx, 073xxxxxxx)
   body('contactNumber')
-    .optional()
-    .matches(/^[\+]?[1-9][\d]{0,15}$/)
+    .optional({ checkFalsy: true })
+    .matches(/^(078|079|072|073)\d{7}$/)
     .withMessage('Please provide a valid contact number'),
+  // Custom validator: require at least one of email or contactNumber
+  body().custom(body => {
+    if (!body.email && !body.contactNumber) {
+      throw new Error('At least one of email or contact number is required');
+    }
+    return true;
+  }),
   
   // Marital status validation
   body('maritalStatus')
