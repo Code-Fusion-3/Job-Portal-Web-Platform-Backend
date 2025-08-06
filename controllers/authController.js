@@ -95,29 +95,35 @@ exports.registerJobSeeker = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, phone, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required.' });
+  if ((!email && !phone) || !password) {
+    return res.status(400).json({ error: 'Email or phone and password are required.' });
   }
 
   try {
-    // Find user with profile
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        profile: true
-      }
-    });
+    // Find user by email or phone
+    let user = null;
+    if (email) {
+      user = await prisma.user.findUnique({
+        where: { email },
+        include: { profile: true }
+      });
+    } else if (phone) {
+      user = await prisma.user.findFirst({
+        where: { profile: { contactNumber: phone } },
+        include: { profile: true }
+      });
+    }
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Invalid credentials.' });
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(401).json({ error: 'Invalid credentials.' });
     }
 
     // Generate JWT token
@@ -133,7 +139,6 @@ exports.login = async (req, res) => {
 
     // Return user info (without password) and token
     const { password: _, ...userWithoutPassword } = user;
-    
     res.json({
       message: 'Login successful',
       user: userWithoutPassword,
