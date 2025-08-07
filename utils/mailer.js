@@ -623,7 +623,7 @@ const sendStatusUpdateNotification = async (employerEmail, employerName, newStat
 };
 
 // Send password reset email
-const sendPasswordResetEmail = async (email, firstName, resetUrl) => {
+const sendPasswordResetEmail = async (email, firstName, resetUrl, footerContact = null) => {
   try {
     const mailOptions = {
       from: `"Job Portal Security" <${process.env.GMAIL_USER}>`,
@@ -665,7 +665,7 @@ const sendPasswordResetEmail = async (email, firstName, resetUrl) => {
             <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
               <p><strong>Job Portal Security Team</strong></p>
               <p>If you didn't request this password reset, please contact us immediately.</p>
-              <p>Email: security@jobportal.com | Phone: +250 788 123 456</p>
+              <p>${footerContact ? footerContact : 'Email: security@jobportal.com | Phone: +250 788 123 456'}</p>
               <p>© 2024 Job Portal. All rights reserved.</p>
             </div>
           </div>
@@ -715,7 +715,7 @@ const sendPasswordResetConfirmation = async (email) => {
             </div>
             
             <p style="color: #7f8c8d; font-size: 14px; text-align: center;">
-              If you didn't perform this password reset, please contact our security team immediately.
+              If you didn't perform this password reset, change password or please contact our security team immediately.
             </p>
             
             <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 30px 0;">
