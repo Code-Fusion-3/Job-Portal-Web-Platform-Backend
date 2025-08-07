@@ -265,11 +265,11 @@ exports.getPublicJobSeekerById = async (req, res) => {
         id: true,
         profile: {
           select: {
-            // All Profile fields except contact information
+            // All Profile fields except contact information and photo (privacy)
             id: true,
             userId: true,
             skills: true,
-            photo: true,
+            // photo: true, // Excluded for privacy in public endpoints
             gender: true,
             experience: true,
             jobCategoryId: true,
@@ -311,11 +311,11 @@ exports.getPublicJobSeekerById = async (req, res) => {
       id: `JS${user.id.toString().padStart(4, '0')}`,
       firstName: profile.firstName.charAt(0) + '*'.repeat(profile.firstName.length - 1),
       lastName: profile.lastName.charAt(0) + '*'.repeat(profile.lastName.length - 1),
-      // All other fields except contactNumber
+      // All other fields except contactNumber and photo (privacy)
       idNumber: profile.idNumber,
       gender: profile.gender,
       dateOfBirth: profile.dateOfBirth,
-      photo: profile.photo,
+      // photo: profile.photo, // Excluded for privacy in public endpoints
       description: profile.description,
       skills: profile.skills,
       experience: profile.experience,

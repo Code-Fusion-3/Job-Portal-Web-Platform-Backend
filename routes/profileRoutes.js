@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const profileController = require('../controllers/profileController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { uploadProfilePhoto, handleUploadError } = require('../middleware/upload');
 
 // Get current user's profile (job seeker or admin)
 router.get('/me', authenticateToken, profileController.getMyProfile);
 
 // Update current user's profile (job seeker or admin)
-router.put('/me', authenticateToken, profileController.updateMyProfile);
+router.put('/me', authenticateToken, uploadProfilePhoto, handleUploadError, profileController.updateMyProfile);
 
 // Delete current user's profile/account (job seeker or admin)
 router.delete('/me', authenticateToken, profileController.deleteMyProfile);

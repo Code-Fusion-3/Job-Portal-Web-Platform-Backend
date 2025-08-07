@@ -57,6 +57,12 @@ exports.updateMyProfile = async (req, res) => {
       const { email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
         maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId } = req.body;
 
+      // Handle photo upload (same pattern as registerJobSeeker)
+      let photoPath = user.profile?.photo; // Keep existing photo if no new one
+      if (req.file) {
+        photoPath = `uploads/profiles/${req.file.filename}`;
+      }
+
       // Check if email is being changed and if it's already taken
       if (email && email !== user.email) {
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -88,6 +94,7 @@ exports.updateMyProfile = async (req, res) => {
             idNumber, contactNumber, maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
             educationLevel, availability, languages, certifications,
             jobCategoryId: categoryId,
+            photo: photoPath,
           },
         });
       } else {
@@ -100,6 +107,7 @@ exports.updateMyProfile = async (req, res) => {
             idNumber, contactNumber, maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
             educationLevel, availability, languages, certifications,
             jobCategoryId: categoryId,
+            photo: photoPath,
           },
         });
       }
@@ -116,6 +124,12 @@ exports.updateMyProfile = async (req, res) => {
       maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
 
+    // Handle photo upload (same pattern as registerJobSeeker)
+    let photoPath = user.profile?.photo; // Keep existing photo if no new one
+    if (req.file) {
+      photoPath = `uploads/profiles/${req.file.filename}`;
+    }
+
     // Convert jobCategoryId to integer if provided
     const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : undefined;
 
@@ -127,6 +141,7 @@ exports.updateMyProfile = async (req, res) => {
         idNumber, contactNumber, maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
         educationLevel, availability, languages, certifications,
         jobCategoryId: categoryId,
+        photo: photoPath,
       },
     });
     res.json({ message: 'Profile updated successfully', profile: updatedProfile });
