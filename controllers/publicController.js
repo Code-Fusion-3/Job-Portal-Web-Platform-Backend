@@ -53,6 +53,7 @@ exports.getPublicJobSeekers = async (req, res) => {
             select: {
               firstName: true,
               lastName: true,
+              gender: true,
               skills: true,
               experience: true,
               experienceLevel: true,
@@ -83,6 +84,7 @@ exports.getPublicJobSeekers = async (req, res) => {
       id: `JS${user.id.toString().padStart(4, '0')}`, // Anonymized ID
       firstName: user.profile.firstName.charAt(0) + '*'.repeat(user.profile.firstName.length - 1),
       lastName: user.profile.lastName.charAt(0) + '*'.repeat(user.profile.lastName.length - 1),
+      gender: user.profile.gender,
       skills: user.profile.skills,
       experience: user.profile.experience,
       experienceLevel: user.profile.experienceLevel,
