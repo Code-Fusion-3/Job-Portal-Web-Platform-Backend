@@ -249,3 +249,70 @@ exports.getAvailableFilters = async (req, res) => {
     res.status(500).json({ error: err.message || 'Failed to fetch filters.' });
   }
 }; 
+
+// Public: Get a single anonymized job seeker by ID
+exports.getPublicJobSeekerById = async (req, res) => {
+  try {
+    const idParam = req.params.id;
+    // Remove 'JS' prefix and parse the numeric ID
+    const userId = parseInt(idParam.replace(/^JS/, ''), 10);
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid job seeker ID.' });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId, role: 'jobseeker' },
+      select: {
+        id: true,
+        profile: {
+          select: {
+            firstName: true,
+            lastName: true,
+            skills: true,
+            experience: true,
+            location: true,
+            city: true,
+            country: true,
+            educationLevel: true,
+            certifications: true,
+            languages: true,
+            availability: true,
+            dailyRate: true,
+            monthlyRate: true,
+            jobCategory: {
+              select: {
+                name_en: true,
+                name_rw: true
+              }
+            }
+          }
+        },
+        createdAt: true
+      }
+    });
+    if (!user || !user.profile) {
+      return res.status(404).json({ error: 'Job seeker not found.' });
+    }
+    // Anonymize the data
+    const anonymizedUser = {
+      id: `JS${user.id.toString().padStart(4, '0')}`,
+      firstName: user.profile.firstName.charAt(0) + '*'.repeat(user.profile.firstName.length - 1),
+      lastName: user.profile.lastName.charAt(0) + '*'.repeat(user.profile.lastName.length - 1),
+      skills: user.profile.skills,
+      experience: user.profile.experience,
+      location: user.profile.location,
+      city: user.profile.city,
+      country: user.profile.country,
+      jobCategory: user.profile.jobCategory,
+      memberSince: user.createdAt,
+      educationLevel: user.profile.educationLevel,
+      certifications: user.profile.certifications,
+      languages: user.profile.languages,
+      availability: user.profile.availability,
+      dailyRate: user.profile.dailyRate,
+      monthlyRate: user.profile.monthlyRate
+    };
+    res.json(anonymizedUser);
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch job seeker.' });
+  }
+}; 
