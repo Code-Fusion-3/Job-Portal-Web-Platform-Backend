@@ -917,9 +917,11 @@ const sendContactResponse = async (contact) => {
 // Send candidate picture notification to employer
 const sendCandidatePictureNotification = async (employerEmail, employerName, candidate) => {
   try {
-    const candidateName = `${candidate.profile?.firstName || ''} ${candidate.profile?.lastName || ''}`.trim();
+    const candidateName = `${(candidate.profile?.firstName?.[0] || '')}** ${(candidate.profile?.lastName?.[0] || '')}**`;
     const candidateSkills = candidate.profile?.skills || 'General';
     const candidateExperience = candidate.profile?.experience || 'Not specified';
+    const candidateEducation = candidate.profile?.education || 'Not specified';
+    const candidateLocation = [candidate.profile?.city, candidate.profile?.country].filter(Boolean).join(', ') || 'Not specified';
     
     const mailOptions = {
       from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
@@ -940,6 +942,16 @@ const sendCandidatePictureNotification = async (employerEmail, employerName, can
             
             <h3 style="color: #28a745; margin-bottom: 15px;">${candidateName}</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                 <div>
+                <strong style="color: #495057;">Location:</strong><br>
+                <span style="color: #6c757d;">${candidateLocation}</span>
+              </div>
+              <div>
+                <strong style="color: #495057;">Education:</strong><br>
+                <span style="color: #6c757d;">${candidateEducation}</span>
+              </div>
+
+
               <div>
                 <strong style="color: #495057;">Skills:</strong><br>
                 <span style="color: #6c757d;">${candidateSkills}</span>

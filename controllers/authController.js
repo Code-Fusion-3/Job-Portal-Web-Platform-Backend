@@ -23,7 +23,12 @@ exports.registerJobSeeker = async (req, res) => {
     references, 
     experience, 
     monthlyRate,
-    jobCategoryId 
+    jobCategoryId,
+    availability,
+    certifications,
+    educationLevel,
+    languages,
+    experienceLevel
   } = req.body;
   
   try {
@@ -69,6 +74,11 @@ exports.registerJobSeeker = async (req, res) => {
             experience,
             monthlyRate,
             jobCategoryId: categoryId,
+            availability,
+            certifications,
+            educationLevel,
+            languages,
+            experienceLevel
           }
         }
       },
