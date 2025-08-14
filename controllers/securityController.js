@@ -98,14 +98,6 @@ exports.requestPasswordReset = async (req, res) => {
       return res.status(400).json({ error: 'Email is required.' });
     }
 
-    // Check rate limiting
-    const rateLimitKey = `password_reset_${email}`;
-    const isRateLimited = await rateLimiter.checkRateLimit(rateLimitKey, 3, 3600); // 3 attempts per hour
-    
-    if (isRateLimited) {
-      return res.status(429).json({ error: 'Too many password reset attempts. Please try again later.' });
-    }
-
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
@@ -113,8 +105,14 @@ exports.requestPasswordReset = async (req, res) => {
     });
 
     if (!user) {
-      // Don't reveal if user exists or not for security
-      return res.json({ message: 'If the email exists, a password reset link has been sent.' });
+      return res.status(404).json({ error: 'Email not found.' });
+    }
+
+    // Use user.id for rate limiting
+    const rateLimitKey = `password_reset_${user.id}`;
+    const isAllowed = await rateLimiter.checkRateLimit(rateLimitKey, 3, 3600); // 3 attempts per hour
+    if (!isAllowed) {
+      return res.status(429).json({ error: 'Too many password reset attempts. Please try again later.' });
     }
 
     // Generate reset token
@@ -130,11 +128,24 @@ exports.requestPasswordReset = async (req, res) => {
       expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
     });
 
+    // Get admin contact details for email footer
+    const admin = await prisma.user.findFirst({
+      where: { role: 'admin' },
+      include: { profile: true }
+    });
+    const adminEmail = admin?.email || 'security@jobportal.com';
+    const adminPhone = admin?.profile?.contactNumber || '+250 788 123 456';
+
     // Send password reset email
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
-    await sendPasswordResetEmail(user.email, user.profile?.firstName || 'User', resetUrl);
+    await sendPasswordResetEmail(
+      user.email,
+      user.profile?.firstName || 'User',
+      resetUrl,
+      `Email: ${adminEmail} | Phone: ${adminPhone}`
+    );
 
-    res.json({ message: 'If the email exists, a password reset link has been sent.' });
+    res.json({ message: 'Password reset link sent to your email.' });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Password reset request failed.' });
   }

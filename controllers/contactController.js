@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 // Public: Submit contact message
 exports.submitContact = async (req, res) => {
   try {
-    const { name, email, subject, message, category = 'general' } = req.body;
+    const { name, email, subject, message, category = 'general', priority = 'normal' } = req.body;
 
     // Validate required fields
     if (!name || !email || !subject || !message) {
@@ -40,6 +40,15 @@ exports.submitContact = async (req, res) => {
       });
     }
 
+    // Validate priority
+    const validPriorities = ['low', 'normal', 'high', 'urgent'];
+    if (!validPriorities.includes(priority)) {
+      return res.status(400).json({
+        error: 'Invalid priority',
+        details: [{ field: 'priority', message: 'Priority must be one of: low, normal, high, urgent' }]
+      });
+    }
+
     // Get admin email from database
     const adminEmail = await getAdminEmail();
 
@@ -52,7 +61,7 @@ exports.submitContact = async (req, res) => {
         message,
         category,
         status: 'unread',
-        priority: 'normal'
+        priority
       }
     });
 
@@ -68,6 +77,7 @@ exports.submitContact = async (req, res) => {
         id: contact.id,
         subject: contact.subject,
         category: contact.category,
+        priority: contact.priority,
         submittedAt: contact.createdAt
       }
     });
@@ -95,7 +105,7 @@ exports.getAllContacts = async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    const skip = (page - 1) * limit;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Build where conditions
     const whereConditions = {};
@@ -128,16 +138,8 @@ exports.getAllContacts = async (req, res) => {
     const [contacts, total] = await Promise.all([
       prisma.contact.findMany({
         where: whereConditions,
-        include: {
-          admin: {
-            select: {
-              id: true,
-              email: true
-            }
-          }
-        },
         skip,
-        take: limit,
+        take: parseInt(limit),
         orderBy: sortConditions
       }),
       prisma.contact.count({ where: whereConditions })
@@ -172,6 +174,11 @@ exports.getAllContacts = async (req, res) => {
     });
   } catch (err) {
     console.error('Get contacts error:', err);
+    console.error('Error details:', {
+      message: err.message,
+      stack: err.stack,
+      query: req.query
+    });
     res.status(500).json({ error: 'Failed to get contact messages.' });
   }
 };
@@ -185,16 +192,14 @@ exports.getContact = async (req, res) => {
 
     const { id } = req.params;
 
+    // Validate id parameter
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ error: 'Invalid contact ID provided.' });
+    }
+
+    const contactId = parseInt(id);
     const contact = await prisma.contact.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        admin: {
-          select: {
-            id: true,
-            email: true
-          }
-        }
-      }
+      where: { id: contactId }
     });
 
     if (!contact) {
@@ -204,7 +209,7 @@ exports.getContact = async (req, res) => {
     // Mark as read if unread
     if (contact.status === 'unread') {
       await prisma.contact.update({
-        where: { id: parseInt(id) },
+        where: { id: contactId },
         data: { status: 'read' }
       });
       contact.status = 'read';
@@ -213,6 +218,11 @@ exports.getContact = async (req, res) => {
     res.json({ contact });
   } catch (err) {
     console.error('Get contact error:', err);
+    console.error('Error details:', {
+      message: err.message,
+      stack: err.stack,
+      params: req.params
+    });
     res.status(500).json({ error: 'Failed to get contact message.' });
   }
 };
@@ -423,6 +433,11 @@ exports.getContactStatistics = async (req, res) => {
     });
   } catch (err) {
     console.error('Get contact statistics error:', err);
+    console.error('Statistics error details:', {
+      message: err.message,
+      stack: err.stack,
+      query: req.query
+    });
     res.status(500).json({ error: 'Failed to get contact statistics.' });
   }
 }; 

@@ -9,6 +9,9 @@ router.post('/submit', contactController.submitContact);
 // Admin: Get all contact messages
 router.get('/admin/all', authenticateToken, requireAdmin, contactController.getAllContacts);
 
+// Admin: Get contact statistics (must come before :id route)
+router.get('/admin/statistics', authenticateToken, requireAdmin, contactController.getContactStatistics);
+
 // Admin: Get specific contact message
 router.get('/admin/:id', authenticateToken, requireAdmin, contactController.getContact);
 
@@ -20,8 +23,5 @@ router.put('/admin/:id/status', authenticateToken, requireAdmin, contactControll
 
 // Admin: Delete contact message
 router.delete('/admin/:id', authenticateToken, requireAdmin, contactController.deleteContact);
-
-// Admin: Get contact statistics
-router.get('/admin/statistics', authenticateToken, requireAdmin, contactController.getContactStatistics);
 
 module.exports = router; 
