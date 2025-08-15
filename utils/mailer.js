@@ -17,6 +17,18 @@ const resolveImageUrl = (path) => {
   return `${base}/${String(path).replace(/^\/+/, '')}`;
 };
 
+// Quick heuristic to determine if a path/URL likely points to an image.
+// Accepts data:image/* URIs and common image file extensions.
+const isImagePath = (path) => {
+  if (!path) return false;
+  const p = String(path).trim();
+  // data URI for images
+  if (/^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(p)) return true;
+  // strip query/hash
+  const clean = p.split('?')[0].split('#')[0].toLowerCase();
+  return /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/.test(clean);
+};
+
 // Professional email template
 const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword=null) => {
   return `
@@ -947,12 +959,16 @@ const sendCandidatePictureNotification = async (employerEmail, employerName, can
               ${(() => {
                 const photoPath = candidate.profile?.photo || candidate.photo || null;
                 const imageUrl = resolveImageUrl(photoPath);
-                if (imageUrl) {
+                if (imageUrl && isImagePath(imageUrl)) {
                   return `
                     <div style="width:120px;height:120px;border-radius:50%;margin:0 auto;overflow:hidden;border:3px solid #28a745;display:flex;align-items:center;justify-content:center;">
                       <img src="${imageUrl}" alt="Candidate photo" style="width:120px;height:120px;object-fit:cover;display:block;" />
                     </div>
                   `;
+                }
+                // If the path exists but isn't a recognizable image URL, log and fall back to emoji
+                if (imageUrl && !isImagePath(imageUrl)) {
+                  console.warn('Mailer: candidate photo path resolved but was not recognized as an image URL:', imageUrl);
                 }
                 return `
                   <div style="width: 120px; height: 120px; background-color: #e9ecef; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #28a745;">
@@ -1050,12 +1066,15 @@ const sendCandidateFullDetailsNotification = async (employerEmail, employerName,
               ${(() => {
                 const photoPath = candidate.profile?.photo || candidate.photo || null;
                 const imageUrl = resolveImageUrl(photoPath);
-                if (imageUrl) {
+                if (imageUrl && isImagePath(imageUrl)) {
                   return `
                     <div style="width:120px;height:120px;border-radius:50%;margin:0 auto;overflow:hidden;border:3px solid #28a745;display:flex;align-items:center;justify-content:center;">
                       <img src="${imageUrl}" alt="Candidate photo" style="width:120px;height:120px;object-fit:cover;display:block;" />
                     </div>
                   `;
+                }
+                if (imageUrl && !isImagePath(imageUrl)) {
+                  console.warn('Mailer: candidate photo path resolved but was not recognized as an image URL:', imageUrl);
                 }
                 return `
                   <div style="width: 120px; height: 120px; background-color: #e9ecef; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #28a745;">
