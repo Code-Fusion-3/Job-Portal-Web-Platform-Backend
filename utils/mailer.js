@@ -9,6 +9,14 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Resolve a stored file path (e.g. "uploads/profiles/xxx.png") to a fully-qualified URL
+const resolveImageUrl = (path) => {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  const base = (process.env.BACKEND_URL || process.env.SERVER_URL || process.env.FRONTEND_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
+  return `${base}/${String(path).replace(/^\/+/, '')}`;
+};
+
 // Professional email template
 const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword=null) => {
   return `
@@ -936,9 +944,22 @@ const sendCandidatePictureNotification = async (employerEmail, employerName, can
           
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <div style="text-align: center; margin-bottom: 20px;">
-              <div style="width: 120px; height: 120px; background-color: #e9ecef; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #28a745;">
-                <span style="font-size: 48px; color: #6c757d;">👤</span>
-              </div>
+              ${(() => {
+                const photoPath = candidate.profile?.photo || candidate.photo || null;
+                const imageUrl = resolveImageUrl(photoPath);
+                if (imageUrl) {
+                  return `
+                    <div style="width:120px;height:120px;border-radius:50%;margin:0 auto;overflow:hidden;border:3px solid #28a745;display:flex;align-items:center;justify-content:center;">
+                      <img src="${imageUrl}" alt="Candidate photo" style="width:120px;height:120px;object-fit:cover;display:block;" />
+                    </div>
+                  `;
+                }
+                return `
+                  <div style="width: 120px; height: 120px; background-color: #e9ecef; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #28a745;">
+                    <span style="font-size: 48px; color: #6c757d;">👤</span>
+                  </div>
+                `;
+              })()}
             </div>
             
             <h3 style="color: #28a745; margin-bottom: 15px;">${candidateName}</h3>
@@ -1026,9 +1047,22 @@ const sendCandidateFullDetailsNotification = async (employerEmail, employerName,
           
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <div style="text-align: center; margin-bottom: 20px;">
-              <div style="width: 120px; height: 120px; background-color: #e9ecef; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #28a745;">
-                <span style="font-size: 48px; color: #6c757d;">👤</span>
-              </div>
+              ${(() => {
+                const photoPath = candidate.profile?.photo || candidate.photo || null;
+                const imageUrl = resolveImageUrl(photoPath);
+                if (imageUrl) {
+                  return `
+                    <div style="width:120px;height:120px;border-radius:50%;margin:0 auto;overflow:hidden;border:3px solid #28a745;display:flex;align-items:center;justify-content:center;">
+                      <img src="${imageUrl}" alt="Candidate photo" style="width:120px;height:120px;object-fit:cover;display:block;" />
+                    </div>
+                  `;
+                }
+                return `
+                  <div style="width: 120px; height: 120px; background-color: #e9ecef; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; border: 3px solid #28a745;">
+                    <span style="font-size: 48px; color: #6c757d;">👤</span>
+                  </div>
+                `;
+              })()}
             </div>
             
             <h3 style="color: #28a745; margin-bottom: 15px;">${candidateName}</h3>
