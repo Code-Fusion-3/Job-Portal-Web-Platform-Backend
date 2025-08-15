@@ -3,6 +3,16 @@ const prisma = new PrismaClient();
 const bcrypt = require('bcrypt');
 const { sendWelcomeEmail } = require('../utils/mailer');
 
+// Helper to resolve uploaded photo path while preserving existing photo when no new file is provided
+function resolvePhotoPath(file, existingPhoto) {
+  if (file) {
+    const filename = file.filename || (file.path ? file.path.split('/').pop() : null);
+    if (filename) return `uploads/profiles/${filename}`;
+    return file.path || existingPhoto || null;
+  }
+  return existingPhoto || null;
+}
+
 // Get current user's profile (job seeker or admin)
 exports.getMyProfile = async (req, res) => {
   try {
@@ -37,7 +47,7 @@ exports.getMyProfile = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to fetch profile.' });
   }
-};
+};  
 
 // Update current user's profile (job seeker or admin)
 exports.updateMyProfile = async (req, res) => {
@@ -57,11 +67,8 @@ exports.updateMyProfile = async (req, res) => {
       const { email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
         maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId } = req.body;
 
-      // Handle photo upload (same pattern as registerJobSeeker)
-      let photoPath = user.profile?.photo; // Keep existing photo if no new one
-      if (req.file) {
-        photoPath = `uploads/profiles/${req.file.filename}`;
-      }
+  // Handle photo upload (preserve existing photo if no new one)
+  const photoPath = resolvePhotoPath(req.file, user.profile?.photo);
 
       // Check if email is being changed and if it's already taken
       if (email && email !== user.email) {
@@ -124,11 +131,8 @@ exports.updateMyProfile = async (req, res) => {
       maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
 
-    // Handle photo upload (same pattern as registerJobSeeker)
-    let photoPath = user.profile?.photo; // Keep existing photo if no new one
-    if (req.file) {
-      photoPath = `uploads/profiles/${req.file.filename}`;
-    }
+  // Handle photo upload (preserve existing photo if no new one)
+  const photoPath = resolvePhotoPath(req.file, user.profile?.photo);
 
     // Convert jobCategoryId to integer if provided
     const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : undefined;
@@ -239,9 +243,11 @@ exports.adminCreateJobSeeker = async (req, res) => {
       return res.status(409).json({ error: 'Contact number already registered.' });
     }
 
-    const defaultPassword = 'JobPortal@123';
+    const defaultPassword = Math.random().toString(36).slice(-6) + '@' + Math.floor(100 + Math.random() * 900);
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-    const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : null;
+  const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : null;
+  // Handle photo upload for created job seeker
+  const photoPath = resolvePhotoPath(req.file, null);
     
     const user = await prisma.user.create({
       data: {
@@ -271,6 +277,7 @@ exports.adminCreateJobSeeker = async (req, res) => {
             languages,
             certifications,
             jobCategoryId: categoryId,
+            photo: photoPath,
           }
         }
       },
@@ -287,7 +294,7 @@ exports.adminCreateJobSeeker = async (req, res) => {
     // Send welcome email if email is provided
     if (email) {
       try {
-        await sendWelcomeEmail(email, firstName);
+        await sendWelcomeEmail(email, firstName, defaultPassword);
       } catch (emailError) {
         console.error('Error sending welcome email:', emailError);
         // Continue even if email fails
@@ -407,8 +414,6 @@ exports.adminUpdateJobSeeker = async (req, res) => {
       maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
 
-
-
     // Check if user exists and is a job seeker
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -425,8 +430,9 @@ exports.adminUpdateJobSeeker = async (req, res) => {
       return res.status(404).json({ error: 'Job seeker not found.' });
     }
 
+    // Handle photo upload (preserve existing photo if no new one)
+    const photoPath = resolvePhotoPath(req.file, existingUser.profile?.photo);
 
-    
     // Check if email is being updated and if it's already taken by another user
     if (email && email !== existingUser.email) {
       const existingEmail = await prisma.user.findUnique({ where: { email } });
@@ -438,8 +444,6 @@ exports.adminUpdateJobSeeker = async (req, res) => {
     // Convert jobCategoryId to integer if provided
     const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : undefined;
 
-
-    
     // Update both user (email) and profile
     const [updatedUser, updatedProfile] = await Promise.all([
       // Update user email if provided
@@ -454,9 +458,11 @@ exports.adminUpdateJobSeeker = async (req, res) => {
         data: {
           firstName, lastName, description, skills, gender,
           dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-          idNumber, contactNumber, maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
+          idNumber, contactNumber, maritalStatus, location, city, country, references, experience, experienceLevel,
+          monthlyRate: monthlyRate ? monthlyRate.toString() : undefined,
           educationLevel, availability, languages, certifications,
           jobCategoryId: categoryId,
+          photo: photoPath,
         },
         include: {
           jobCategory: true
@@ -464,19 +470,13 @@ exports.adminUpdateJobSeeker = async (req, res) => {
       })
     ]);
 
-
-
-
-
-
-    
     res.json({ 
       message: 'Job seeker profile updated successfully', 
-      email: updatedUser.email, // Include email at top level for frontend
+      email: updatedUser.email,
       user: updatedUser,
       profile: updatedProfile 
     });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to update job seeker profile.' });
   }
-}; 
+};

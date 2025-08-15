@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // Professional email template
-const getWelcomeEmailTemplate = (userName, userEmail) => {
+const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword=null) => {
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -133,11 +133,12 @@ const getWelcomeEmailTemplate = (userName, userEmail) => {
           <p>Welcome to <strong>Job Portal</strong>! We're thrilled to have you join our community of professionals and employers.</p>
           
           <p>Your account has been successfully created with the email: <strong>${userEmail}</strong></p>
+          ${defaultPassword ? `<p>Your temporary password is: <strong>${defaultPassword}</strong></p>` : ''}
           
           <div class="features">
             <h3>🚀 What you can do now:</h3>
             <ul>
-              <li><strong>Complete your profile</strong> - Add your skills, experience, and preferences</li>
+              <li><strong>Complete your profile</strong> - Add your skills, experience, and preferences and set new password</li>
               <li><strong>Browse opportunities</strong> - Discover job openings from top employers</li>
               <li><strong>Connect with employers</strong> - Get noticed by companies looking for your skills</li>
               <li><strong>Track applications</strong> - Monitor your job application status</li>
@@ -183,13 +184,13 @@ const getWelcomeEmailTemplate = (userName, userEmail) => {
 };
 
 // Send welcome email to newly registered user
-const sendWelcomeEmail = async (userEmail, userName = 'User') => {
+const sendWelcomeEmail = async (userEmail, userName = 'User', defaultPassword) => {
   try {
     const mailOptions = {
       from: `"Job Portal" <${process.env.GMAIL_USER}>`,
       to: userEmail,
       subject: 'Welcome to Job Portal - Your Account is Ready! 🎉',
-      html: getWelcomeEmailTemplate(userName, userEmail)
+      html: getWelcomeEmailTemplate(userName, userEmail, defaultPassword)
     };
 
     const info = await transporter.sendMail(mailOptions);
