@@ -176,6 +176,7 @@ exports.getAllEmployerRequests = async (req, res) => {
                   skills: true,
                   experience: true,
                   experienceLevel: true,
+                  photo: true,
                   location: true,
                   city: true,
                   country: true,
