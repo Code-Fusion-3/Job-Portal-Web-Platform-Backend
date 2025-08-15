@@ -20,10 +20,10 @@ router.get('/all', authenticateToken, requireAdmin, profileController.adminGetAl
 router.get('/:id', authenticateToken, requireAdmin, profileController.getProfileById);
 
 // Admin: Create job seeker (worker)
-router.post('/', authenticateToken, requireAdmin, profileController.adminCreateJobSeeker);
+router.post('/', authenticateToken, uploadProfilePhoto, handleUploadError, requireAdmin, profileController.adminCreateJobSeeker);
 
 // Admin: Update any job seeker's profile
-router.put('/:id', authenticateToken, requireAdmin, profileController.adminUpdateJobSeeker);
+router.put('/:id', authenticateToken, uploadProfilePhoto, handleUploadError, requireAdmin, profileController.adminUpdateJobSeeker);
 
 // Admin: Delete worker (job seeker) by user ID
 router.delete('/:id', authenticateToken, requireAdmin, profileController.adminDeleteWorker);
