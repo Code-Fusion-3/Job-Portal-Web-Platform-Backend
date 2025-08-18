@@ -58,11 +58,11 @@ const validateJobSeekerRegistration = [
       return true;
     }),
   
-  // Contact number validation (accept local formats e.g. 078xxxxxxx, 079xxxxxxx, 072xxxxxxx, 073xxxxxxx)
+  // Contact number validation (must start with 25, followed by 078xxxxxxx, 079xxxxxxx, 072xxxxxxx, or 073xxxxxxx)
   body('contactNumber')
     .optional({ checkFalsy: true })
-    .matches(/^(078|079|072|073)\d{7}$/)
-    .withMessage('Please provide a valid contact number'),
+    .matches(/^25(078|079|072|073)\d{7}$/)
+    .withMessage('Please provide a valid contact number starting with 25'),
   // Custom validator: require at least one of email or contactNumber
   body().custom(body => {
     if (!body.email && !body.contactNumber) {
