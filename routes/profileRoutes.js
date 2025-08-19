@@ -28,4 +28,11 @@ router.put('/:id', authenticateToken, uploadProfilePhoto, handleUploadError, req
 // Admin: Delete worker (job seeker) by user ID
 router.delete('/:id', authenticateToken, requireAdmin, profileController.adminDeleteWorker);
 
-module.exports = router; 
+// Approval workflow
+router.put('/:id/approve', authenticateToken, requireAdmin, profileController.approveProfile);
+router.put('/:id/reject', authenticateToken, requireAdmin, profileController.rejectProfile);
+router.get('/status/pending', authenticateToken, requireAdmin, profileController.getPendingProfiles);
+router.get('/status/approved', authenticateToken, requireAdmin, profileController.getApprovedProfiles);
+router.get('/status/rejected', authenticateToken, requireAdmin, profileController.getRejectedProfiles);
+
+module.exports = router;

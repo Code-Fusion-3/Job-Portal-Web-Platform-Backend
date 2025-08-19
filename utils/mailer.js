@@ -368,6 +368,47 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
   }
 };
 
+// Generate simple status change email
+const getStatusChangeTemplate = (userName, status, reason=null) => `
+  <html><body style="font-family:Arial,Helvetica,sans-serif;line-height:1.5;">
+    <h2 style="color:#444;">Profile Status Update</h2>
+    <p>Dear <strong>${userName}</strong>,</p>
+    <p>Your job seeker profile status has changed to: <strong style="text-transform:uppercase;">${status}</strong>.</p>
+    ${status === 'approved' ? '<p>Your profile is now publicly visible and searchable by employers.</p>' : ''}
+    ${status === 'rejected' && reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+    <p>If you have any questions, reply to this email.</p>
+    <p style="margin-top:30px;font-size:12px;color:#888;">Job Portal &copy; ${new Date().getFullYear()}</p>
+  </body></html>`;
+
+const sendProfileApprovedEmail = async (toEmail, name) => {
+  if (!toEmail) return false;
+  try {
+    await transporter.sendMail({
+      from: `Job Portal <${process.env.GMAIL_USER}>`,
+      to: toEmail,
+      subject: 'Your Profile Has Been Approved ✅',
+      html: getStatusChangeTemplate(name, 'approved')
+    });
+    return true;
+  } catch (e) { console.error('Approval email failed', e); return false; }
+};
+
+const sendProfileRejectedEmail = async (toEmail, name, reason) => {
+  if (!toEmail) return false;
+  try {
+    await transporter.sendMail({
+      from: `Job Portal <${process.env.GMAIL_USER}>`,
+      to: toEmail,
+      subject: 'Your Profile Review Result ❌',
+      html: getStatusChangeTemplate(name, 'rejected', reason)
+    });
+    return true;
+  } catch (e) { console.error('Rejection email failed', e); return false; }
+};
+
+module.exports.sendProfileApprovedEmail = sendProfileApprovedEmail;
+module.exports.sendProfileRejectedEmail = sendProfileRejectedEmail;
+
 // Send notification email to admin when admin replies
 const sendAdminReplyNotification = async (employerEmail, employerName, adminMessage, attachmentName = null) => {
   try {

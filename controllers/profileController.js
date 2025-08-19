@@ -1,7 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const bcrypt = require('bcrypt');
-const { sendWelcomeEmail } = require('../utils/mailer');
+const { sendWelcomeEmail, sendProfileApprovedEmail, sendProfileRejectedEmail } = require('../utils/mailer');
 
 // Helper to resolve uploaded photo path while preserving existing photo when no new file is provided
 function resolvePhotoPath(file, existingPhoto) {
@@ -479,4 +479,67 @@ exports.adminUpdateJobSeeker = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to update job seeker profile.' });
   }
+};
+
+// Admin: Approval workflow endpoints
+exports.approveProfile = async (req, res) => {
+  try {
+    const profileId = parseInt(req.params.id, 10);
+    const adminId = req.user.id;
+    const profile = await prisma.profile.update({
+      where: { id: profileId },
+      data: {
+        approvalStatus: 'approved',
+        isActive: true,
+        approvedAt: new Date(),
+        approvedBy: adminId,
+        rejectionReason: null
+      },
+      include: { user: true }
+    });
+    if (profile?.user?.email) {
+      sendProfileApprovedEmail(profile.user.email, profile.firstName || 'User');
+    }
+    res.json({ message: 'Profile approved', profile });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to approve profile.' });
+  }
+};
+
+exports.rejectProfile = async (req, res) => {
+  try {
+    const profileId = parseInt(req.params.id, 10);
+    const { reason } = req.body;
+    if (!reason) return res.status(400).json({ error: 'Rejection reason required.' });
+    const profile = await prisma.profile.update({
+      where: { id: profileId },
+      data: {
+        approvalStatus: 'rejected',
+        isActive: false,
+        approvedAt: null,
+        approvedBy: null,
+        rejectionReason: reason
+      },
+      include: { user: true }
+    });
+    if (profile?.user?.email) {
+      sendProfileRejectedEmail(profile.user.email, profile.firstName || 'User', reason);
+    }
+    res.json({ message: 'Profile rejected', profile });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to reject profile.' });
+  }
+};
+
+exports.getPendingProfiles = async (req, res) => {
+  try {
+    const profiles = await prisma.profile.findMany({ where: { approvalStatus: 'pending' } });
+    res.json(profiles);
+  } catch (err) { res.status(500).json({ error: err.message || 'Failed to fetch pending profiles.' }); }
+};
+exports.getApprovedProfiles = async (req, res) => {
+  try { const profiles = await prisma.profile.findMany({ where: { approvalStatus: 'approved' } }); res.json(profiles); } catch (err) { res.status(500).json({ error: err.message || 'Failed to fetch approved profiles.' }); }
+};
+exports.getRejectedProfiles = async (req, res) => {
+  try { const profiles = await prisma.profile.findMany({ where: { approvalStatus: 'rejected' } }); res.json(profiles); } catch (err) { res.status(500).json({ error: err.message || 'Failed to fetch rejected profiles.' }); }
 };

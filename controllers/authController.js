@@ -78,7 +78,9 @@ exports.registerJobSeeker = async (req, res) => {
             certifications,
             educationLevel,
             languages,
-            experienceLevel
+            experienceLevel,
+            approvalStatus: 'pending',
+            isActive: false
           }
         }
       },
@@ -160,4 +162,4 @@ exports.login = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message || 'Login failed.' });
   }
-}; 
+};

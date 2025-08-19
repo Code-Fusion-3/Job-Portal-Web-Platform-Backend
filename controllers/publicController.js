@@ -15,7 +15,9 @@ exports.getPublicJobSeekers = async (req, res) => {
     const whereClause = {
       role: 'jobseeker',
       profile: {
-        isNot: null
+        isNot: null,
+        approvalStatus: 'approved',
+        isActive: true
       }
     };
 
@@ -306,7 +308,7 @@ exports.getPublicJobSeekerById = async (req, res) => {
         createdAt: true
       }
     });
-    if (!user || !user.profile) {
+    if (!user || !user.profile || user.profile.approvalStatus !== 'approved' || !user.profile.isActive) {
       return res.status(404).json({ error: 'Job seeker not found.' });
     }
     // Anonymize the name, return all other profile fields except contact info
@@ -344,4 +346,4 @@ exports.getPublicJobSeekerById = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to fetch job seeker.' });
   }
-}; 
+};

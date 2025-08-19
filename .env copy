@@ -1,0 +1,10 @@
+JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
+REDIS_URL = "rediss://default:a2abe246cf7b46f4be178cbbbc341c27@gusc1-first-seagull-32179.upstash.io:32179"
+GMAIL_USER="infofonepo@gmail.com"
+GMAIL_APP_PASSWORD="zaoxwuezfjpglwjb"
+DATABASE_URL="postgresql://root:xnmd1emIagml4Jq3R9AsjScp7kBfDbmk@dpg-d2eqj5ndiees7385om20-a.oregon-postgres.render.com/job_portal_db_oo76?schema=public&sslmode=require"
+# DATABASE_URL="postgresql://postgres:postgres@localhost:5432/job_portal"
+PORT=3000
+ADMIN_EMAIL="abayosincere11@gmail.com"
+FRONTEND_URL="http://localhost:5173"
+BACKEND_URL="https://job-portal-backend-cfk4.onrender.com"
