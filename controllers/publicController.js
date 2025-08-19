@@ -11,91 +11,81 @@ exports.getPublicJobSeekers = async (req, res) => {
     // Filter parameters
     const { categoryId, skills, experience, location } = req.query;
     
-    // Build where clause
-    const whereClause = {
-      role: 'jobseeker',
-      profile: {
-        is: {
-          approvalStatus: 'approved',
-          isActive: true,
-        },
-      },
+    // Build where clause (query profiles directly)
+    const profileWhere = {
+      approvalStatus: 'approved',
+      isActive: true,
+      user: {
+        is: { role: 'jobseeker' }
+      }
     };
 
     if (categoryId) {
-      whereClause.profile.is.jobCategoryId = parseInt(categoryId, 10);
+      profileWhere.jobCategoryId = parseInt(categoryId, 10);
     }
 
     if (skills) {
-      whereClause.profile.is.skills = {
+      profileWhere.skills = {
         contains: skills,
         mode: 'insensitive'
       };
     }
 
     if (experience) {
-      whereClause.profile.is.experience = {
+      profileWhere.experience = {
         contains: experience,
         mode: 'insensitive'
       };
     }
 
     if (location) {
-      whereClause.profile.is.location = {
+      profileWhere.location = {
         contains: location,
         mode: 'insensitive'
       };
     }
 
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where: whereClause,
+    const [profiles, total] = await Promise.all([
+      prisma.profile.findMany({
+        where: profileWhere,
         select: {
-          id: true,
-          profile: {
-            select: {
-              firstName: true,
-              lastName: true,
-              gender: true,
-              skills: true,
-              experience: true,
-              experienceLevel: true,
-              location: true,
-              city: true,
-              country: true,
-              jobCategory: {
-                select: {
-                  name_en: true,
-                  name_rw: true
-                }
-              }
-            }
+          firstName: true,
+          lastName: true,
+          gender: true,
+          skills: true,
+          experience: true,
+          experienceLevel: true,
+          location: true,
+          city: true,
+          country: true,
+          jobCategory: {
+            select: { name_en: true, name_rw: true }
           },
-          createdAt: true
+          user: {
+            select: { id: true, createdAt: true }
+          },
         },
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { user: { createdAt: 'desc' } },
       }),
-      prisma.user.count({
-        where: whereClause
-      })
+      prisma.profile.count({ where: profileWhere })
     ]);
 
     // Anonymize the data
-    const anonymizedUsers = users.map((user, index) => ({
-      id: `JS${user.id.toString().padStart(4, '0')}`, // Anonymized ID
-      firstName: user.profile.firstName.charAt(0) + '*'.repeat(user.profile.firstName.length - 1),
-      lastName: user.profile.lastName.charAt(0) + '*'.repeat(user.profile.lastName.length - 1),
-      gender: user.profile.gender,
-      skills: user.profile.skills,
-      experience: user.profile.experience,
-      experienceLevel: user.profile.experienceLevel,
-      location: user.profile.location,
-      city: user.profile.city,
-      country: user.profile.country,
-      jobCategory: user.profile.jobCategory,
-      memberSince: user.createdAt
+    const anonymizedUsers = profiles.map((p) => ({
+      id: `JS${p.user.id.toString().padStart(4, '0')}`, // Anonymized ID
+      firstName: p.firstName.charAt(0) + '*'.repeat(p.firstName.length - 1),
+      lastName: p.lastName.charAt(0) + '*'.repeat(p.lastName.length - 1),
+      gender: p.gender,
+      skills: p.skills,
+      experience: p.experience,
+      experienceLevel: p.experienceLevel,
+      location: p.location,
+      city: p.city,
+      country: p.country,
+      jobCategory: p.jobCategory,
+      memberSince: p.user.createdAt
     }));
 
     res.json({
