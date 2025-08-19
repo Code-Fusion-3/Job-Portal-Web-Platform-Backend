@@ -15,32 +15,33 @@ exports.getPublicJobSeekers = async (req, res) => {
     const whereClause = {
       role: 'jobseeker',
       profile: {
-        isNot: null,
-        approvalStatus: 'approved',
-        isActive: true
-      }
+        is: {
+          approvalStatus: 'approved',
+          isActive: true,
+        },
+      },
     };
 
     if (categoryId) {
-      whereClause.profile.jobCategoryId = parseInt(categoryId, 10);
+      whereClause.profile.is.jobCategoryId = parseInt(categoryId, 10);
     }
 
     if (skills) {
-      whereClause.profile.skills = {
+      whereClause.profile.is.skills = {
         contains: skills,
         mode: 'insensitive'
       };
     }
 
     if (experience) {
-      whereClause.profile.experience = {
+      whereClause.profile.is.experience = {
         contains: experience,
         mode: 'insensitive'
       };
     }
 
     if (location) {
-      whereClause.profile.location = {
+      whereClause.profile.is.location = {
         contains: location,
         mode: 'insensitive'
       };
@@ -265,7 +266,7 @@ exports.getPublicJobSeekerById = async (req, res) => {
     if (isNaN(userId)) {
       return res.status(400).json({ error: 'Invalid job seeker ID.' });
     }
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: { id: userId, role: 'jobseeker' },
       select: {
         id: true,
@@ -297,6 +298,8 @@ exports.getPublicJobSeekerById = async (req, res) => {
             educationLevel: true,
             languages: true,
             experienceLevel: true,
+            approvalStatus: true,
+            isActive: true,
             jobCategory: {
               select: {
                 name_en: true,
