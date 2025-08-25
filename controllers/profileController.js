@@ -481,7 +481,7 @@ exports.adminUpdateJobSeeker = async (req, res) => {
   }
 };
 
-// Admin: Approval workflow endpoints
+// approve profile
 exports.approveProfile = async (req, res) => {
   try {
     const profileId = parseInt(req.params.id, 10);
@@ -497,20 +497,29 @@ exports.approveProfile = async (req, res) => {
       },
       include: { user: true }
     });
+    
+    // ✅ Enhanced error handling for email
     if (profile?.user?.email) {
-      sendProfileApprovedEmail(profile.user.email, profile.firstName || 'User');
+      try {
+        await sendProfileApprovedEmail(profile.user.email, profile.firstName || 'User');
+      } catch (emailError) {
+        console.error('Failed to send approval email:', emailError);
+        // Continue with approval even if email fails
+      }
     }
+    
     res.json({ message: 'Profile approved', profile });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to approve profile.' });
   }
 };
-
+// reject profile
 exports.rejectProfile = async (req, res) => {
   try {
     const profileId = parseInt(req.params.id, 10);
     const { reason } = req.body;
     if (!reason) return res.status(400).json({ error: 'Rejection reason required.' });
+    
     const profile = await prisma.profile.update({
       where: { id: profileId },
       data: {
@@ -522,15 +531,23 @@ exports.rejectProfile = async (req, res) => {
       },
       include: { user: true }
     });
+    
+    // ✅ Enhanced error handling for email
     if (profile?.user?.email) {
-      sendProfileRejectedEmail(profile.user.email, profile.firstName || 'User', reason);
+      try {
+        await sendProfileRejectedEmail(profile.user.email, profile.firstName || 'User', reason);
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+        // Continue with rejection even if email fails
+      }
     }
+    
     res.json({ message: 'Profile rejected', profile });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to reject profile.' });
   }
 };
-
+// get pending profiles
 exports.getPendingProfiles = async (req, res) => {
   try {
     const profiles = await prisma.profile.findMany({ where: { approvalStatus: 'pending' } });
