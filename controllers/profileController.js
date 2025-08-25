@@ -1,5 +1,13 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const { getPrismaClient } = require('../utils/database');
+let prisma = null;
+
+// Initialize Prisma client
+const initPrisma = async () => {
+  if (!prisma) {
+    prisma = await getPrismaClient();
+  }
+  return prisma;
+};
 const bcrypt = require('bcrypt');
 const { sendWelcomeEmail, sendProfileApprovedEmail, sendProfileRejectedEmail } = require('../utils/mailer');
 
@@ -16,6 +24,7 @@ function resolvePhotoPath(file, existingPhoto) {
 // Get current user's profile (job seeker or admin)
 exports.getMyProfile = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const userId = req.user.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },

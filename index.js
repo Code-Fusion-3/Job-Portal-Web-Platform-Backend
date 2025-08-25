@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { redisClient } = require('./utils/redis');
+const { closePrismaConnections, checkDatabaseHealth } = require('./utils/database');
 const WebSocketServer = require('./websocket');
 
 const app = express();
@@ -81,4 +82,36 @@ global.wsServer = wsServer;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    const dbHealth = await checkDatabaseHealth();
+    const redisHealth = redisClient.isReady ? 'healthy' : 'unhealthy';
+    
+    // Test database operations if database is healthy
+    let dbOperations = null;
+    if (dbHealth.status === 'healthy') {
+      const { testDatabaseOperations } = require('./utils/database');
+      dbOperations = await testDatabaseOperations();
+    }
+    
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: dbHealth,
+      databaseOperations: dbOperations,
+      redis: redisHealth,
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    console.error('❌ Health check failed:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
 }); 

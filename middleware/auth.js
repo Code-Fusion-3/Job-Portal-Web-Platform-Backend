@@ -1,7 +1,15 @@
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require("@prisma/client");
+const { getPrismaClient } = require('../utils/database');
 
-const prisma = new PrismaClient();
+let prisma = null;
+
+// Initialize Prisma client
+const initPrisma = async () => {
+  if (!prisma) {
+    prisma = await getPrismaClient();
+  }
+  return prisma;
+};
 
 // Middleware to verify JWT token
 const authenticateToken = async (req, res, next) => {
@@ -13,6 +21,7 @@ const authenticateToken = async (req, res, next) => {
   }
 
   try {
+    const prisma = await initPrisma();
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

@@ -1,8 +1,16 @@
-const { PrismaClient } = require("@prisma/client");
+const { getPrismaClient } = require('../utils/database');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { sendWelcomeEmail } = require('../utils/mailer');
-const prisma = new PrismaClient();
+let prisma = null;
+
+// Initialize Prisma client
+const initPrisma = async () => {
+  if (!prisma) {
+    prisma = await getPrismaClient();
+  }
+  return prisma;
+};
 
 exports.registerJobSeeker = async (req, res) => {
   const { 
@@ -32,6 +40,7 @@ exports.registerJobSeeker = async (req, res) => {
   } = req.body;
   
   try {
+    const prisma = await initPrisma();
     // Only check for existing user by email if email is provided
     if (email) {
       const existing = await prisma.user.findUnique({ where: { email } });
@@ -116,6 +125,7 @@ exports.login = async (req, res) => {
   }
 
   try {
+    const prisma = await initPrisma();
     // Find user by email or phone
     let user = null;
     if (email) {

@@ -3,15 +3,19 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  // Add connection pooling configuration for MySQL
+  relationMode = "prisma"
+  // Enable Prisma's built-in connection pooling
+  directUrl    = env("DIRECT_URL")
 }
 
 model User {
   id               Int               @id @default(autoincrement())
-  email            String?           @unique
-  password         String
-  role             String
+  email            String?           @unique @db.VarChar(255)
+  password         String            @db.VarChar(255)
+  role             String            @db.VarChar(50)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   contacts         Contact[]
@@ -23,51 +27,51 @@ model User {
 model Profile {
   id              Int          @id @default(autoincrement())
   userId          Int          @unique
-  skills          String?
-  photo           String?
-  gender          String?
-  experience      String?
+  skills          String?      @db.Text
+  photo           String?      @db.VarChar(500)
+  gender          String?      @db.VarChar(20)
+  experience      String?      @db.VarChar(100)
   jobCategoryId   Int?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   dateOfBirth     DateTime?
-  description     String?
-  firstName       String
-  idNumber        String?
-  lastName        String
-  references      String?
-  city            String?
-  contactNumber   String
-  country         String?
-  location        String?
-  maritalStatus   String?
-  monthlyRate     String?
-  availability    String?
-  certifications  String?
-  educationLevel  String?
-  languages       String?
-  experienceLevel String?
-  approvalStatus  String       @default("pending") // pending | approved | rejected
+  description     String?      @db.Text
+  firstName       String       @db.VarChar(100)
+  idNumber        String?      @db.VarChar(20)
+  lastName        String       @db.VarChar(100)
+  references      String?      @db.Text
+  city            String?      @db.VarChar(100)
+  contactNumber   String       @db.VarChar(20)
+  country         String?      @db.VarChar(100)
+  location        String?      @db.VarChar(200)
+  maritalStatus   String?      @db.VarChar(20)
+  monthlyRate     String?      @db.VarChar(50)
+  availability    String?      @db.VarChar(100)
+  certifications  String?      @db.Text
+  educationLevel  String?      @db.VarChar(100)
+  languages       String?      @db.VarChar(200)
+  experienceLevel String?      @db.VarChar(100)
+  approvalStatus  String       @default("pending") @db.VarChar(20) // pending | approved | rejected
   isActive        Boolean      @default(false)
   approvedAt      DateTime?
   approvedBy      Int?
-  rejectionReason String?
+  rejectionReason String?      @db.Text
   jobCategory     JobCategory? @relation(fields: [jobCategoryId], references: [id])
   user            User         @relation(fields: [userId], references: [id])
 }
 
 model EmployerRequest {
   id                   Int       @id @default(autoincrement())
-  name                 String
-  email                String
-  message              String?
+  name                 String    @db.VarChar(255)
+  email                String    @db.VarChar(255)
+  message              String?   @db.Text
   selectedUserId       Int?
   createdAt            DateTime  @default(now())
-  priority             String    @default("normal")
-  status               String    @default("pending")
+  priority             String    @default("normal") @db.VarChar(20)
+  status               String    @default("pending") @db.VarChar(20)
   updatedAt            DateTime  @updatedAt
-  companyName          String?
-  phoneNumber          String?
+  companyName          String?   @db.VarChar(255)
+  phoneNumber          String?   @db.VarChar(20)
   requestedCandidateId Int?
   requestedCandidate   User?     @relation("RequestedCandidate", fields: [requestedCandidateId], references: [id])
   selectedUser         User?     @relation("SelectedUser", fields: [selectedUserId], references: [id])
@@ -78,13 +82,13 @@ model Message {
   id                Int             @id @default(autoincrement())
   employerRequestId Int
   fromAdmin         Boolean
-  employerEmail     String
-  content           String
+  employerEmail     String          @db.VarChar(255)
+  content           String          @db.Text
   createdAt         DateTime        @default(now())
-  attachmentName    String?
-  attachmentUrl     String?
+  attachmentName    String?         @db.VarChar(255)
+  attachmentUrl     String?         @db.VarChar(500)
   isRead            Boolean         @default(false)
-  messageType       String          @default("text")
+  messageType       String          @default("text") @db.VarChar(20)
   readAt            DateTime?
   updatedAt         DateTime        @updatedAt
   employerRequest   EmployerRequest @relation(fields: [employerRequestId], references: [id])
@@ -92,15 +96,15 @@ model Message {
 
 model Contact {
   id                   Int       @id @default(autoincrement())
-  name                 String
-  email                String
-  subject              String
-  message              String
-  status               String    @default("unread")
-  priority             String    @default("normal")
-  category             String    @default("general")
-  adminResponse        String?
-  adminResponseSubject String?
+  name                 String    @db.VarChar(255)
+  email                String    @db.VarChar(255)
+  subject              String    @db.VarChar(255)
+  message              String    @db.Text
+  status               String    @default("unread") @db.VarChar(20)
+  priority             String    @default("normal") @db.VarChar(20)
+  category             String    @default("general") @db.VarChar(50)
+  adminResponse        String?   @db.Text
+  adminResponseSubject String?   @db.VarChar(255)
   respondedBy          Int?
   respondedAt          DateTime?
   createdAt            DateTime  @default(now())
@@ -110,8 +114,8 @@ model Contact {
 
 model JobCategory {
   id        Int       @id @default(autoincrement())
-  name_en   String
-  name_rw   String
+  name_en   String    @db.VarChar(255)
+  name_rw   String    @db.VarChar(255)
   createdAt DateTime  @default(now())
   profiles  Profile[]
 }
