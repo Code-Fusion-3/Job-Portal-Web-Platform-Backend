@@ -154,6 +154,7 @@ exports.submitEmployerRequest = async (req, res) => {
 // Admin: Get all employer requests with pagination
 exports.getAllEmployerRequests = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -347,6 +348,7 @@ exports.getAllEmployerRequests = async (req, res) => {
 // Admin: Get request statistics
 exports.getRequestStats = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const { period = '30' } = req.query; // Default to last 30 days
     const days = parseInt(period);
     
@@ -449,6 +451,7 @@ exports.getRequestStats = async (req, res) => {
 // Admin: Get specific employer request with messages
 exports.getEmployerRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
 
     const request = await prisma.employerRequest.findUnique({
@@ -514,6 +517,7 @@ exports.getEmployerRequest = async (req, res) => {
 // Admin: Reply to employer request
 exports.replyToEmployerRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
     const { content } = req.body;
     const adminUser = req.user; // Get admin user from auth middleware
@@ -599,6 +603,7 @@ exports.replyToEmployerRequest = async (req, res) => {
 // Admin: Select a job seeker for employer request
 exports.selectJobSeekerForRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
     const { selectedUserId, detailsType = 'picture' } = req.body;
     const adminUser = req.user; // Get admin user from auth middleware
@@ -764,6 +769,7 @@ exports.selectJobSeekerForRequest = async (req, res) => {
 // Admin: Approve employer request
 exports.approveEmployerRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
     const { adminNotes } = req.body;
 
@@ -883,6 +889,7 @@ exports.approveEmployerRequest = async (req, res) => {
 // Admin: Update request status
 exports.updateRequestStatus = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
     const { status, priority, adminNotes } = req.body;
 

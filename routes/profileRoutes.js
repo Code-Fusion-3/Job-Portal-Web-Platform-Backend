@@ -4,6 +4,12 @@ const profileController = require('../controllers/profileController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { uploadProfilePhoto, handleUploadError } = require('../middleware/upload');
 
+// Debug endpoint (temporary - remove in production)
+router.get('/debug', profileController.debugDatabase);
+
+// Test query endpoint (temporary - remove in production)
+router.get('/test-query', profileController.testQuery);
+
 // Get current user's profile (job seeker or admin)
 router.get('/me', authenticateToken, profileController.getMyProfile);
 
