@@ -381,8 +381,6 @@ exports.adminGetAllJobSeekers = async (req, res) => {
     // Build count where clause (same as above)
     const countWhereClause = { ...whereClause };
     
-    console.log('🔍 adminGetAllJobSeekers query:', JSON.stringify(whereClause, null, 2));
-    
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where: whereClause,
@@ -401,12 +399,6 @@ exports.adminGetAllJobSeekers = async (req, res) => {
         where: countWhereClause
       })
     ]);
-
-    // Log for debugging
-    console.log(`🔍 adminGetAllJobSeekers: Found ${users.length} users out of ${total} total`);
-    if (users.length > 0) {
-      console.log('🔍 First user structure:', JSON.stringify(users[0], null, 2));
-    }
 
     res.json({
       users,
@@ -623,115 +615,5 @@ exports.getRejectedProfiles = async (req, res) => {
     res.json(profiles); 
   } catch (err) { 
     res.status(500).json({ error: err.message || 'Failed to fetch rejected profiles.' }); 
-  }
-};
-
-// Debug endpoint to see what's in the database
-exports.debugDatabase = async (req, res) => {
-  try {
-    const prisma = await initPrisma();
-    
-    // Get all users with their roles
-    const allUsers = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        profile: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            approvalStatus: true
-          }
-        }
-      },
-      orderBy: { id: 'asc' }
-    });
-
-    // Get all profiles
-    const allProfiles = await prisma.profile.findMany({
-      select: {
-        id: true,
-        userId: true,
-        firstName: true,
-        lastName: true,
-        approvalStatus: true
-      },
-      orderBy: { id: 'asc' }
-    });
-
-    // Get users with jobseeker role
-    const jobSeekers = await prisma.user.findMany({
-      where: { role: 'jobseeker' },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        profile: true
-      }
-    });
-
-    res.json({
-      debug: {
-        allUsers,
-        allProfiles,
-        jobSeekers,
-        userCount: allUsers.length,
-        profileCount: allProfiles.length,
-        jobSeekerCount: jobSeekers.length
-      }
-    });
-  } catch (err) {
-    console.error('❌ debugDatabase error:', err);
-    res.status(500).json({ error: err.message || 'Failed to debug database.' });
-  }
-};
-
-// Simple test endpoint to debug the basic query
-exports.testQuery = async (req, res) => {
-  try {
-    const prisma = await initPrisma();
-    
-    // Test 1: Get all users with jobseeker role
-    const jobSeekersOnly = await prisma.user.findMany({
-      where: { role: 'jobseeker' },
-      select: { id: true, email: true, role: true }
-    });
-
-    // Test 2: Get all users with jobseeker role and include profiles
-    const jobSeekersWithProfiles = await prisma.user.findMany({
-      where: { role: 'jobseeker' },
-      include: { profile: true }
-    });
-
-    // Test 3: Get all users with jobseeker role and profiles (using the same logic as adminGetAllJobSeekers)
-    const testQuery = await prisma.user.findMany({
-      where: { role: 'jobseeker' },
-      include: {
-        profile: {
-          include: {
-            jobCategory: true
-          }
-        }
-      }
-    });
-
-    res.json({
-      test: {
-        jobSeekersOnly,
-        jobSeekersWithProfiles,
-        testQuery,
-        counts: {
-          jobSeekersOnly: jobSeekersOnly.length,
-          jobSeekersWithProfiles: jobSeekersWithProfiles.length,
-          testQuery: testQuery.length
-        }
-      }
-    });
-  } catch (err) {
-    console.error('❌ testQuery error:', err);
-    res.status(500).json({ error: err.message || 'Failed to test query.' });
   }
 };

@@ -93,7 +93,7 @@ const wsServer = new WebSocketServer(server);
 global.wsServer = wsServer;
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  // console.log(`Server running on port ${PORT}`);
 });
 
 // Health check endpoint
