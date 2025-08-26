@@ -1,12 +1,24 @@
-const { PrismaClient } = require("@prisma/client");
+const { getPrismaClient } = require('../utils/database');
+const bcrypt = require('bcrypt');
+const { generateRandomPassword } = require('../utils/passwordGenerator');
+const { getAnonymizedJobSeekerData } = require('../utils/dataAnonymizer');
 const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/mailer');
 const { getAdminEmail } = require('../utils/adminUtils');
 
-const prisma = new PrismaClient();
+let prisma = null;
+
+// Initialize Prisma client
+const initPrisma = async () => {
+  if (!prisma) {
+    prisma = await getPrismaClient();
+  }
+  return prisma;
+};
 
 // Public: Submit employer request (no login required)
 exports.submitEmployerRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const { name, email, phoneNumber, companyName, message, requestedCandidateId, priority } = req.body;
 
     if (!name || !email) {
@@ -25,15 +37,57 @@ exports.submitEmployerRequest = async (req, res) => {
       }
     }
 
+    // Check if employer account exists, if not create one
+    let employerAccount = await prisma.employerAccount.findUnique({
+      where: { email }
+    });
+
+    if (!employerAccount) {
+      // Generate random password in abc@123 format
+      const randomPassword = generateRandomPassword();
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+      // Create user record
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name,
+          role: 'employer'
+        }
+      });
+
+      // Create employer account
+      employerAccount = await prisma.employerAccount.create({
+        data: {
+          userId: user.id,
+          phoneNumber,
+          companyName
+        }
+      });
+
+      // Store the plain password temporarily for email
+      employerAccount.plainPassword = randomPassword;
+    }
+
+    // Create employer request linked to account
     const employerRequest = await prisma.employerRequest.create({
       data: {
-        name,
-        email,
-        phoneNumber,
-        companyName,
+        employerAccountId: employerAccount.id,
         message,
         requestedCandidateId: requestedCandidateId ? parseInt(requestedCandidateId, 10) : null,
         priority: priority || 'normal'
+      }
+    });
+
+    // Create initial progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: employerRequest.id,
+        stage: 'request_received',
+        status: 'completed',
+        description: 'Employer request received and under review',
+        completedAt: new Date()
       }
     });
 
@@ -42,8 +96,24 @@ exports.submitEmployerRequest = async (req, res) => {
       const adminEmail = await getAdminEmail();
       // Send to admin
       await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, adminEmail, priority);
-      // Send to employer (copy)
-      await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, email, priority);
+      
+      // Send to employer with login credentials if new account
+      if (employerAccount.plainPassword) {
+        await sendEmployerRequestNotification(
+          name, 
+          email, 
+          message, 
+          phoneNumber, 
+          companyName, 
+          requestedCandidateId, 
+          email, 
+          priority,
+          employerAccount.plainPassword // Pass the plain password for email
+        );
+      } else {
+        // Send regular notification for existing accounts
+        await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, email, priority);
+      }
     } catch (emailError) {
       console.error('Failed to send employer request notification:', emailError);
       // Continue even if email fails
@@ -55,10 +125,27 @@ exports.submitEmployerRequest = async (req, res) => {
       // global.wsServer.notifyDashboardUpdate();
     }
 
-    res.status(201).json({
+    // Prepare response with login credentials if new account was created
+    const response = {
       message: 'Employer request submitted successfully',
-      request: employerRequest
-    });
+      request: {
+        id: employerRequest.id,
+        status: employerRequest.status,
+        priority: employerRequest.priority,
+        createdAt: employerRequest.createdAt
+      }
+    };
+
+    // If this is a new account, include login credentials
+    if (employerAccount.plainPassword) {
+      response.loginCredentials = {
+        email,
+        password: employerAccount.plainPassword,
+        message: 'Your account has been created. Please save these credentials to access your dashboard.'
+      };
+    }
+
+    res.status(201).json(response);
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to submit request.' });
   }
@@ -162,7 +249,7 @@ exports.getAllEmployerRequests = async (req, res) => {
       prisma.employerRequest.count({ where: whereClause })
     ]);
 
-    // Get requested candidate details for each request
+    // Get requested candidate details for each request with anonymization
     const requestsWithCandidateDetails = await Promise.all(
       requests.map(async (request) => {
         if (request.requestedCandidateId) {
@@ -203,9 +290,13 @@ exports.getAllEmployerRequests = async (req, res) => {
               }
             }
           });
+          
+          // Apply anonymization based on current access level
+          const anonymizedCandidate = getAnonymizedJobSeekerData(candidate, request);
+          
           return {
             ...request,
-            requestedCandidate: candidate
+            requestedCandidate: anonymizedCandidate
           };
         }
         return request;

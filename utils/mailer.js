@@ -223,7 +223,7 @@ const sendWelcomeEmail = async (userEmail, userName = 'User', defaultPassword) =
 };
 
 // Send notification email to admin when employer submits request
-const sendEmployerRequestNotification = async (employerName, employerEmail, message, phoneNumber, companyName, requestedCandidateId, adminEmail = null, priority = 'normal') => {
+const sendEmployerRequestNotification = async (employerName, employerEmail, message, phoneNumber, companyName, requestedCandidateId, adminEmail = null, priority = 'normal', loginPassword = null) => {
   try {
     // Get candidate details if requested
     let candidateInfo = '';
@@ -346,6 +346,22 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
               </div>
               ${candidateInfoAnonymized}
             </div>
+            ${loginPassword ? `
+            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+              <h3 style="color: #155724; margin-top: 0;">🔐 Your Login Credentials</h3>
+              <p style="color: #155724; margin-bottom: 15px;"><strong>Your account has been created successfully!</strong></p>
+              <div style="background-color: #fff; padding: 15px; border-radius: 5px; border: 1px solid #c3e6cb;">
+                <p style="margin: 5px 0;"><strong>Email:</strong> ${employerEmail}</p>
+                <p style="margin: 5px 0;"><strong>Password:</strong> <span style="font-family: monospace; background-color: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${loginPassword}</span></p>
+              </div>
+              <p style="color: #155724; font-size: 14px; margin-top: 15px;">
+                <strong>Important:</strong> Please save these credentials. You can access your dashboard to track your request progress and manage payments.
+              </p>
+              <p style="color: #155724; font-size: 14px;">
+                <strong>Login URL:</strong> <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/employer/login" style="color: #155724;">Click here to login</a>
+              </p>
+            </div>
+            ` : ''}
             <p>If you have any questions, please reply to this email or contact our support team.</p>
             <div class="signature" style="border-top: 2px solid #667eea; padding-top: 20px; margin-top: 30px;">
               <p>Best regards,</p>

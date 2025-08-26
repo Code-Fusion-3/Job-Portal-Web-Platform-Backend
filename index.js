@@ -70,6 +70,18 @@ app.use('/settings', require('./routes/settingsRoutes'));
 app.use('/security', require('./routes/securityRoutes'));
 // Contact routes
 app.use('/contact', require('./routes/contactRoutes'));
+// Payment routes
+app.use('/payments', require('./routes/paymentRoutes'));
+// Payment method routes
+app.use('/payment-methods', require('./routes/paymentMethodRoutes'));
+// Payment confirmation routes
+app.use('/payment-confirmations', require('./routes/paymentConfirmationRoutes'));
+// Request history and reporting routes
+app.use('/request-history', require('./routes/requestHistoryRoutes'));
+// Dashboard analytics routes
+app.use('/dashboard', require('./routes/dashboardAnalyticsRoutes'));
+// Employer authentication routes
+app.use('/employer/auth', require('./routes/employerAuthRoutes'));
 
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);

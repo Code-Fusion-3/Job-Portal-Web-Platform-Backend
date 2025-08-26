@@ -23,21 +23,55 @@ const authenticateToken = async (req, res, next) => {
   try {
     const prisma = await initPrisma();
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        profile: true,
-      }
-    });
+    
+    // Handle different user types
+    if (decoded.role === 'employer') {
+      // For employers, get account details
+      const employerAccount = await prisma.employerAccount.findUnique({
+        where: { id: decoded.accountId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          }
+        }
+      });
 
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
+      if (!employerAccount) {
+        return res.status(401).json({ error: 'Employer account not found' });
+      }
+
+      req.user = {
+        ...decoded,
+        id: employerAccount.user.id,
+        email: employerAccount.user.email,
+        name: employerAccount.user.name,
+        accountId: employerAccount.id,
+        companyName: employerAccount.companyName,
+        phoneNumber: employerAccount.phoneNumber
+      };
+    } else {
+      // For regular users (admin, jobseeker)
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          profile: true,
+        }
+      });
+
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      req.user = user;
     }
 
-    req.user = user;
     next();
   } catch (error) {
     return res.status(403).json({ error: 'Invalid or expired token' });
@@ -60,8 +94,17 @@ const requireJobSeeker = (req, res, next) => {
   next();
 };
 
+// Middleware to check if user is employer
+const requireEmployer = (req, res, next) => {
+  if (req.user.role !== 'employer') {
+    return res.status(403).json({ error: 'Employer access required' });
+  }
+  next();
+};
+
 module.exports = {
   authenticateToken,
   requireAdmin,
-  requireJobSeeker
+  requireJobSeeker,
+  requireEmployer
 }; 
