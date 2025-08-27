@@ -8,14 +8,22 @@
  * @param {string} name - Full name to anonymize
  * @returns {string} Anonymized name (e.g., "John Doe" -> "J*** D**")
  */
+// TO DO:
+// - Always use exactly two stars "**" after the first letter of each name part, regardless of length
+// - If only one part, apply to that part
+// - If more than two parts, only anonymize the first two, ignore the rest
+
 function anonymizeName(name) {
   if (!name || typeof name !== 'string') return '';
   
   const parts = name.trim().split(' ');
   if (parts.length >= 2) {
-    return `${parts[0].charAt(0)}${'*'.repeat(parts[0].length - 1)} ${parts[1].charAt(0)}${'*'.repeat(parts[1].length - 1)}`;
+    // Only anonymize first two parts, ignore the rest
+    return `${parts[0].charAt(0)}** ${parts[1].charAt(0)}**`;
+  } else if (parts.length === 1 && parts[0].length > 0) {
+    return `${parts[0].charAt(0)}**`;
   } else {
-    return `${parts[0].charAt(0)}${'*'.repeat(parts[0].length - 1)}`;
+    return '';
   }
 }
 

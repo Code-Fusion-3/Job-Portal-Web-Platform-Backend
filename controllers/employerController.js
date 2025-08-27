@@ -1,7 +1,7 @@
 const { getPrismaClient } = require('../utils/database');
+const { getAnonymizedJobSeekerData } = require('../utils/dataAnonymizer');
 const bcrypt = require('bcrypt');
 const { generateRandomPassword } = require('../utils/passwordGenerator');
-const { getAnonymizedJobSeekerData } = require('../utils/dataAnonymizer');
 const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/mailer');
 const { getAdminEmail } = require('../utils/adminUtils');
 
@@ -1131,7 +1131,31 @@ exports.getEmployerDashboard = async (req, res) => {
                 lastName: true,
                 skills: true,
                 experience: true,
-                photo: true
+                experienceLevel: true,
+                photo: true,
+                location: true,
+                city: true,
+                country: true,
+                contactNumber: true,
+                monthlyRate: true,
+                jobCategoryId: true,
+                educationLevel: true,
+                availability: true,
+                languages: true,
+                certifications: true,
+                description: true,
+                gender: true,
+                maritalStatus: true,
+                idNumber: true,
+                references: true,
+                dateOfBirth: true,
+                jobCategory: {
+                  select: {
+                    id: true,
+                    name_en: true,
+                    name_rw: true
+                  }
+                }
               }
             }
           }
@@ -1144,7 +1168,31 @@ exports.getEmployerDashboard = async (req, res) => {
                 lastName: true,
                 skills: true,
                 experience: true,
-                photo: true
+                experienceLevel: true,
+                photo: true,
+                location: true,
+                city: true,
+                country: true,
+                contactNumber: true,
+                monthlyRate: true,
+                jobCategoryId: true,
+                educationLevel: true,
+                availability: true,
+                languages: true,
+                certifications: true,
+                description: true,
+                gender: true,
+                maritalStatus: true,
+                idNumber: true,
+                references: true,
+                dateOfBirth: true,
+                jobCategory: {
+                  select: {
+                    id: true,
+                    name_en: true,
+                    name_rw: true
+                  }
+                }
               }
             }
           }
@@ -1195,7 +1243,7 @@ exports.getEmployerDashboard = async (req, res) => {
       totalPayments: requests.reduce((sum, r) => sum + r._count.payments, 0)
     };
 
-    // Process requests to anonymize sensitive data
+    // Process requests using proper anonymization utility
     const processedRequests = requests.map(request => {
       const requestData = {
         id: request.id,
@@ -1220,55 +1268,56 @@ exports.getEmployerDashboard = async (req, res) => {
         latestProgress: request.requestProgress[0] || null
       };
 
-      // Add candidate information based on access level
+      // Add candidate information using proper anonymization utility
       if (request.requestedCandidate) {
-        if (request.imageAccessGranted) {
-          requestData.candidate = {
-            id: request.requestedCandidate.id,
-            name: `${request.requestedCandidate.profile?.firstName?.charAt(0)}*** ${request.requestedCandidate.profile?.lastName?.charAt(0)}***`,
-            skills: request.requestedCandidate.profile?.skills || 'Not specified',
-            experience: request.requestedCandidate.profile?.experience || 'Not specified',
-            photo: request.requestedCandidate.profile?.photo || null
-          };
-        } else if (request.contactAccessGranted) {
-          requestData.candidate = {
-            id: request.requestedCandidate.id,
-            name: `${request.requestedCandidate.profile?.firstName?.charAt(0)}*** ${request.requestedCandidate.profile?.lastName?.charAt(0)}***`,
-            skills: request.requestedCandidate.profile?.skills || 'Not specified',
-            experience: request.requestedCandidate.profile?.experience || 'Not specified',
-            photo: null // No photo access yet
-          };
-        } else {
-          // No access granted - show anonymized data
-          requestData.candidate = {
-            id: request.requestedCandidate.id,
-            name: '*** ***',
-            skills: request.requestedCandidate.profile?.skills || 'Not specified',
-            experience: request.requestedCandidate.profile?.experience || 'Not specified',
-            photo: null
-          };
-        }
+        const anonymizedCandidate = getAnonymizedJobSeekerData(request.requestedCandidate, request);
+        requestData.candidate = {
+          id: anonymizedCandidate.id,
+          name: `${anonymizedCandidate.profile.firstName} ${anonymizedCandidate.profile.lastName}`,
+          skills: anonymizedCandidate.profile.skills || 'Not specified',
+          experience: anonymizedCandidate.profile.experience || 'Not specified',
+          experienceLevel: anonymizedCandidate.profile.experienceLevel || 'Not specified',
+          educationLevel: anonymizedCandidate.profile.educationLevel || 'Not specified',
+          location: anonymizedCandidate.profile.location || 'Not specified',
+          city: anonymizedCandidate.profile.city || 'Not specified',
+          country: anonymizedCandidate.profile.country || 'Not specified',
+          gender: anonymizedCandidate.profile.gender || 'Not specified',
+          monthlyRate: anonymizedCandidate.profile.monthlyRate || 'Not specified',
+          availability: anonymizedCandidate.profile.availability || 'Not specified',
+          languages: anonymizedCandidate.profile.languages || 'Not specified',
+          certifications: anonymizedCandidate.profile.certifications || 'Not specified',
+          description: anonymizedCandidate.profile.description || 'Not specified',
+          photo: anonymizedCandidate.profile.photo,
+          contactNumber: anonymizedCandidate.profile.contactNumber,
+          accessLevel: anonymizedCandidate.accessLevel,
+          accessGranted: anonymizedCandidate.accessGranted
+        };
       }
 
       // Add selected user information if different from requested candidate
       if (request.selectedUser && request.selectedUser.id !== request.requestedCandidate?.id) {
-        if (request.imageAccessGranted) {
-          requestData.selectedUser = {
-            id: request.selectedUser.id,
-            name: `${request.selectedUser.profile?.firstName?.charAt(0)}*** ${request.selectedUser.profile?.lastName?.charAt(0)}***`,
-            skills: request.selectedUser.profile?.skills || 'Not specified',
-            experience: request.selectedUser.profile?.experience || 'Not specified',
-            photo: request.selectedUser.profile?.photo || null
-          };
-        } else {
-          requestData.selectedUser = {
-            id: request.selectedUser.id,
-            name: '*** ***',
-            skills: request.selectedUser.profile?.skills || 'Not specified',
-            experience: request.selectedUser.profile?.experience || 'Not specified',
-            photo: null
-          };
-        }
+        const anonymizedSelectedUser = getAnonymizedJobSeekerData(request.selectedUser, request);
+        requestData.selectedUser = {
+          id: anonymizedSelectedUser.id,
+          name: `${anonymizedSelectedUser.profile.firstName} ${anonymizedSelectedUser.profile.lastName}`,
+          skills: anonymizedSelectedUser.profile.skills || 'Not specified',
+          experience: anonymizedSelectedUser.profile.experience || 'Not specified',
+          experienceLevel: anonymizedSelectedUser.profile.experienceLevel || 'Not specified',
+          educationLevel: anonymizedSelectedUser.profile.educationLevel || 'Not specified',
+          location: anonymizedSelectedUser.profile.location || 'Not specified',
+          city: anonymizedSelectedUser.profile.city || 'Not specified',
+          country: anonymizedSelectedUser.profile.country || 'Not specified',
+          gender: anonymizedSelectedUser.profile.gender || 'Not specified',
+          monthlyRate: anonymizedSelectedUser.profile.monthlyRate || 'Not specified',
+          availability: anonymizedSelectedUser.profile.availability || 'Not specified',
+          languages: anonymizedSelectedUser.profile.languages || 'Not specified',
+          certifications: anonymizedSelectedUser.profile.certifications || 'Not specified',
+          description: anonymizedSelectedUser.profile.description || 'Not specified',
+          photo: anonymizedSelectedUser.profile.photo,
+          contactNumber: anonymizedSelectedUser.profile.contactNumber,
+          accessLevel: anonymizedSelectedUser.accessLevel,
+          accessGranted: anonymizedSelectedUser.accessGranted
+        };
       }
 
       return requestData;
