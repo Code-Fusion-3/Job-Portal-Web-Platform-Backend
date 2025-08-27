@@ -38,12 +38,60 @@ exports.submitEmployerRequest = async (req, res) => {
     }
 
     // Check if employer account exists, if not create one
-    let employerAccount = await prisma.employerAccount.findUnique({
-      where: { email }
+    let employerAccount = null;
+    let existingUser = null;
+    
+    console.log(`🔍 Checking for existing user with email: ${email}`);
+    
+    // First, find the user by email
+    existingUser = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        employerAccounts: true
+      }
     });
 
+    if (existingUser) {
+      console.log(`✅ Found existing user: ${existingUser.id}, role: ${existingUser.role}, employer accounts: ${existingUser.employerAccounts.length}`);
+      
+      // User exists - check if they already have an employer account
+      if (existingUser.employerAccounts.length > 0) {
+        // User exists and has employer account(s)
+        employerAccount = existingUser.employerAccounts[0];
+        console.log(`✅ Using existing employer account: ${employerAccount.id}`);
+      } else if (existingUser.role === 'employer') {
+        // User exists with employer role but no employer account - create one
+        console.log(`🔄 Creating employer account for existing employer user`);
+        employerAccount = await prisma.employerAccount.create({
+          data: {
+            userId: existingUser.id,
+            phoneNumber,
+            companyName
+          }
+        });
+        console.log(`✅ Created employer account: ${employerAccount.id}`);
+      } else {
+        // User exists but with different role (e.g., jobseeker) - update role and create employer account
+        console.log(`🔄 Updating user role from ${existingUser.role} to employer and creating employer account`);
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { role: 'employer' }
+        });
+        
+        employerAccount = await prisma.employerAccount.create({
+          data: {
+            userId: existingUser.id,
+            phoneNumber,
+            companyName
+          }
+        });
+        console.log(`✅ Updated user role and created employer account: ${employerAccount.id}`);
+      }
+    }
+
     if (!employerAccount) {
-      // Generate random password in abc@123 format
+      // No existing user - create new user and employer account
+      console.log(`🆕 Creating new user and employer account`);
       const randomPassword = generateRandomPassword();
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
@@ -56,6 +104,7 @@ exports.submitEmployerRequest = async (req, res) => {
           role: 'employer'
         }
       });
+      console.log(`✅ Created new user: ${user.id}`);
 
       // Create employer account
       employerAccount = await prisma.employerAccount.create({
@@ -65,6 +114,7 @@ exports.submitEmployerRequest = async (req, res) => {
           companyName
         }
       });
+      console.log(`✅ Created new employer account: ${employerAccount.id}`);
 
       // Store the plain password temporarily for email
       employerAccount.plainPassword = randomPassword;
@@ -76,7 +126,12 @@ exports.submitEmployerRequest = async (req, res) => {
         employerAccountId: employerAccount.id,
         message,
         requestedCandidateId: requestedCandidateId ? parseInt(requestedCandidateId, 10) : null,
-        priority: priority || 'normal'
+        priority: priority || 'normal',
+        // Set default payment requirements
+        paymentRequired: true,
+        paymentAmount: 5000.00,
+        paymentCurrency: 'RWF',
+        paymentDescription: 'Initial non-refundable fee for worker/service details access'
       }
     });
 
@@ -86,8 +141,19 @@ exports.submitEmployerRequest = async (req, res) => {
         employerRequestId: employerRequest.id,
         stage: 'request_received',
         status: 'completed',
-        description: 'Employer request received and under review',
+        description: 'Employer request received and under review. Initial payment of 5,000 Frw required.',
         completedAt: new Date()
+      }
+    });
+
+    // Create payment required progress
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: employerRequest.id,
+        stage: 'payment_required',
+        status: 'pending',
+        description: 'Initial payment of 5,000 Frw required to proceed with worker details access.',
+        adminNotes: 'Employer needs to pay initial fee before receiving additional information'
       }
     });
 

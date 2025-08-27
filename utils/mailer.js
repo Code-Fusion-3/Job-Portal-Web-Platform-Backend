@@ -297,6 +297,15 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #2c3e50;">New Employer Request</h2>
             <p>A new employer request has been submitted. Please review the details below:</p>
+            
+            <!-- Payment Information for Admin -->
+            <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+              <h3 style="color: #856404; margin-top: 0;">💰 Payment Structure</h3>
+              <p style="color: #856404; margin-bottom: 15px;"><strong>Initial Fee:</strong> 5,000 Frw (non-refundable)</p>
+              <p style="color: #856404; margin-bottom: 15px;"><strong>Process:</strong> Initial payment → Additional details → Remaining payment → Connection</p>
+              <p style="color: #856404; font-size: 14px;">This information has been sent to the employer in both English and Kinyarwanda.</p>
+            </div>
+            
             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p><strong>Employer Name:</strong> ${employerName}</p>
               <p><strong>Employer Email:</strong> ${employerEmail}</p>
@@ -334,6 +343,38 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
             <h2 style="color: #2c3e50;">Thank You for Your Submission!</h2>
             <p>Dear ${employerName},</p>
             <p>We have received your employer request and our team will review it and get back to you within <strong>24-48 business hours</strong>.</p>
+            
+            <!-- Payment Information Section -->
+            <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+              <h3 style="color: #856404; margin-top: 0;">💰 Payment Information</h3>
+              
+              <!-- English Version -->
+              <div style="margin-bottom: 20px;">
+                <h4 style="color: #856404; margin-bottom: 10px;">🇬🇧 English</h4>
+                <p style="color: #856404; line-height: 1.6;">
+                  Sir, Madam, we have gladly received the service you need from us. Before you are given full information about this worker or service, you must first pay a non-refundable fee of <strong>5,000 Frw</strong>. After that, you will be given further details, and then you can pay the remaining amount as agreed. Finally, we will connect you with the person you needed.
+                </p>
+              </div>
+              
+              <!-- Kinyarwanda Version -->
+              <div style="margin-bottom: 20px;">
+                <h4 style="color: #856404; margin-bottom: 10px;">🇷🇼 Kinyarwanda</h4>
+                <p style="color: #856404; line-height: 1.6;">
+                  Bwana, Madam twakiriye neza service mudukeneyeho, mbere yuko muhabwa amakuru ahagije kuri uyu mukozi cg service murabanza kwishyura amafranga <strong>5000 Frw</strong> adasubizwa, nyuma muhabwe undi mwirondoro mubone kwishyura asigaye bitewe nuko byumvikanweho. Bwanyuma hazabaho kubahuza nuwo mwari mukeneye.
+                </p>
+              </div>
+              
+              <div style="background-color: #fff; padding: 15px; border-radius: 5px; border: 1px solid #ffeaa7;">
+                <p style="margin: 5px 0; color: #856404;"><strong>📋 Next Steps:</strong></p>
+                <ol style="color: #856404; margin: 5px 0; padding-left: 20px;">
+                  <li>Pay the initial fee of <strong>5,000 Frw</strong> (non-refundable)</li>
+                  <li>Receive additional details about the worker/service</li>
+                  <li>Pay the remaining amount as agreed</li>
+                  <li>Get connected with your requested worker</li>
+                </ol>
+              </div>
+            </div>
+            
             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p><strong>Submitted Details:</strong></p>
               <p><strong>Email:</strong> ${employerEmail}</p>
@@ -380,6 +421,108 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
     return true;
   } catch (error) {
     console.error('Error sending employer request notification:', error);
+    return false;
+  }
+};
+
+// Send payment request email to employer
+const sendPaymentRequestEmail = async (employerName, employerEmail, requestId, candidateName = null) => {
+  try {
+    const candidateInfo = candidateName ? `
+      <div style="background-color: #e8f4fd; padding: 15px; border-radius: 5px; margin: 15px 0;">
+        <p style="margin: 5px 0;"><strong>Requested Worker:</strong> ${candidateName}</p>
+        <p style="margin: 5px 0;"><strong>Request ID:</strong> #${requestId}</p>
+      </div>
+    ` : '';
+
+    const mailOptions = {
+      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      to: employerEmail,
+      subject: 'Payment Required - Job Portal',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">Payment Required</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Initial payment needed to proceed with your request</p>
+          </div>
+          
+          <div style="padding: 30px; background-color: #ffffff;">
+            <h2 style="color: #2c3e50;">Payment Required to Continue</h2>
+            <p>Dear ${employerName},</p>
+            
+            ${candidateInfo}
+            
+            <!-- Payment Information Section -->
+            <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+              <h3 style="color: #856404; margin-top: 0;">💰 Payment Required</h3>
+              
+              <!-- English Version -->
+              <div style="margin-bottom: 20px;">
+                <h4 style="color: #856404; margin-bottom: 10px;">🇬🇧 English</h4>
+                <p style="color: #856404; line-height: 1.6;">
+                  Sir, Madam, we have gladly received the service you need from us. Before you are given full information about this worker or service, you must first pay a non-refundable fee of <strong>5,000 Frw</strong>. After that, you will be given further details, and then you can pay the remaining amount as agreed. Finally, we will connect you with the person you needed.
+                </p>
+              </div>
+              
+              <!-- Kinyarwanda Version -->
+              <div style="margin-bottom: 20px;">
+                <h4 style="color: #856404; margin-bottom: 10px;">🇷🇼 Kinyarwanda</h4>
+                <p style="color: #856404; line-height: 1.6;">
+                  Bwana, Madam twakiriye neza service mudukeneyeho, mbere yuko muhabwa amakuru ahagije kuri uyu mukozi cg service murabanza kwishyura amafranga <strong>5000 Frw</strong> adasubizwa, nyuma muhabwe undi mwirondoro mubone kwishyura asigaye bitewe nuko byumvikanweho. Bwanyuma hazabaho kubahuza nuwo mwari mukeneye.
+                </p>
+              </div>
+            </div>
+            
+            <!-- Payment Instructions -->
+            <div style="background-color: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+              <h3 style="color: #155724; margin-top: 0;">📋 How to Proceed</h3>
+              <ol style="color: #155724; margin: 5px 0; padding-left: 20px;">
+                <li><strong>Pay the initial fee:</strong> 5,000 Frw (non-refundable)</li>
+                <li><strong>Contact us:</strong> Reply to this email with your payment confirmation</li>
+                <li><strong>Receive details:</strong> We'll provide additional information about the worker</li>
+                <li><strong>Pay remaining amount:</strong> As agreed upon</li>
+                <li><strong>Get connected:</strong> Direct connection with your requested worker</li>
+              </ol>
+            </div>
+            
+            <!-- Payment Methods -->
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #2c3e50; margin-top: 0;">💳 Payment Methods</h3>
+              <p>Please contact us to get the current payment details for:</p>
+              <ul style="color: #2c3e50; margin: 5px 0; padding-left: 20px;">
+                <li>Mobile Money (MTN, Airtel)</li>
+                <li>Bank Transfer</li>
+                <li>Other available methods</li>
+              </ul>
+            </div>
+            
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; border: 1px solid #ffeaa7;">
+              <p style="color: #856404; margin: 5px 0; font-size: 14px;">
+                <strong>⚠️ Important:</strong> This initial payment of 5,000 Frw is non-refundable and required to proceed with your request.
+              </p>
+            </div>
+            
+            <p>If you have any questions about the payment process, please reply to this email or contact our support team.</p>
+            
+            <div class="signature" style="border-top: 2px solid #dc3545; padding-top: 20px; margin-top: 30px;">
+              <p>Best regards,</p>
+              <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Job Portal Team</div>
+              <div class="signature-title" style="color: #dc3545; font-size: 14px;">Payment & Customer Success</div>
+            </div>
+          </div>
+          
+          <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Job Portal. Please do not reply to this email.</p>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Payment request email sent:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Error sending payment request email:', error);
     return false;
   }
 };
@@ -1261,5 +1404,6 @@ module.exports = {
   sendContactConfirmation,
   sendContactResponse,
   sendCandidatePictureNotification,
-  sendCandidateFullDetailsNotification
+  sendCandidateFullDetailsNotification,
+  sendPaymentRequestEmail
 }; 

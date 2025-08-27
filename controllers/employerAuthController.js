@@ -23,15 +23,71 @@ exports.createEmployerAccount = async (req, res) => {
     }
 
     // Check if employer account already exists
-    const existingAccount = await prisma.employerAccount.findUnique({
-      where: { email }
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        employerAccounts: true
+      }
     });
 
-    if (existingAccount) {
-      return res.status(409).json({ 
-        error: 'Employer account already exists with this email.',
-        accountId: existingAccount.id
-      });
+    if (existingUser) {
+      if (existingUser.employerAccounts.length > 0) {
+        return res.status(409).json({ 
+          error: 'Employer account already exists with this email.',
+          accountId: existingUser.employerAccounts[0].id
+        });
+      } else if (existingUser.role === 'employer') {
+        // User exists with employer role but no employer account - create one
+        const employerAccount = await prisma.employerAccount.create({
+          data: {
+            userId: existingUser.id,
+            phoneNumber,
+            companyName
+          }
+        });
+        
+        return res.status(200).json({
+          message: 'Employer account created successfully using existing user',
+          account: {
+            id: employerAccount.id,
+            email: existingUser.email,
+            name: existingUser.name,
+            companyName: employerAccount.companyName
+          },
+          loginCredentials: {
+            email: existingUser.email,
+            message: 'Please use your existing password to login.'
+          }
+        });
+      } else {
+        // User exists but with different role - update role and create employer account
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { role: 'employer' }
+        });
+        
+        const employerAccount = await prisma.employerAccount.create({
+          data: {
+            userId: existingUser.id,
+            phoneNumber,
+            companyName
+          }
+        });
+        
+        return res.status(200).json({
+          message: 'Employer account created successfully using existing user',
+          account: {
+            id: employerAccount.id,
+            email: existingUser.email,
+            name: existingUser.name,
+            companyName: employerAccount.companyName
+          },
+          loginCredentials: {
+            email: existingUser.email,
+            message: 'Please use your existing password to login.'
+          }
+        });
+      }
     }
 
     // Generate random password in abc@123 format
@@ -61,8 +117,8 @@ exports.createEmployerAccount = async (req, res) => {
       message: 'Employer account created successfully',
       account: {
         id: employerAccount.id,
-        email: employerAccount.email,
-        name: employerAccount.name,
+        email: user.email,
+        name: user.name,
         companyName: employerAccount.companyName
       },
       loginCredentials: {
@@ -89,7 +145,7 @@ exports.employerLogin = async (req, res) => {
     }
 
     // Find employer account
-    const employerAccount = await prisma.employerAccount.findUnique({
+    const employerAccount = await prisma.employerAccount.findFirst({
       where: { 
         user: { email } 
       },
@@ -106,7 +162,7 @@ exports.employerLogin = async (req, res) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, employerAccount.password);
+    const isValidPassword = await bcrypt.compare(password, employerAccount.user.password);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
@@ -122,7 +178,7 @@ exports.employerLogin = async (req, res) => {
       { 
         userId: employerAccount.userId, 
         accountId: employerAccount.id,
-        email: employerAccount.email,
+        email: employerAccount.user.email,
         role: 'employer' 
       },
       process.env.JWT_SECRET,
@@ -160,15 +216,16 @@ exports.changePassword = async (req, res) => {
 
     // Find employer account
     const employerAccount = await prisma.employerAccount.findUnique({
-      where: { id: accountId }
+      where: { id: accountId },
+      include: { user: true }
     });
 
     if (!employerAccount) {
       return res.status(404).json({ error: 'Employer account not found.' });
     }
 
-    // Verify current password
-    const isValidPassword = await bcrypt.compare(currentPassword, employerAccount.password);
+    // Verify current password from user table
+    const isValidPassword = await bcrypt.compare(currentPassword, employerAccount.user.password);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Current password is incorrect.' });
     }
