@@ -1,43 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const messagingController = require('../controllers/messagingController');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
-const { uploadMessageFile } = require('../middleware/upload');
+const { authenticateToken } = require('../middleware/auth');
 
-// Admin: Send message to employer (with file upload support)
-router.post('/admin/:id/send', 
-  authenticateToken, 
-  requireAdmin, 
-  uploadMessageFile.single('attachment'),
-  messagingController.sendAdminMessage
-);
+// All messaging routes require authentication
+router.use(authenticateToken);
 
-// Employer: Reply to admin message (public endpoint with file upload)
-router.post('/employer/:id/reply', 
-  uploadMessageFile.single('attachment'),
-  messagingController.sendEmployerReply
-);
+// Get messages for a specific request
+router.get('/request/:requestId', messagingController.getMessagesByRequest);
 
-// Get conversation (admin or employer with email)
-router.get('/conversation/:id', messagingController.getConversation);
+// Send a message
+router.post('/request/:requestId', messagingController.sendMessage);
 
 // Mark messages as read
-router.post('/conversation/:id/read', 
-  authenticateToken, 
-  messagingController.markAsRead
-);
+router.patch('/request/:requestId/read', messagingController.markMessagesAsRead);
 
-// Get unread message count
-router.get('/conversation/:id/unread', 
-  authenticateToken, 
-  messagingController.getUnreadCount
-);
+// Get unread message count for current user
+router.get('/unread-count', messagingController.getUnreadCount);
 
-// Admin: Get all conversations with unread counts
-router.get('/admin/conversations', 
-  authenticateToken, 
-  requireAdmin, 
-  messagingController.getAllConversations
-);
+// Delete a message (admin or message owner only)
+router.delete('/message/:messageId', messagingController.deleteMessage);
 
 module.exports = router; 

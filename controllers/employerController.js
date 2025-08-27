@@ -1093,3 +1093,202 @@ exports.updateRequestStatus = async (req, res) => {
     res.status(500).json({ error: err.message || 'Failed to update request status.' });
   }
 }; 
+
+// Get employer dashboard data
+exports.getEmployerDashboard = async (req, res) => {
+  try {
+    const prisma = await initPrisma();
+    const employerId = req.user.id;
+
+    // Get employer account details
+    const employerAccount = await prisma.employerAccount.findFirst({
+      where: { userId: employerId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            createdAt: true
+          }
+        }
+      }
+    });
+
+    if (!employerAccount) {
+      return res.status(404).json({ error: 'Employer account not found' });
+    }
+
+    // Get all requests for this employer
+    const requests = await prisma.employerRequest.findMany({
+      where: { employerAccountId: employerAccount.id },
+      include: {
+        requestedCandidate: {
+          include: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+                skills: true,
+                experience: true,
+                photo: true
+              }
+            }
+          }
+        },
+        selectedUser: {
+          include: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+                skills: true,
+                experience: true,
+                photo: true
+              }
+            }
+          }
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1 // Get latest message
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1 // Get latest payment
+        },
+        requestProgress: {
+          orderBy: { createdAt: 'desc' },
+          take: 1 // Get latest progress
+        },
+        _count: {
+          select: {
+            messages: true,
+            payments: true,
+            requestProgress: true
+          }
+        }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    // Get unread message count
+    const unreadCount = await prisma.message.count({
+      where: {
+        fromAdmin: true,
+        isRead: false,
+        employerRequest: {
+          employerAccountId: employerAccount.id
+        }
+      }
+    });
+
+    // Calculate statistics
+    const stats = {
+      totalRequests: requests.length,
+      pendingRequests: requests.filter(r => r.status === 'pending').length,
+      paymentRequired: requests.filter(r => r.status === 'payment_required').length,
+      approvedRequests: requests.filter(r => r.status === 'approved').length,
+      completedRequests: requests.filter(r => r.status === 'completed').length,
+      totalMessages: requests.reduce((sum, r) => sum + r._count.messages, 0),
+      unreadMessages: unreadCount,
+      totalPayments: requests.reduce((sum, r) => sum + r._count.payments, 0)
+    };
+
+    // Process requests to anonymize sensitive data
+    const processedRequests = requests.map(request => {
+      const requestData = {
+        id: request.id,
+        status: request.status,
+        priority: request.priority,
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+        message: request.message,
+        paymentRequired: request.paymentRequired,
+        paymentAmount: request.paymentAmount,
+        paymentCurrency: request.paymentCurrency,
+        paymentDescription: request.paymentDescription,
+        paymentDueDate: request.paymentDueDate,
+        contactAccessGranted: request.contactAccessGranted,
+        imageAccessGranted: request.imageAccessGranted,
+        accessGrantedAt: request.accessGrantedAt,
+        messageCount: request._count.messages,
+        paymentCount: request._count.payments,
+        progressCount: request._count.requestProgress,
+        latestMessage: request.messages[0] || null,
+        latestPayment: request.payments[0] || null,
+        latestProgress: request.requestProgress[0] || null
+      };
+
+      // Add candidate information based on access level
+      if (request.requestedCandidate) {
+        if (request.imageAccessGranted) {
+          requestData.candidate = {
+            id: request.requestedCandidate.id,
+            name: `${request.requestedCandidate.profile?.firstName?.charAt(0)}*** ${request.requestedCandidate.profile?.lastName?.charAt(0)}***`,
+            skills: request.requestedCandidate.profile?.skills || 'Not specified',
+            experience: request.requestedCandidate.profile?.experience || 'Not specified',
+            photo: request.requestedCandidate.profile?.photo || null
+          };
+        } else if (request.contactAccessGranted) {
+          requestData.candidate = {
+            id: request.requestedCandidate.id,
+            name: `${request.requestedCandidate.profile?.firstName?.charAt(0)}*** ${request.requestedCandidate.profile?.lastName?.charAt(0)}***`,
+            skills: request.requestedCandidate.profile?.skills || 'Not specified',
+            experience: request.requestedCandidate.profile?.experience || 'Not specified',
+            photo: null // No photo access yet
+          };
+        } else {
+          // No access granted - show anonymized data
+          requestData.candidate = {
+            id: request.requestedCandidate.id,
+            name: '*** ***',
+            skills: request.requestedCandidate.profile?.skills || 'Not specified',
+            experience: request.requestedCandidate.profile?.experience || 'Not specified',
+            photo: null
+          };
+        }
+      }
+
+      // Add selected user information if different from requested candidate
+      if (request.selectedUser && request.selectedUser.id !== request.requestedCandidate?.id) {
+        if (request.imageAccessGranted) {
+          requestData.selectedUser = {
+            id: request.selectedUser.id,
+            name: `${request.selectedUser.profile?.firstName?.charAt(0)}*** ${request.selectedUser.profile?.lastName?.charAt(0)}***`,
+            skills: request.selectedUser.profile?.skills || 'Not specified',
+            experience: request.selectedUser.profile?.experience || 'Not specified',
+            photo: request.selectedUser.profile?.photo || null
+          };
+        } else {
+          requestData.selectedUser = {
+            id: request.selectedUser.id,
+            name: '*** ***',
+            skills: request.selectedUser.profile?.skills || 'Not specified',
+            experience: request.selectedUser.profile?.experience || 'Not specified',
+            photo: null
+          };
+        }
+      }
+
+      return requestData;
+    });
+
+    res.json({
+      employer: {
+        id: employerAccount.id,
+        email: employerAccount.user.email,
+        name: employerAccount.user.name,
+        phoneNumber: employerAccount.phoneNumber,
+        companyName: employerAccount.companyName,
+        createdAt: employerAccount.user.createdAt
+      },
+      stats,
+      requests: processedRequests
+    });
+
+  } catch (error) {
+    console.error('Error getting employer dashboard:', error);
+    res.status(500).json({ error: 'Failed to get dashboard data' });
+  }
+}; 

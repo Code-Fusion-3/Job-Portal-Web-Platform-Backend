@@ -6,6 +6,9 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 // Public: Submit employer request (no authentication required)
 router.post('/request', employerController.submitEmployerRequest);
 
+// Employer: Get dashboard data (requires authentication)
+router.get('/dashboard', authenticateToken, employerController.getEmployerDashboard);
+
 // Admin: Get all employer requests
 router.get('/requests', authenticateToken, requireAdmin, employerController.getAllEmployerRequests);
 

@@ -1,392 +1,362 @@
-const { PrismaClient } = require("@prisma/client");
-const { sendAdminReplyNotification, sendEmployerReplyNotification } = require('../utils/mailer');
-const { messageCache, realTimeMessaging, rateLimiter } = require('../utils/redis');
-const { v4: uuidv4 } = require('uuid');
-const path = require('path');
-const fs = require('fs').promises;
+const { getPrismaClient } = require('../utils/database');
 
-const prisma = new PrismaClient();
-
-// Admin: Send message to employer
-exports.sendAdminMessage = async (req, res) => {
+// Get all messages for a specific employer request
+const getMessagesByRequest = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
-    const { content, messageType = 'text' } = req.body;
-    const adminId = req.user.id;
-
-    if (!content) {
-      return res.status(400).json({ error: 'Message content is required.' });
-    }
-
-    // Rate limiting for admin messages
-    const rateLimitKey = `admin_message:${adminId}`;
-    const isAllowed = await rateLimiter.checkRateLimit(rateLimitKey, 10, 60); // 10 messages per minute
-    if (!isAllowed) {
-      return res.status(429).json({ error: 'Rate limit exceeded. Please wait before sending another message.' });
-    }
-
-    // Check if request exists
-    const request = await prisma.employerRequest.findUnique({
-      where: { id: requestId }
-    });
-
-    if (!request) {
-      return res.status(404).json({ error: 'Employer request not found.' });
-    }
-
-    // Check if request is approved - block further communication
-    if (request.status === 'approved') {
-      return res.status(400).json({ 
-        error: 'Cannot send messages for approved requests. Communication is closed after approval.' 
-      });
-    }
-
-    // Check if request is cancelled or completed
-    if (request.status === 'cancelled' || request.status === 'completed') {
-      return res.status(400).json({ 
-        error: 'Cannot send messages for cancelled or completed requests.' 
-      });
-    }
-
-    // Handle file attachment
-    let attachmentUrl = null;
-    let attachmentName = null;
+    const { requestId } = req.params;
+    const { page = 1, limit = 50 } = req.query;
     
-    if (req.file && messageType === 'file') {
-      const fileExtension = path.extname(req.file.originalname);
-      const fileName = `message_${uuidv4()}${fileExtension}`;
-      const filePath = `uploads/messages/${fileName}`;
-      
-      // Move file to messages directory
-      await fs.rename(req.file.path, filePath);
-      
-      attachmentUrl = filePath;
-      attachmentName = req.file.originalname;
-    }
-
-    // Create message
-    const message = await prisma.message.create({
-      data: {
-        employerRequestId: requestId,
-        fromAdmin: true,
-        employerEmail: request.email,
-        content,
-        messageType,
-        attachmentUrl,
-        attachmentName
+    const prisma = await getPrismaClient();
+    
+    // Verify the request exists and user has access
+    const request = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId) },
+      include: {
+        employerAccount: {
+          include: {
+            user: {
+              select: { id: true, email: true, name: true }
+            }
+          }
+        }
       }
     });
 
-    // Cache the message
-    await messageCache.cacheMessage(message.id, message);
-
-    // Send email notification to employer
-    try {
-      await sendAdminReplyNotification(request.email, request.name, content, attachmentName);
-    } catch (emailError) {
-      console.error('Failed to send admin reply notification:', emailError);
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
     }
 
-    // Increment unread count for employer
-    await realTimeMessaging.incrementUnreadCount('employer', requestId);
+    // Check if user is admin or the employer who owns this request
+    const isAdmin = req.user?.role === 'admin';
+    const isOwner = req.user?.role === 'employer' && 
+                   request.employerAccount?.user?.id === req.user.id;
 
-    // Publish real-time notification
-    await realTimeMessaging.publishMessage(`employer_${requestId}`, {
-      type: 'new_message',
-      message: {
-        id: message.id,
-        content,
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Get messages with pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const messages = await prisma.message.findMany({
+      where: { employerRequestId: parseInt(requestId) },
+      orderBy: { createdAt: 'asc' },
+      skip,
+      take: parseInt(limit),
+      include: {
+        employerRequest: {
+          select: {
+            id: true,
+            status: true,
+            priority: true
+          }
+        }
+      }
+    });
+
+    // Get total count for pagination
+    const totalMessages = await prisma.message.count({
+      where: { employerRequestId: parseInt(requestId) }
+    });
+
+    // Mark messages as read for the current user
+    if (req.user?.role === 'employer') {
+      await prisma.message.updateMany({
+        where: {
+          employerRequestId: parseInt(requestId),
+          fromAdmin: true,
+          isRead: false
+        },
+        data: { isRead: true, readAt: new Date() }
+      });
+    }
+
+    res.json({
+      messages,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalMessages,
+        pages: Math.ceil(totalMessages / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting messages:', error);
+    res.status(500).json({ error: 'Failed to get messages' });
+  }
+};
+
+// Send a message (employer to admin or admin to employer)
+const sendMessage = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { content, messageType = 'text', attachmentName, attachmentUrl } = req.body;
+    
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'Message content is required' });
+    }
+
+    const prisma = await getPrismaClient();
+    
+    // Verify the request exists
+    const request = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId) },
+      include: {
+        employerAccount: {
+          include: {
+            user: {
+              select: { id: true, email: true, name: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+
+    // Check permissions
+    const isAdmin = req.user?.role === 'admin';
+    const isOwner = req.user?.role === 'employer' && 
+                   request.employerAccount?.user?.id === req.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Create the message
+    const message = await prisma.message.create({
+      data: {
+        employerRequestId: parseInt(requestId),
+        fromAdmin: isAdmin,
+        content: content.trim(),
         messageType,
-        attachmentUrl,
         attachmentName,
-        fromAdmin: true,
-        createdAt: message.createdAt
+        attachmentUrl,
+        isRead: false
+      },
+      include: {
+        employerRequest: {
+          select: {
+            id: true,
+            status: true,
+            priority: true
+          }
+        }
+      }
+    });
+
+    // Update request status if this is the first message
+    if (request.status === 'pending') {
+      await prisma.employerRequest.update({
+        where: { id: parseInt(requestId) },
+        data: { status: 'reviewing' }
+      });
+    }
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        action: 'message_sent',
+        entityType: 'message',
+        entityId: message.id,
+        userId: req.user.id,
+        userRole: req.user.role,
+        details: {
+          requestId: parseInt(requestId),
+          fromAdmin: isAdmin,
+          messageType
+        }
       }
     });
 
     res.status(201).json({
       message: 'Message sent successfully',
-      messageData: message
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to send message.' });
-  }
-};
-
-// Employer: Reply to admin message (public endpoint)
-exports.sendEmployerReply = async (req, res) => {
-  try {
-    const requestId = parseInt(req.params.id, 10);
-    const { email, content, messageType = 'text' } = req.body;
-
-    if (!email || !content) {
-      return res.status(400).json({ error: 'Email and message content are required.' });
-    }
-
-    // Rate limiting for employer messages
-    const rateLimitKey = `employer_message:${email}`;
-    const isAllowed = await rateLimiter.checkRateLimit(rateLimitKey, 5, 60); // 5 messages per minute
-    if (!isAllowed) {
-      return res.status(429).json({ error: 'Rate limit exceeded. Please wait before sending another message.' });
-    }
-
-    // Check if request exists and email matches
-    const request = await prisma.employerRequest.findUnique({
-      where: { id: requestId }
+      data: message
     });
 
-    if (!request || request.email !== email) {
-      return res.status(404).json({ error: 'Employer request not found or email does not match.' });
-    }
-
-    // Check if request is approved - block further communication
-    if (request.status === 'approved') {
-      return res.status(400).json({ 
-        error: 'Cannot send messages for approved requests. Communication is closed after approval.' 
-      });
-    }
-
-    // Check if request is cancelled or completed
-    if (request.status === 'cancelled' || request.status === 'completed') {
-      return res.status(400).json({ 
-        error: 'Cannot send messages for cancelled or completed requests.' 
-      });
-    }
-
-    // Handle file attachment
-    let attachmentUrl = null;
-    let attachmentName = null;
-    
-    if (req.file && messageType === 'file') {
-      const fileExtension = path.extname(req.file.originalname);
-      const fileName = `message_${uuidv4()}${fileExtension}`;
-      const filePath = `uploads/messages/${fileName}`;
-      
-      // Move file to messages directory
-      await fs.rename(req.file.path, filePath);
-      
-      attachmentUrl = filePath;
-      attachmentName = req.file.originalname;
-    }
-
-    // Create message
-    const message = await prisma.message.create({
-      data: {
-        employerRequestId: requestId,
-        fromAdmin: false,
-        employerEmail: email,
-        content,
-        messageType,
-        attachmentUrl,
-        attachmentName
-      }
-    });
-
-    // Cache the message
-    await messageCache.cacheMessage(message.id, message);
-
-    // Send email notification to admin
-    try {
-      await sendEmployerReplyNotification(email, request.name, content, attachmentName);
-    } catch (emailError) {
-      console.error('Failed to send employer reply notification:', emailError);
-    }
-
-    // Increment unread count for admin
-    await realTimeMessaging.incrementUnreadCount('admin', requestId);
-
-    // Publish real-time notification
-    await realTimeMessaging.publishMessage(`admin_${requestId}`, {
-      type: 'new_message',
-      message: {
-        id: message.id,
-        content,
-        messageType,
-        attachmentUrl,
-        attachmentName,
-        fromAdmin: false,
-        createdAt: message.createdAt
-      }
-    });
-
-    res.status(201).json({
-      message: 'Reply sent successfully',
-      messageData: message
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to send reply.' });
-  }
-};
-
-// Get conversation with caching
-exports.getConversation = async (req, res) => {
-  try {
-    const requestId = parseInt(req.params.id, 10);
-    const { email } = req.query; // For employer access
-
-    // Check if request exists
-    const request = await prisma.employerRequest.findUnique({
-      where: { id: requestId }
-    });
-
-    if (!request) {
-      return res.status(404).json({ error: 'Employer request not found.' });
-    }
-
-    // Check access permissions
-    if (req.user && req.user.role === 'admin') {
-      // Admin can access any conversation
-    } else if (email && request.email === email) {
-      // Employer can access their own conversation
-    } else {
-      return res.status(403).json({ error: 'Access denied.' });
-    }
-
-    // Try to get cached conversation
-    let messages = await messageCache.getCachedConversation(requestId);
-
-    if (!messages) {
-      // Get from database
-      messages = await prisma.message.findMany({
-        where: { employerRequestId: requestId },
-        orderBy: { createdAt: 'asc' }
-      });
-
-      // Cache the conversation
-      await messageCache.cacheConversation(requestId, messages);
-    }
-
-    // Mark messages as read for the current user
-    if (req.user) {
-      const userId = req.user.role === 'admin' ? 'admin' : 'employer';
-      await realTimeMessaging.markAsRead(userId, requestId);
-    }
-
-    res.json({
-      requestId,
-      employerEmail: request.email,
-      employerName: request.name,
-      messages,
-      unreadCount: req.user ? await realTimeMessaging.getUnreadCount(req.user.role === 'admin' ? 'admin' : 'employer', requestId) : 0
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to fetch conversation.' });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Failed to send message' });
   }
 };
 
 // Mark messages as read
-exports.markAsRead = async (req, res) => {
+const markMessagesAsRead = async (req, res) => {
   try {
-    const requestId = parseInt(req.params.id, 10);
-    const messageIds = req.body.messageIds || [];
+    const { requestId } = req.params;
+    const { messageIds } = req.body;
+    
+    const prisma = await getPrismaClient();
+    
+    // Verify the request exists and user has access
+    const request = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId) },
+      include: {
+        employerAccount: {
+          include: {
+            user: {
+              select: { id: true }
+            }
+          }
+        }
+      }
+    });
 
-    if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required.' });
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
     }
 
-    // Update message read status
-    if (messageIds.length > 0) {
+    // Check permissions
+    const isAdmin = req.user?.role === 'admin';
+    const isOwner = req.user?.role === 'employer' && 
+                   request.employerAccount?.user?.id === req.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Mark specific messages as read
+    if (messageIds && messageIds.length > 0) {
       await prisma.message.updateMany({
         where: {
-          id: { in: messageIds },
-          employerRequestId: requestId
+          id: { in: messageIds.map(id => parseInt(id)) },
+          employerRequestId: parseInt(requestId)
         },
-        data: {
-          isRead: true,
-          readAt: new Date()
+        data: { isRead: true, readAt: new Date() }
+      });
+    } else {
+      // Mark all unread messages as read
+      await prisma.message.updateMany({
+        where: {
+          employerRequestId: parseInt(requestId),
+          fromAdmin: !isAdmin, // Mark messages from the other party as read
+          isRead: false
+        },
+        data: { isRead: true, readAt: new Date() }
+      });
+    }
+
+    res.json({ message: 'Messages marked as read' });
+
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    res.status(500).json({ error: 'Failed to mark messages as read' });
+  }
+};
+
+// Get unread message count for a user
+const getUnreadCount = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    
+    let unreadCount = 0;
+    
+    if (req.user?.role === 'admin') {
+      // Count unread messages from employers to admin
+      unreadCount = await prisma.message.count({
+        where: {
+          fromAdmin: false,
+          isRead: false
+        }
+      });
+    } else if (req.user?.role === 'employer') {
+      // Count unread messages from admin to this employer
+      unreadCount = await prisma.message.count({
+        where: {
+          fromAdmin: true,
+          isRead: false,
+          employerRequest: {
+            employerAccount: {
+              user: {
+                id: req.user.id
+              }
+            }
+          }
         }
       });
     }
 
-    // Mark as read in Redis
-    const userId = req.user.role === 'admin' ? 'admin' : 'employer';
-    await realTimeMessaging.markAsRead(userId, requestId);
-
-    res.json({ message: 'Messages marked as read.' });
-  } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to mark messages as read.' });
-  }
-};
-
-// Get unread message count
-exports.getUnreadCount = async (req, res) => {
-  try {
-    const requestId = parseInt(req.params.id, 10);
-
-    if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required.' });
-    }
-
-    const userId = req.user.role === 'admin' ? 'admin' : 'employer';
-    const unreadCount = await realTimeMessaging.getUnreadCount(userId, requestId);
-
     res.json({ unreadCount });
-  } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to get unread count.' });
+
+  } catch (error) {
+    console.error('Error getting unread count:', error);
+    res.status(500).json({ error: 'Failed to get unread count' });
   }
 };
 
-// Admin: Get all conversations with unread counts
-exports.getAllConversations = async (req, res) => {
+// Delete a message (only for admin or message owner)
+const deleteMessage = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const [requests, total] = await Promise.all([
-      prisma.employerRequest.findMany({
-        include: {
-          selectedUser: {
-            select: {
-              id: true,
-              email: true,
-              profile: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  skills: true
+    const { messageId } = req.params;
+    
+    const prisma = await getPrismaClient();
+    
+    // Get the message with request details
+    const message = await prisma.message.findUnique({
+      where: { id: parseInt(messageId) },
+      include: {
+        employerRequest: {
+          include: {
+            employerAccount: {
+              include: {
+                user: {
+                  select: { id: true }
                 }
               }
             }
-          },
-          messages: {
-            orderBy: { createdAt: 'desc' },
-            take: 1 // Get latest message
-          },
-          _count: {
-            select: {
-              messages: true
-            }
           }
-        },
-        skip,
-        take: limit,
-        orderBy: { updatedAt: 'desc' }
-      }),
-      prisma.employerRequest.count()
-    ]);
-
-    // Get unread counts for each request
-    const requestsWithUnread = await Promise.all(
-      requests.map(async (request) => {
-        const unreadCount = await realTimeMessaging.getUnreadCount('admin', request.id);
-        return {
-          ...request,
-          unreadCount
-        };
-      })
-    );
-
-    res.json({
-      requests: requestsWithUnread,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
+        }
       }
     });
-  } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to fetch conversations.' });
+
+    if (!message) {
+      return res.status(404).json({ error: 'Message not found' });
+    }
+
+    // Check permissions - only admin or message owner can delete
+    const isAdmin = req.user?.role === 'admin';
+    const isOwner = req.user?.role === 'employer' && 
+                   message.employerRequest.employerAccount?.user?.id === req.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Delete the message
+    await prisma.message.delete({
+      where: { id: parseInt(messageId) }
+    });
+
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        action: 'message_deleted',
+        entityType: 'message',
+        entityId: parseInt(messageId),
+        userId: req.user.id,
+        userRole: req.user.role,
+        details: {
+          requestId: message.employerRequestId,
+          fromAdmin: message.fromAdmin
+        }
+      }
+    });
+
+    res.json({ message: 'Message deleted successfully' });
+
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    res.status(500).json({ error: 'Failed to delete message' });
   }
+};
+
+module.exports = {
+  getMessagesByRequest,
+  sendMessage,
+  markMessagesAsRead,
+  getUnreadCount,
+  deleteMessage
 }; 
