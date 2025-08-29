@@ -102,6 +102,7 @@ exports.requestPayment = async (req, res) => {
         currency,
         paymentMethodId: parseInt(paymentMethodId, 10),
         paymentType,
+        paymentReference: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
         description: description || `${paymentType === 'photo_access' ? 'Photo access' : 'Full details'} payment for job seeker request`,
         status: 'pending'
       }

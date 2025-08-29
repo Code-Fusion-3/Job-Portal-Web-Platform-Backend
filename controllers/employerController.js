@@ -1203,7 +1203,19 @@ exports.getEmployerDashboard = async (req, res) => {
         },
         payments: {
           orderBy: { createdAt: 'desc' },
-          take: 1 // Get latest payment
+          take: 1, // Get latest payment
+          include: {
+            paymentMethod: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                accountName: true,
+                accountNumber: true,
+                bankName: true
+              }
+            }
+          }
         },
         requestProgress: {
           orderBy: { createdAt: 'desc' },
