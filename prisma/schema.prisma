@@ -3,104 +3,174 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  // Add connection pooling configuration for MySQL
+  relationMode = "prisma"
 }
 
 model User {
   id               Int               @id @default(autoincrement())
-  email            String?           @unique
-  password         String
-  role             String
+  email            String?           @unique @db.VarChar(255)
+  password         String            @db.VarChar(255)
+  name             String?           @db.VarChar(255) // Name for both job seekers and employers
+  role             String            @db.VarChar(50)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   contacts         Contact[]
   requestedIn      EmployerRequest[] @relation("RequestedCandidate")
   employerRequests EmployerRequest[] @relation("SelectedUser")
   profile          Profile?
+  payments         Payment[]
+  paymentApprovals PaymentApproval[]
+  // Employer authentication
+  employerAccounts EmployerAccount[]
+  // Audit trail
+  auditLogs        AuditLog[]
 }
 
 model Profile {
   id              Int          @id @default(autoincrement())
   userId          Int          @unique
-  skills          String?
-  photo           String?
-  gender          String?
-  experience      String?
+  skills          String?      @db.Text
+  photo           String?      @db.VarChar(500)
+  gender          String?      @db.VarChar(20)
+  experience      String?      @db.VarChar(100)
   jobCategoryId   Int?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   dateOfBirth     DateTime?
-  description     String?
-  firstName       String
-  idNumber        String?
-  lastName        String
-  references      String?
-  city            String?
-  contactNumber   String
-  country         String?
-  location        String?
-  maritalStatus   String?
-  monthlyRate     String?
-  availability    String?
-  certifications  String?
-  educationLevel  String?
-  languages       String?
-  experienceLevel String?
-  approvalStatus  String       @default("pending") // pending | approved | rejected
+  description     String?      @db.Text
+  firstName       String       @db.VarChar(100)
+  idNumber        String?      @db.VarChar(20)
+  lastName        String       @db.VarChar(100)
+  references      String?      @db.Text
+  city            String?      @db.VarChar(100)
+  contactNumber   String       @db.VarChar(20)
+  country         String?      @db.VarChar(100)
+  location        String?      @db.VarChar(200)
+  maritalStatus   String?      @db.VarChar(20)
+  monthlyRate     String?      @db.VarChar(50)
+  availability    String?      @db.VarChar(100)
+  certifications  String?      @db.Text
+  educationLevel  String?      @db.VarChar(100)
+  languages       String?      @db.VarChar(200)
+  experienceLevel String?      @db.VarChar(100)
+  approvalStatus  String       @default("pending") @db.VarChar(20) // pending | approved | rejected
   isActive        Boolean      @default(false)
   approvedAt      DateTime?
   approvedBy      Int?
-  rejectionReason String?
+  rejectionReason String?      @db.Text
   jobCategory     JobCategory? @relation(fields: [jobCategoryId], references: [id])
   user            User         @relation(fields: [userId], references: [id])
 }
 
 model EmployerRequest {
-  id                   Int       @id @default(autoincrement())
-  name                 String
-  email                String
-  message              String?
+  id                   Int               @id @default(autoincrement())
+  employerAccountId    Int? // Link to employer account
+  message              String?           @db.Text
   selectedUserId       Int?
-  createdAt            DateTime  @default(now())
-  priority             String    @default("normal")
-  status               String    @default("pending")
-  updatedAt            DateTime  @updatedAt
-  companyName          String?
-  phoneNumber          String?
+  createdAt            DateTime          @default(now())
+  priority             String            @default("normal") @db.VarChar(20)
+  status               String            @default("pending") @db.VarChar(20) // pending | reviewing | payment_required | payment_confirmed | approved | completed | cancelled
+  updatedAt            DateTime          @updatedAt
   requestedCandidateId Int?
-  requestedCandidate   User?     @relation("RequestedCandidate", fields: [requestedCandidateId], references: [id])
-  selectedUser         User?     @relation("SelectedUser", fields: [selectedUserId], references: [id])
+  requestedCandidate   User?             @relation("RequestedCandidate", fields: [requestedCandidateId], references: [id])
+  selectedUser         User?             @relation("SelectedUser", fields: [selectedUserId], references: [id])
+  employerAccount      EmployerAccount?  @relation(fields: [employerAccountId], references: [id])
   messages             Message[]
+  payments             Payment[]
+  requestProgress      RequestProgress[]
+  // New fields for payment workflow
+  paymentRequired      Boolean           @default(false)
+  paymentAmount        Decimal?          @db.Decimal(10, 2)
+  paymentCurrency      String?           @default("RWF") @db.VarChar(10)
+  paymentDescription   String?           @db.Text
+  paymentDueDate       DateTime?
+  // Contact access control
+  contactAccessGranted Boolean           @default(false)
+  imageAccessGranted   Boolean           @default(false)
+  accessGrantedAt      DateTime?
+  accessGrantedBy      Int?
 }
 
 model Message {
   id                Int             @id @default(autoincrement())
   employerRequestId Int
   fromAdmin         Boolean
-  employerEmail     String
-  content           String
+  content           String          @db.Text
   createdAt         DateTime        @default(now())
-  attachmentName    String?
-  attachmentUrl     String?
+  attachmentName    String?         @db.VarChar(255)
+  attachmentUrl     String?         @db.VarChar(500)
   isRead            Boolean         @default(false)
-  messageType       String          @default("text")
+  messageType       String          @default("text") @db.VarChar(20)
   readAt            DateTime?
   updatedAt         DateTime        @updatedAt
   employerRequest   EmployerRequest @relation(fields: [employerRequestId], references: [id])
 }
 
+// New model for payment tracking
+model Payment {
+  id                Int               @id @default(autoincrement())
+  employerRequestId Int
+  amount            Decimal           @db.Decimal(10, 2)
+  currency          String            @default("RWF") @db.VarChar(10)
+  paymentMethodId   Int // Link to PaymentMethod
+  paymentType       String            @db.VarChar(50) // photo_access | full_details
+  paymentReference  String            @db.VarChar(255) // External payment reference
+  status            String            @default("pending") @db.VarChar(20) // pending | confirmed | approved | rejected
+  description       String?           @db.Text
+  // Payment confirmation details
+  confirmationName  String?           @db.VarChar(255) // Name on the account that made payment
+  confirmationPhone String?           @db.VarChar(20) // Phone number that made payment
+  confirmationDate  DateTime?
+  adminNotes        String?           @db.Text
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  employerRequest   EmployerRequest   @relation(fields: [employerRequestId], references: [id])
+  paymentMethod     PaymentMethod     @relation(fields: [paymentMethodId], references: [id])
+  user              User?             @relation(fields: [userId], references: [id])
+  userId            Int?
+  approvals         PaymentApproval[]
+}
+
+// New model for payment approval workflow
+model PaymentApproval {
+  id        Int      @id @default(autoincrement())
+  paymentId Int
+  adminId   Int
+  action    String   @db.VarChar(20) // approve | reject
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  payment   Payment  @relation(fields: [paymentId], references: [id])
+  admin     User     @relation(fields: [adminId], references: [id])
+}
+
+// New model for tracking request progress
+model RequestProgress {
+  id                Int             @id @default(autoincrement())
+  employerRequestId Int
+  stage             String          @db.VarChar(50) // request_received | admin_review | payment_requested | payment_confirmed | contact_shared | completed
+  status            String          @db.VarChar(20) // pending | in_progress | completed | failed
+  description       String          @db.Text
+  adminNotes        String?         @db.Text
+  completedAt       DateTime?
+  completedBy       Int?
+  createdAt         DateTime        @default(now())
+  employerRequest   EmployerRequest @relation(fields: [employerRequestId], references: [id])
+}
+
 model Contact {
   id                   Int       @id @default(autoincrement())
-  name                 String
-  email                String
-  subject              String
-  message              String
-  status               String    @default("unread")
-  priority             String    @default("normal")
-  category             String    @default("general")
-  adminResponse        String?
-  adminResponseSubject String?
+  name                 String    @db.VarChar(255)
+  email                String    @db.VarChar(255)
+  subject              String    @db.VarChar(255)
+  message              String    @db.Text
+  status               String    @default("unread") @db.VarChar(20)
+  priority             String    @default("normal") @db.VarChar(20)
+  category             String    @default("general") @db.VarChar(50)
+  adminResponse        String?   @db.Text
+  adminResponseSubject String?   @db.VarChar(255)
   respondedBy          Int?
   respondedAt          DateTime?
   createdAt            DateTime  @default(now())
@@ -110,8 +180,52 @@ model Contact {
 
 model JobCategory {
   id        Int       @id @default(autoincrement())
-  name_en   String
-  name_rw   String
+  name_en   String    @db.VarChar(255)
+  name_rw   String    @db.VarChar(255)
   createdAt DateTime  @default(now())
   profiles  Profile[]
+}
+
+// Audit log for tracking all actions
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  action     String   @db.VarChar(100) // e.g., payment_confirmed, payment_approved, access_granted
+  entityType String   @db.VarChar(50) // e.g., payment, employer_request, user
+  entityId   Int // ID of the related entity
+  userId     Int? // User who performed the action
+  userRole   String   @db.VarChar(50) // e.g., admin, employer, jobseeker
+  details    Json? // Additional action details
+  ipAddress  String?  @db.VarChar(45) // IP address of the user
+  userAgent  String?  @db.Text // User agent string
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id])
+}
+
+// Dynamic payment methods management
+model PaymentMethod {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(100) // e.g., "MTN MOMO", "Airtel Money"
+  type          String    @db.VarChar(50) // e.g., "mobile_money", "bank_transfer"
+  accountName   String    @db.VarChar(255) // Account holder name
+  accountNumber String    @db.VarChar(100) // Phone number or account number
+  bankName      String?   @db.VarChar(100) // For bank transfers
+  isActive      Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  payments      Payment[]
+}
+
+// Employer account model for authentication
+model EmployerAccount {
+  id               Int               @id @default(autoincrement())
+  userId           Int               @unique
+  phoneNumber      String?           @db.VarChar(20)
+  companyName      String?           @db.VarChar(255)
+  isActive         Boolean           @default(true)
+  lastLoginAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  user             User              @relation(fields: [userId], references: [id])
+  employerRequests EmployerRequest[]
 }

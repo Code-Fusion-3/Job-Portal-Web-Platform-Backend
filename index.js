@@ -8,12 +8,18 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const { redisClient } = require('./utils/redis');
+const { closePrismaConnections, checkDatabaseHealth } = require('./utils/database');
 const WebSocketServer = require('./websocket');
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5174', 'http://localhost:3000', 'http://localhost:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -69,6 +75,18 @@ app.use('/settings', require('./routes/settingsRoutes'));
 app.use('/security', require('./routes/securityRoutes'));
 // Contact routes
 app.use('/contact', require('./routes/contactRoutes'));
+// Payment routes
+app.use('/payments', require('./routes/paymentRoutes'));
+// Payment method routes
+app.use('/payment-methods', require('./routes/paymentMethodRoutes'));
+// Payment confirmation routes
+app.use('/payment-confirmations', require('./routes/paymentConfirmationRoutes'));
+// Request history and reporting routes
+app.use('/request-history', require('./routes/requestHistoryRoutes'));
+// Dashboard analytics routes
+app.use('/dashboard', require('./routes/dashboardAnalyticsRoutes'));
+// Employer authentication routes
+app.use('/employer/auth', require('./routes/employerAuthRoutes'));
 
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
@@ -80,5 +98,37 @@ const wsServer = new WebSocketServer(server);
 global.wsServer = wsServer;
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  // console.log(`Server running on port ${PORT}`);
+});
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    const dbHealth = await checkDatabaseHealth();
+    const redisHealth = redisClient.isReady ? 'healthy' : 'unhealthy';
+    
+    // Test database operations if database is healthy
+    let dbOperations = null;
+    if (dbHealth.status === 'healthy') {
+      const { testDatabaseOperations } = require('./utils/database');
+      dbOperations = await testDatabaseOperations();
+    }
+    
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: dbHealth,
+      databaseOperations: dbOperations,
+      redis: redisHealth,
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  } catch (error) {
+    console.error('❌ Health check failed:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
 }); 

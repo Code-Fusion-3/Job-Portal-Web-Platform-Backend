@@ -1,9 +1,18 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const { getPrismaClient } = require('../utils/database');
+let prisma = null;
+
+// Initialize Prisma client
+const initPrisma = async () => {
+  if (!prisma) {
+    prisma = await getPrismaClient();
+  }
+  return prisma;
+};
 
 // Public: Get all job categories
 exports.getAllJobCategories = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const categories = await prisma.jobCategory.findMany({
       orderBy: { name_en: 'asc' }
     });
@@ -17,6 +26,7 @@ exports.getAllJobCategories = async (req, res) => {
 // Admin: Create job category
 exports.createJobCategory = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const { name_en, name_rw } = req.body;
 
     if (!name_en || !name_rw) {
@@ -56,6 +66,7 @@ exports.createJobCategory = async (req, res) => {
 // Admin: Get all job categories with pagination
 exports.adminGetAllJobCategories = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -93,6 +104,7 @@ exports.adminGetAllJobCategories = async (req, res) => {
 // Admin: Get specific job category
 exports.getJobCategory = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const categoryId = parseInt(req.params.id, 10);
 
     const category = await prisma.jobCategory.findUnique({
@@ -128,6 +140,7 @@ exports.getJobCategory = async (req, res) => {
 // Admin: Update job category
 exports.updateJobCategory = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const categoryId = parseInt(req.params.id, 10);
     const { name_en, name_rw } = req.body;
 
@@ -181,6 +194,7 @@ exports.updateJobCategory = async (req, res) => {
 // Admin: Delete job category
 exports.deleteJobCategory = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const categoryId = parseInt(req.params.id, 10);
 
     // Check if category exists

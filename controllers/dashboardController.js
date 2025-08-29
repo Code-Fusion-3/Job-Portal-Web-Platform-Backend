@@ -1,9 +1,18 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const { getPrismaClient } = require('../utils/database');
+let prisma = null;
+
+// Initialize Prisma client
+const initPrisma = async () => {
+  if (!prisma) {
+    prisma = await getPrismaClient();
+  }
+  return prisma;
+};
 
 // Admin: Get comprehensive dashboard statistics
 exports.getDashboardStats = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const [
       totalJobSeekers,
       totalEmployerRequests,
@@ -284,6 +293,7 @@ exports.getDashboardStats = async (req, res) => {
 // Admin: Get detailed analytics
 exports.getAnalytics = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const { period = '30' } = req.query; // days
     const days = parseInt(period, 10);
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);

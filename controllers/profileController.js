@@ -1,5 +1,13 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const { getPrismaClient } = require('../utils/database');
+let prisma = null;
+
+// Initialize Prisma client
+const initPrisma = async () => {
+  if (!prisma) {
+    prisma = await getPrismaClient();
+  }
+  return prisma;
+};
 const bcrypt = require('bcrypt');
 const { sendWelcomeEmail, sendProfileApprovedEmail, sendProfileRejectedEmail } = require('../utils/mailer');
 
@@ -16,6 +24,7 @@ function resolvePhotoPath(file, existingPhoto) {
 // Get current user's profile (job seeker or admin)
 exports.getMyProfile = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const userId = req.user.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -52,6 +61,7 @@ exports.getMyProfile = async (req, res) => {
 // Update current user's profile (job seeker or admin)
 exports.updateMyProfile = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const userId = req.user.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -67,8 +77,8 @@ exports.updateMyProfile = async (req, res) => {
       const { email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
         maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId } = req.body;
 
-  // Handle photo upload (preserve existing photo if no new one)
-  const photoPath = resolvePhotoPath(req.file, user.profile?.photo);
+      // Handle photo upload (preserve existing photo if no new one)
+      const photoPath = resolvePhotoPath(req.file, user.profile?.photo);
 
       // Check if email is being changed and if it's already taken
       if (email && email !== user.email) {
@@ -131,8 +141,8 @@ exports.updateMyProfile = async (req, res) => {
       maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
 
-  // Handle photo upload (preserve existing photo if no new one)
-  const photoPath = resolvePhotoPath(req.file, user.profile?.photo);
+    // Handle photo upload (preserve existing photo if no new one)
+    const photoPath = resolvePhotoPath(req.file, user.profile?.photo);
 
     // Convert jobCategoryId to integer if provided
     const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : undefined;
@@ -157,6 +167,7 @@ exports.updateMyProfile = async (req, res) => {
 // Get any profile by user ID (admin only)
 exports.getProfileById = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const userId = parseInt(req.params.id, 10);
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -181,6 +192,7 @@ exports.getProfileById = async (req, res) => {
 // Delete current user's profile/account (job seeker or admin)
 exports.deleteMyProfile = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const userId = req.user.id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -203,7 +215,7 @@ exports.deleteMyProfile = async (req, res) => {
 
     // For job seekers, delete both profile and user
     if (user.profile) {
-    await prisma.profile.delete({ where: { userId } });
+      await prisma.profile.delete({ where: { userId } });
     }
     await prisma.user.delete({ where: { id: userId } });
     res.json({ message: 'Account and profile deleted successfully.' });
@@ -215,13 +227,12 @@ exports.deleteMyProfile = async (req, res) => {
 // Admin: Create a job seeker account (worker) with default password
 exports.adminCreateJobSeeker = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const {
       email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
       maritalStatus, location, city, country, references, experience, experienceLevel, monthlyRate, educationLevel, availability, languages, certifications, jobCategoryId
     } = req.body;
 
-
-    
     // Updated validation: contact number required, email optional
     if (!firstName || !lastName || !contactNumber) {
       return res.status(400).json({ error: 'First name, last name, and contact number are required.' });
@@ -245,9 +256,9 @@ exports.adminCreateJobSeeker = async (req, res) => {
 
     const defaultPassword = Math.random().toString(36).slice(-6) + '@' + Math.floor(100 + Math.random() * 900);
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
-  const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : null;
-  // Handle photo upload for created job seeker
-  const photoPath = resolvePhotoPath(req.file, null);
+    const categoryId = jobCategoryId ? parseInt(jobCategoryId, 10) : null;
+    // Handle photo upload for created job seeker
+    const photoPath = resolvePhotoPath(req.file, null);
     
     const user = await prisma.user.create({
       data: {
@@ -314,6 +325,7 @@ exports.adminCreateJobSeeker = async (req, res) => {
 // Admin: Delete any worker (job seeker) by user ID
 exports.adminDeleteWorker = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const userId = parseInt(req.params.id, 10);
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.role !== 'jobseeker') {
@@ -330,6 +342,7 @@ exports.adminDeleteWorker = async (req, res) => {
 // Admin: Get all job seekers with pagination
 exports.adminGetAllJobSeekers = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -338,39 +351,35 @@ exports.adminGetAllJobSeekers = async (req, res) => {
     const location = req.query.location || '';
     const skills = req.query.skills || '';
     
-    // Build where clause for filtering
+    // Build where clause for filtering - make profile filters truly optional
     const whereClause = {
-      role: 'jobseeker',
-      ...(search && {
-        OR: [
-          { email: { contains: search, mode: 'insensitive' } },
-          { profile: { firstName: { contains: search, mode: 'insensitive' } } },
-          { profile: { lastName: { contains: search, mode: 'insensitive' } } },
-          { profile: { skills: { contains: search, mode: 'insensitive' } } },
-          { profile: { location: { contains: search, mode: 'insensitive' } } }
-        ]
-      }),
-      ...(gender && { profile: { gender: gender } }),
-      ...(location && { profile: { location: { contains: location, mode: 'insensitive' } } }),
-      ...(skills && { profile: { skills: { contains: skills, mode: 'insensitive' } } })
+      role: 'jobseeker'
     };
 
-    // Build count where clause (same as above but without profile include)
-    const countWhereClause = {
-      role: 'jobseeker',
-      ...(search && {
-        OR: [
-          { email: { contains: search, mode: 'insensitive' } },
-          { profile: { firstName: { contains: search, mode: 'insensitive' } } },
-          { profile: { lastName: { contains: search, mode: 'insensitive' } } },
-          { profile: { skills: { contains: search, mode: 'insensitive' } } },
-          { profile: { location: { contains: search, mode: 'insensitive' } } }
-        ]
-      }),
-      ...(gender && { profile: { gender: gender } }),
-      ...(location && { profile: { location: { contains: location, mode: 'insensitive' } } }),
-      ...(skills && { profile: { skills: { contains: skills, mode: 'insensitive' } } })
-    };
+    // Only add profile filters if they have values AND if we're not being too restrictive
+    if (search) {
+      whereClause.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { profile: { firstName: { contains: search, mode: 'insensitive' } } },
+        { profile: { lastName: { contains: search, mode: 'insensitive' } } },
+        { profile: { skills: { contains: search, mode: 'insensitive' } } },
+        { profile: { location: { contains: search, mode: 'insensitive' } } }
+      ];
+    }
+
+    // Only add profile-specific filters if they have values
+    if (gender) {
+      whereClause.profile = { ...whereClause.profile, gender: gender };
+    }
+    if (location) {
+      whereClause.profile = { ...whereClause.profile, location: { contains: location, mode: 'insensitive' } };
+    }
+    if (skills) {
+      whereClause.profile = { ...whereClause.profile, skills: { contains: skills, mode: 'insensitive' } };
+    }
+
+    // Build count where clause (same as above)
+    const countWhereClause = { ...whereClause };
     
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -401,6 +410,7 @@ exports.adminGetAllJobSeekers = async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('❌ adminGetAllJobSeekers error:', err);
     res.status(500).json({ error: err.message || 'Failed to fetch job seekers.' });
   }
 };
@@ -408,6 +418,7 @@ exports.adminGetAllJobSeekers = async (req, res) => {
 // Admin: Update any job seeker's profile
 exports.adminUpdateJobSeeker = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const userId = parseInt(req.params.id, 10);
     const {
       email, firstName, lastName, description, skills, gender, dateOfBirth, idNumber, contactNumber,
@@ -481,11 +492,24 @@ exports.adminUpdateJobSeeker = async (req, res) => {
   }
 };
 
-// Admin: Approval workflow endpoints
+// approve profile
 exports.approveProfile = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const profileId = parseInt(req.params.id, 10);
     const adminId = req.user.id;
+    
+    // First, check if the profile exists
+    const existingProfile = await prisma.profile.findUnique({
+      where: { id: profileId },
+      include: { user: true }
+    });
+    
+    if (!existingProfile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+    
+    // Update the profile
     const profile = await prisma.profile.update({
       where: { id: profileId },
       data: {
@@ -497,20 +521,46 @@ exports.approveProfile = async (req, res) => {
       },
       include: { user: true }
     });
+    
+    // ✅ Enhanced error handling for email
     if (profile?.user?.email) {
-      sendProfileApprovedEmail(profile.user.email, profile.firstName || 'User');
+      try {
+        await sendProfileApprovedEmail(profile.user.email, profile.firstName || 'User');
+      } catch (emailError) {
+        console.error('Failed to send approval email:', emailError);
+        // Continue with approval even if email fails
+      }
     }
+    
     res.json({ message: 'Profile approved', profile });
   } catch (err) {
+    console.error('Profile approval error:', err);
     res.status(500).json({ error: err.message || 'Failed to approve profile.' });
   }
 };
 
+// reject profile
 exports.rejectProfile = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const profileId = parseInt(req.params.id, 10);
     const { reason } = req.body;
-    if (!reason) return res.status(400).json({ error: 'Rejection reason required.' });
+    
+    if (!reason) {
+      return res.status(400).json({ error: 'Rejection reason required.' });
+    }
+    
+    // First, check if the profile exists
+    const existingProfile = await prisma.profile.findUnique({
+      where: { id: profileId },
+      include: { user: true }
+    });
+    
+    if (!existingProfile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+    
+    // Update the profile
     const profile = await prisma.profile.update({
       where: { id: profileId },
       data: {
@@ -522,24 +572,48 @@ exports.rejectProfile = async (req, res) => {
       },
       include: { user: true }
     });
+    
+    // ✅ Enhanced error handling for email
     if (profile?.user?.email) {
-      sendProfileRejectedEmail(profile.user.email, profile.firstName || 'User', reason);
+      try {
+        await sendProfileRejectedEmail(profile.user.email, profile.firstName || 'User', reason);
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+        // Continue with rejection even if email fails
+      }
     }
+    
     res.json({ message: 'Profile rejected', profile });
   } catch (err) {
+    console.error('Profile rejection error:', err);
     res.status(500).json({ error: err.message || 'Failed to reject profile.' });
   }
 };
-
+// get pending profiles
 exports.getPendingProfiles = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const profiles = await prisma.profile.findMany({ where: { approvalStatus: 'pending' } });
     res.json(profiles);
-  } catch (err) { res.status(500).json({ error: err.message || 'Failed to fetch pending profiles.' }); }
+  } catch (err) { 
+    res.status(500).json({ error: err.message || 'Failed to fetch pending profiles.' }); 
+  }
 };
 exports.getApprovedProfiles = async (req, res) => {
-  try { const profiles = await prisma.profile.findMany({ where: { approvalStatus: 'approved' } }); res.json(profiles); } catch (err) { res.status(500).json({ error: err.message || 'Failed to fetch approved profiles.' }); }
+  try { 
+    const prisma = await initPrisma();
+    const profiles = await prisma.profile.findMany({ where: { approvalStatus: 'approved' } }); 
+    res.json(profiles); 
+  } catch (err) { 
+    res.status(500).json({ error: err.message || 'Failed to fetch approved profiles.' }); 
+  }
 };
 exports.getRejectedProfiles = async (req, res) => {
-  try { const profiles = await prisma.profile.findMany({ where: { approvalStatus: 'rejected' } }); res.json(profiles); } catch (err) { res.status(500).json({ error: err.message || 'Failed to fetch rejected profiles.' }); }
+  try { 
+    const prisma = await initPrisma();
+    const profiles = await prisma.profile.findMany({ where: { approvalStatus: 'rejected' } }); 
+    res.json(profiles); 
+  } catch (err) { 
+    res.status(500).json({ error: err.message || 'Failed to fetch rejected profiles.' }); 
+  }
 };

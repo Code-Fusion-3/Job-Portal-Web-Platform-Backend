@@ -1,12 +1,24 @@
-const { PrismaClient } = require("@prisma/client");
+const { getPrismaClient } = require('../utils/database');
+const { getAnonymizedJobSeekerData } = require('../utils/dataAnonymizer');
+const bcrypt = require('bcrypt');
+const { generateRandomPassword } = require('../utils/passwordGenerator');
 const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/mailer');
 const { getAdminEmail } = require('../utils/adminUtils');
 
-const prisma = new PrismaClient();
+let prisma = null;
+
+// Initialize Prisma client
+const initPrisma = async () => {
+  if (!prisma) {
+    prisma = await getPrismaClient();
+  }
+  return prisma;
+};
 
 // Public: Submit employer request (no login required)
 exports.submitEmployerRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const { name, email, phoneNumber, companyName, message, requestedCandidateId, priority } = req.body;
 
     if (!name || !email) {
@@ -25,15 +37,123 @@ exports.submitEmployerRequest = async (req, res) => {
       }
     }
 
+    // Check if employer account exists, if not create one
+    let employerAccount = null;
+    let existingUser = null;
+    
+    console.log(`🔍 Checking for existing user with email: ${email}`);
+    
+    // First, find the user by email
+    existingUser = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        employerAccounts: true
+      }
+    });
+
+    if (existingUser) {
+      console.log(`✅ Found existing user: ${existingUser.id}, role: ${existingUser.role}, employer accounts: ${existingUser.employerAccounts.length}`);
+      
+      // User exists - check if they already have an employer account
+      if (existingUser.employerAccounts.length > 0) {
+        // User exists and has employer account(s)
+        employerAccount = existingUser.employerAccounts[0];
+        console.log(`✅ Using existing employer account: ${employerAccount.id}`);
+      } else if (existingUser.role === 'employer') {
+        // User exists with employer role but no employer account - create one
+        console.log(`🔄 Creating employer account for existing employer user`);
+        employerAccount = await prisma.employerAccount.create({
+          data: {
+            userId: existingUser.id,
+            phoneNumber,
+            companyName
+          }
+        });
+        console.log(`✅ Created employer account: ${employerAccount.id}`);
+      } else {
+        // User exists but with different role (e.g., jobseeker) - update role and create employer account
+        console.log(`🔄 Updating user role from ${existingUser.role} to employer and creating employer account`);
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { role: 'employer' }
+        });
+        
+        employerAccount = await prisma.employerAccount.create({
+          data: {
+            userId: existingUser.id,
+            phoneNumber,
+            companyName
+          }
+        });
+        console.log(`✅ Updated user role and created employer account: ${employerAccount.id}`);
+      }
+    }
+
+    if (!employerAccount) {
+      // No existing user - create new user and employer account
+      console.log(`🆕 Creating new user and employer account`);
+      const randomPassword = generateRandomPassword();
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+      // Create user record
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name,
+          role: 'employer'
+        }
+      });
+      console.log(`✅ Created new user: ${user.id}`);
+
+      // Create employer account
+      employerAccount = await prisma.employerAccount.create({
+        data: {
+          userId: user.id,
+          phoneNumber,
+          companyName
+        }
+      });
+      console.log(`✅ Created new employer account: ${employerAccount.id}`);
+
+      // Store the plain password temporarily for email
+      employerAccount.plainPassword = randomPassword;
+    }
+
+    // Create employer request linked to account
     const employerRequest = await prisma.employerRequest.create({
       data: {
-        name,
-        email,
-        phoneNumber,
-        companyName,
+        employerAccountId: employerAccount.id,
         message,
         requestedCandidateId: requestedCandidateId ? parseInt(requestedCandidateId, 10) : null,
-        priority: priority || 'normal'
+        priority: priority || 'normal',
+        // Set default payment requirements
+        paymentRequired: true,
+        paymentAmount: 5000.00,
+        paymentCurrency: 'RWF',
+        paymentDescription: 'Initial non-refundable fee for worker/service details access'
+      }
+    });
+
+    // Create initial progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: employerRequest.id,
+        stage: 'request_received',
+        status: 'completed',
+        description: 'Employer request received and under review. Initial payment of 5,000 Frw required.',
+        completedAt: new Date()
+      }
+    });
+
+    // Create payment required progress
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: employerRequest.id,
+        stage: 'payment_required',
+        status: 'pending',
+        description: 'Initial payment of 5,000 Frw required to proceed with worker details access.',
+        adminNotes: 'Employer needs to pay initial fee before receiving additional information'
       }
     });
 
@@ -42,8 +162,24 @@ exports.submitEmployerRequest = async (req, res) => {
       const adminEmail = await getAdminEmail();
       // Send to admin
       await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, adminEmail, priority);
-      // Send to employer (copy)
-      await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, email, priority);
+      
+      // Send to employer with login credentials if new account
+      if (employerAccount.plainPassword) {
+        await sendEmployerRequestNotification(
+          name, 
+          email, 
+          message, 
+          phoneNumber, 
+          companyName, 
+          requestedCandidateId, 
+          email, 
+          priority,
+          employerAccount.plainPassword // Pass the plain password for email
+        );
+      } else {
+        // Send regular notification for existing accounts
+        await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, email, priority);
+      }
     } catch (emailError) {
       console.error('Failed to send employer request notification:', emailError);
       // Continue even if email fails
@@ -55,10 +191,27 @@ exports.submitEmployerRequest = async (req, res) => {
       // global.wsServer.notifyDashboardUpdate();
     }
 
-    res.status(201).json({
+    // Prepare response with login credentials if new account was created
+    const response = {
       message: 'Employer request submitted successfully',
-      request: employerRequest
-    });
+      request: {
+        id: employerRequest.id,
+        status: employerRequest.status,
+        priority: employerRequest.priority,
+        createdAt: employerRequest.createdAt
+      }
+    };
+
+    // If this is a new account, include login credentials
+    if (employerAccount.plainPassword) {
+      response.loginCredentials = {
+        email,
+        password: employerAccount.plainPassword,
+        message: 'Your account has been created. Please save these credentials to access your dashboard.'
+      };
+    }
+
+    res.status(201).json(response);
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to submit request.' });
   }
@@ -67,6 +220,7 @@ exports.submitEmployerRequest = async (req, res) => {
 // Admin: Get all employer requests with pagination
 exports.getAllEmployerRequests = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
@@ -162,7 +316,7 @@ exports.getAllEmployerRequests = async (req, res) => {
       prisma.employerRequest.count({ where: whereClause })
     ]);
 
-    // Get requested candidate details for each request
+    // Get requested candidate details for each request with anonymization
     const requestsWithCandidateDetails = await Promise.all(
       requests.map(async (request) => {
         if (request.requestedCandidateId) {
@@ -203,9 +357,13 @@ exports.getAllEmployerRequests = async (req, res) => {
               }
             }
           });
+          
+          // Apply anonymization based on current access level
+          const anonymizedCandidate = getAnonymizedJobSeekerData(candidate, request);
+          
           return {
             ...request,
-            requestedCandidate: candidate
+            requestedCandidate: anonymizedCandidate
           };
         }
         return request;
@@ -256,6 +414,7 @@ exports.getAllEmployerRequests = async (req, res) => {
 // Admin: Get request statistics
 exports.getRequestStats = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const { period = '30' } = req.query; // Default to last 30 days
     const days = parseInt(period);
     
@@ -358,6 +517,7 @@ exports.getRequestStats = async (req, res) => {
 // Admin: Get specific employer request with messages
 exports.getEmployerRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
 
     const request = await prisma.employerRequest.findUnique({
@@ -423,6 +583,7 @@ exports.getEmployerRequest = async (req, res) => {
 // Admin: Reply to employer request
 exports.replyToEmployerRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
     const { content } = req.body;
     const adminUser = req.user; // Get admin user from auth middleware
@@ -508,6 +669,7 @@ exports.replyToEmployerRequest = async (req, res) => {
 // Admin: Select a job seeker for employer request
 exports.selectJobSeekerForRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
     const { selectedUserId, detailsType = 'picture' } = req.body;
     const adminUser = req.user; // Get admin user from auth middleware
@@ -673,6 +835,7 @@ exports.selectJobSeekerForRequest = async (req, res) => {
 // Admin: Approve employer request
 exports.approveEmployerRequest = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
     const { adminNotes } = req.body;
 
@@ -792,6 +955,7 @@ exports.approveEmployerRequest = async (req, res) => {
 // Admin: Update request status
 exports.updateRequestStatus = async (req, res) => {
   try {
+    const prisma = await initPrisma();
     const requestId = parseInt(req.params.id, 10);
     const { status, priority, adminNotes } = req.body;
 
@@ -927,5 +1091,265 @@ exports.updateRequestStatus = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to update request status.' });
+  }
+}; 
+
+// Get employer dashboard data
+exports.getEmployerDashboard = async (req, res) => {
+  try {
+    const prisma = await initPrisma();
+    const employerId = req.user.id;
+
+    // Get employer account details
+    const employerAccount = await prisma.employerAccount.findFirst({
+      where: { userId: employerId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            createdAt: true
+          }
+        }
+      }
+    });
+
+    if (!employerAccount) {
+      return res.status(404).json({ error: 'Employer account not found' });
+    }
+
+    // Get all requests for this employer
+    const requests = await prisma.employerRequest.findMany({
+      where: { employerAccountId: employerAccount.id },
+      include: {
+        requestedCandidate: {
+          include: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+                skills: true,
+                experience: true,
+                experienceLevel: true,
+                photo: true,
+                location: true,
+                city: true,
+                country: true,
+                contactNumber: true,
+                monthlyRate: true,
+                jobCategoryId: true,
+                educationLevel: true,
+                availability: true,
+                languages: true,
+                certifications: true,
+                description: true,
+                gender: true,
+                maritalStatus: true,
+                idNumber: true,
+                references: true,
+                dateOfBirth: true,
+                jobCategory: {
+                  select: {
+                    id: true,
+                    name_en: true,
+                    name_rw: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        selectedUser: {
+          include: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+                skills: true,
+                experience: true,
+                experienceLevel: true,
+                photo: true,
+                location: true,
+                city: true,
+                country: true,
+                contactNumber: true,
+                monthlyRate: true,
+                jobCategoryId: true,
+                educationLevel: true,
+                availability: true,
+                languages: true,
+                certifications: true,
+                description: true,
+                gender: true,
+                maritalStatus: true,
+                idNumber: true,
+                references: true,
+                dateOfBirth: true,
+                jobCategory: {
+                  select: {
+                    id: true,
+                    name_en: true,
+                    name_rw: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1 // Get latest message
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1, // Get latest payment
+          include: {
+            paymentMethod: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                accountName: true,
+                accountNumber: true,
+                bankName: true
+              }
+            }
+          }
+        },
+        requestProgress: {
+          orderBy: { createdAt: 'desc' },
+          take: 1 // Get latest progress
+        },
+        _count: {
+          select: {
+            messages: true,
+            payments: true,
+            requestProgress: true
+          }
+        }
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    // Get unread message count
+    const unreadCount = await prisma.message.count({
+      where: {
+        fromAdmin: true,
+        isRead: false,
+        employerRequest: {
+          employerAccountId: employerAccount.id
+        }
+      }
+    });
+
+    // Calculate statistics
+    const stats = {
+      totalRequests: requests.length,
+      pendingRequests: requests.filter(r => r.status === 'pending').length,
+      paymentRequired: requests.filter(r => r.status === 'payment_required').length,
+      approvedRequests: requests.filter(r => r.status === 'approved').length,
+      completedRequests: requests.filter(r => r.status === 'completed').length,
+      totalMessages: requests.reduce((sum, r) => sum + r._count.messages, 0),
+      unreadMessages: unreadCount,
+      totalPayments: requests.reduce((sum, r) => sum + r._count.payments, 0)
+    };
+
+    // Process requests using proper anonymization utility
+    const processedRequests = requests.map(request => {
+      const requestData = {
+        id: request.id,
+        status: request.status,
+        priority: request.priority,
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+        message: request.message,
+        paymentRequired: request.paymentRequired,
+        paymentAmount: request.paymentAmount,
+        paymentCurrency: request.paymentCurrency,
+        paymentDescription: request.paymentDescription,
+        paymentDueDate: request.paymentDueDate,
+        contactAccessGranted: request.contactAccessGranted,
+        imageAccessGranted: request.imageAccessGranted,
+        accessGrantedAt: request.accessGrantedAt,
+        messageCount: request._count.messages,
+        paymentCount: request._count.payments,
+        progressCount: request._count.requestProgress,
+        latestMessage: request.messages[0] || null,
+        latestPayment: request.payments[0] || null,
+        latestProgress: request.requestProgress[0] || null
+      };
+
+      // Add candidate information using proper anonymization utility
+      if (request.requestedCandidate) {
+        const anonymizedCandidate = getAnonymizedJobSeekerData(request.requestedCandidate, request);
+        requestData.candidate = {
+          id: anonymizedCandidate.id,
+          name: `${anonymizedCandidate.profile.firstName} ${anonymizedCandidate.profile.lastName}`,
+          skills: anonymizedCandidate.profile.skills || 'Not specified',
+          experience: anonymizedCandidate.profile.experience || 'Not specified',
+          experienceLevel: anonymizedCandidate.profile.experienceLevel || 'Not specified',
+          educationLevel: anonymizedCandidate.profile.educationLevel || 'Not specified',
+          location: anonymizedCandidate.profile.location || 'Not specified',
+          city: anonymizedCandidate.profile.city || 'Not specified',
+          country: anonymizedCandidate.profile.country || 'Not specified',
+          gender: anonymizedCandidate.profile.gender || 'Not specified',
+          monthlyRate: anonymizedCandidate.profile.monthlyRate || 'Not specified',
+          availability: anonymizedCandidate.profile.availability || 'Not specified',
+          languages: anonymizedCandidate.profile.languages || 'Not specified',
+          certifications: anonymizedCandidate.profile.certifications || 'Not specified',
+          description: anonymizedCandidate.profile.description || 'Not specified',
+          photo: anonymizedCandidate.profile.photo,
+          contactNumber: anonymizedCandidate.profile.contactNumber,
+          accessLevel: anonymizedCandidate.accessLevel,
+          accessGranted: anonymizedCandidate.accessGranted
+        };
+      }
+
+      // Add selected user information if different from requested candidate
+      if (request.selectedUser && request.selectedUser.id !== request.requestedCandidate?.id) {
+        const anonymizedSelectedUser = getAnonymizedJobSeekerData(request.selectedUser, request);
+        requestData.selectedUser = {
+          id: anonymizedSelectedUser.id,
+          name: `${anonymizedSelectedUser.profile.firstName} ${anonymizedSelectedUser.profile.lastName}`,
+          skills: anonymizedSelectedUser.profile.skills || 'Not specified',
+          experience: anonymizedSelectedUser.profile.experience || 'Not specified',
+          experienceLevel: anonymizedSelectedUser.profile.experienceLevel || 'Not specified',
+          educationLevel: anonymizedSelectedUser.profile.educationLevel || 'Not specified',
+          location: anonymizedSelectedUser.profile.location || 'Not specified',
+          city: anonymizedSelectedUser.profile.city || 'Not specified',
+          country: anonymizedSelectedUser.profile.country || 'Not specified',
+          gender: anonymizedSelectedUser.profile.gender || 'Not specified',
+          monthlyRate: anonymizedSelectedUser.profile.monthlyRate || 'Not specified',
+          availability: anonymizedSelectedUser.profile.availability || 'Not specified',
+          languages: anonymizedSelectedUser.profile.languages || 'Not specified',
+          certifications: anonymizedSelectedUser.profile.certifications || 'Not specified',
+          description: anonymizedSelectedUser.profile.description || 'Not specified',
+          photo: anonymizedSelectedUser.profile.photo,
+          contactNumber: anonymizedSelectedUser.profile.contactNumber,
+          accessLevel: anonymizedSelectedUser.accessLevel,
+          accessGranted: anonymizedSelectedUser.accessGranted
+        };
+      }
+
+      return requestData;
+    });
+
+    res.json({
+      employer: {
+        id: employerAccount.id,
+        email: employerAccount.user.email,
+        name: employerAccount.user.name,
+        phoneNumber: employerAccount.phoneNumber,
+        companyName: employerAccount.companyName,
+        createdAt: employerAccount.user.createdAt
+      },
+      stats,
+      requests: processedRequests
+    });
+
+  } catch (error) {
+    console.error('Error getting employer dashboard:', error);
+    res.status(500).json({ error: 'Failed to get dashboard data' });
   }
 }; 

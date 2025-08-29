@@ -23,6 +23,7 @@
     "express-validator": "^7.0.0",
     "jsonwebtoken": "^9.0.0",
     "multer": "^2.0.2",
+    "mysql2": "^3.14.3",
     "nodemailer": "^6.9.0",
     "pdfkit": "^0.17.1",
     "pg": "^8.11.0",
