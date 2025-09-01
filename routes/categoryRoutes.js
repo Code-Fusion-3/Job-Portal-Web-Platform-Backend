@@ -9,6 +9,9 @@ router.get('/', categoryController.getAllJobCategories);
 // Admin: Get all job categories with pagination and details
 router.get('/admin', authenticateToken, requireAdmin, categoryController.adminGetAllJobCategories);
 
+// Admin: Get all job categories without pagination (for management)
+router.get('/admin/all', authenticateToken, requireAdmin, categoryController.adminGetAllJobCategoriesNoPagination);
+
 // Admin: Create job category
 router.post('/', authenticateToken, requireAdmin, categoryController.createJobCategory);
 

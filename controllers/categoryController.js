@@ -101,6 +101,31 @@ exports.adminGetAllJobCategories = async (req, res) => {
   }
 };
 
+// Admin: Get all job categories without pagination (for management)
+exports.adminGetAllJobCategoriesNoPagination = async (req, res) => {
+  try {
+    const prisma = await initPrisma();
+    
+    const categories = await prisma.jobCategory.findMany({
+      include: {
+        _count: {
+          select: {
+            profiles: true
+          }
+        }
+      },
+      orderBy: { name_en: 'asc' }
+    });
+
+    res.json({
+      categories,
+      total: categories.length
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to fetch job categories.' });
+  }
+};
+
 // Admin: Get specific job category
 exports.getJobCategory = async (req, res) => {
   try {
