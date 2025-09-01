@@ -1,5 +1,47 @@
 const { getPrismaClient } = require('../utils/database');
 
+// Helper function to validate and normalize social media URLs
+const validateSocialMediaUrl = (url, platform) => {
+  if (!url || url.trim() === '') return null;
+  
+  const trimmedUrl = url.trim();
+  
+  // If it's already a full URL, validate it
+  if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+    return trimmedUrl;
+  }
+  
+  // If it's just a username, construct the proper URL
+  switch (platform) {
+    case 'github':
+      return `https://github.com/${trimmedUrl.replace(/^github\.com\//, '')}`;
+    case 'facebook':
+      return `https://facebook.com/${trimmedUrl.replace(/^facebook\.com\//, '')}`;
+    case 'linkedin':
+      return `https://linkedin.com/in/${trimmedUrl.replace(/^linkedin\.com\/in\//, '')}`;
+    case 'twitter':
+      return `https://twitter.com/${trimmedUrl.replace(/^twitter\.com\//, '')}`;
+    case 'instagram':
+      return `https://instagram.com/${trimmedUrl.replace(/^instagram\.com\//, '')}`;
+    default:
+      return trimmedUrl;
+  }
+};
+
+// Helper function to sanitize personal data
+const sanitizePersonalData = (personalData) => {
+  if (!personalData) return personalData;
+  
+  return {
+    ...personalData,
+    github: validateSocialMediaUrl(personalData.github, 'github'),
+    facebook: validateSocialMediaUrl(personalData.facebook, 'facebook'),
+    linkedin: validateSocialMediaUrl(personalData.linkedin, 'linkedin'),
+    twitter: validateSocialMediaUrl(personalData.twitter, 'twitter'),
+    instagram: validateSocialMediaUrl(personalData.instagram, 'instagram')
+  };
+};
+
 // Get admin profile information
 exports.getAdminProfile = async (req, res) => {
   try {
@@ -16,14 +58,19 @@ exports.getAdminProfile = async (req, res) => {
       adminProfile = await prisma.adminProfile.create({
         data: {
           adminId: adminId,
-          personal: {
+          personal: sanitizePersonalData({
             name: 'Admin User',
             title: 'Full Stack Developer & System Administrator',
             location: 'Kigali, Rwanda',
             email: 'admin@jobportal.com',
             phone: '+250 123 456 789',
-            aboutMe: 'Experienced full-stack developer with expertise in modern web technologies and system administration.'
-          },
+            aboutMe: 'Experienced full-stack developer with expertise in modern web technologies and system administration.',
+            github: 'github.com/adminuser',
+            facebook: 'facebook.com/adminuser',
+            linkedin: 'linkedin.com/in/adminuser',
+            twitter: 'twitter.com/adminuser',
+            instagram: 'instagram.com/adminuser'
+          }),
           skills: {
             frontend: ['React.js', 'Vue.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Next.js'],
             backend: ['Node.js', 'Express.js', 'Python', 'Django', 'PHP', 'Laravel'],
@@ -33,13 +80,7 @@ exports.getAdminProfile = async (req, res) => {
           experience: [],
           education: [],
           certifications: [],
-          projects: [],
-          systemStats: {
-            jobSeekers: 500,
-            uptime: 98,
-            companies: 50,
-            experience: 5
-          }
+          projects: []
         }
       });
     }
@@ -58,28 +99,32 @@ exports.updateAdminProfile = async (req, res) => {
     const adminId = req.user.id;
     const profileData = req.body;
 
+    // Sanitize and validate personal data, especially social media URLs
+    const sanitizedProfileData = {
+      ...profileData,
+      personal: sanitizePersonalData(profileData.personal)
+    };
+
     // Update or create admin profile
     const adminProfile = await prisma.adminProfile.upsert({
       where: { adminId: adminId },
       update: {
-        personal: profileData.personal,
-        skills: profileData.skills,
-        experience: profileData.experience,
-        education: profileData.education,
-        certifications: profileData.certifications,
-        projects: profileData.projects,
-        systemStats: profileData.systemStats,
+        personal: sanitizedProfileData.personal,
+        skills: sanitizedProfileData.skills,
+        experience: sanitizedProfileData.experience,
+        education: sanitizedProfileData.education,
+        certifications: sanitizedProfileData.certifications,
+        projects: sanitizedProfileData.projects,
         updatedAt: new Date()
       },
       create: {
         adminId: adminId,
-        personal: profileData.personal,
-        skills: profileData.skills,
-        experience: profileData.experience,
-        education: profileData.education,
-        certifications: profileData.certifications,
-        projects: profileData.projects,
-        systemStats: profileData.systemStats
+        personal: sanitizedProfileData.personal,
+        skills: sanitizedProfileData.skills,
+        experience: sanitizedProfileData.experience,
+        education: sanitizedProfileData.education,
+        certifications: sanitizedProfileData.certifications,
+        projects: sanitizedProfileData.projects
       }
     });
 
@@ -142,14 +187,19 @@ exports.getPublicAdminProfile = async (req, res) => {
       adminProfile = await prisma.adminProfile.create({
         data: {
           adminId: adminUser.id,
-          personal: {
+          personal: sanitizePersonalData({
             name: adminUser.name || 'Admin User',
             title: 'Full Stack Developer & System Administrator',
             location: 'Kigali, Rwanda',
             email: adminUser.email || 'admin@jobportal.com',
             phone: '+250 123 456 789',
-            aboutMe: 'Experienced full-stack developer with expertise in modern web technologies and system administration.'
-          },
+            aboutMe: 'Experienced full-stack developer with expertise in modern web technologies and system administration.',
+            github: 'github.com/adminuser',
+            facebook: 'facebook.com/adminuser',
+            linkedin: 'linkedin.com/in/adminuser',
+            twitter: 'twitter.com/adminuser',
+            instagram: 'instagram.com/adminuser'
+          }),
           skills: {
             frontend: ['React.js', 'Vue.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Next.js'],
             backend: ['Node.js', 'Express.js', 'Python', 'Django', 'PHP', 'Laravel'],
@@ -209,13 +259,7 @@ exports.getPublicAdminProfile = async (req, res) => {
               tech: 'Vue.js, Laravel, MySQL, Docker',
               status: 'live'
             }
-          ],
-          systemStats: {
-            jobSeekers: 500,
-            uptime: 98,
-            companies: 50,
-            experience: 5
-          }
+          ]
         }
       });
 
@@ -231,8 +275,7 @@ exports.getPublicAdminProfile = async (req, res) => {
       experience: adminProfile.experience,
       education: adminProfile.education,
       certifications: adminProfile.certifications,
-      projects: adminProfile.projects,
-      systemStats: adminProfile.systemStats
+      projects: adminProfile.projects
     });
   } catch (error) {
     console.error('❌ Error getting public admin profile:', error);
