@@ -5,20 +5,12 @@ const { generateRandomPassword } = require('../utils/passwordGenerator');
 const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/mailer');
 const { getAdminEmail } = require('../utils/adminUtils');
 
-let prisma = null;
-
-// Initialize Prisma client
-const initPrisma = async () => {
-  if (!prisma) {
-    prisma = await getPrismaClient();
-  }
-  return prisma;
-};
+// Prisma client is managed by the database utility
 
 // Public: Submit employer request (no login required)
 exports.submitEmployerRequest = async (req, res) => {
   try {
-    const prisma = await initPrisma();
+    const prisma = await getPrismaClient();
     const { name, email, phoneNumber, companyName, message, requestedCandidateId, priority } = req.body;
 
     if (!name || !email) {
@@ -217,204 +209,12 @@ exports.submitEmployerRequest = async (req, res) => {
   }
 };
 
-// Admin: Get all employer requests with pagination
-exports.getAllEmployerRequests = async (req, res) => {
-  try {
-    const prisma = await initPrisma();
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-    
-    // Extract filter parameters
-    const { 
-      status, 
-      priority, 
-      search, 
-      sortBy = 'createdAt', 
-      sortOrder = 'desc',
-      dateFrom,
-      dateTo,
-      category
-    } = req.query;
-
-    // Build where clause for filtering
-    const whereClause = {};
-    
-    if (status) {
-      whereClause.status = status;
-    }
-    
-    if (priority) {
-      whereClause.priority = priority;
-    }
-    
-    if (search) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { companyName: { contains: search, mode: 'insensitive' } },
-        { message: { contains: search, mode: 'insensitive' } }
-      ];
-    }
-    
-    if (dateFrom || dateTo) {
-      whereClause.createdAt = {};
-      if (dateFrom) {
-        whereClause.createdAt.gte = new Date(dateFrom);
-      }
-      if (dateTo) {
-        whereClause.createdAt.lte = new Date(dateTo);
-      }
-    }
-
-    // Handle category filtering
-    if (category) {
-      whereClause.requestedCandidate = {
-        profile: {
-          jobCategory: {
-            name_en: { equals: category, mode: 'insensitive' }
-          }
-        }
-      };
-    }
-
-    // Validate sort parameters
-    const validSortFields = ['createdAt', 'updatedAt', 'name', 'email', 'status', 'priority'];
-    const validSortOrders = ['asc', 'desc'];
-    
-    const finalSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
-    const finalSortOrder = validSortOrders.includes(sortOrder) ? sortOrder : 'desc';
-
-    const [requests, total] = await Promise.all([
-      prisma.employerRequest.findMany({
-        where: whereClause,
-        include: {
-          selectedUser: {
-            select: {
-              id: true,
-              email: true,
-              profile: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  skills: true,
-                  experience: true,
-                  contactNumber: true
-                }
-              }
-            }
-          },
-          messages: {
-            orderBy: { createdAt: 'desc' },
-            take: 1 // Get latest message
-          }
-        },
-        skip,
-        take: limit,
-        orderBy: { [finalSortBy]: finalSortOrder }
-      }),
-      prisma.employerRequest.count({ where: whereClause })
-    ]);
-
-    // Get requested candidate details for each request with anonymization
-    const requestsWithCandidateDetails = await Promise.all(
-      requests.map(async (request) => {
-        if (request.requestedCandidateId) {
-          const candidate = await prisma.user.findUnique({
-            where: { id: request.requestedCandidateId },
-            include: {
-              profile: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  skills: true,
-                  experience: true,
-                  experienceLevel: true,
-                  photo: true,
-                  location: true,
-                  city: true,
-                  country: true,
-                  contactNumber: true,
-                  monthlyRate: true,
-                  jobCategoryId: true,
-                  educationLevel: true,
-                  availability: true,
-                  languages: true,
-                  certifications: true,
-                  description: true,
-                  gender: true,
-                  maritalStatus: true,
-                  idNumber: true,
-                  references: true,
-                  jobCategory: {
-                    select: {
-                      id: true,
-                      name_en: true,
-                      name_rw: true
-                    }
-                  }
-                }
-              }
-            }
-          });
-          
-          // Apply anonymization based on current access level
-          const anonymizedCandidate = getAnonymizedJobSeekerData(candidate, request);
-          
-          return {
-            ...request,
-            requestedCandidate: anonymizedCandidate
-          };
-        }
-        return request;
-      })
-    );
-
-    // Get status counts for dashboard
-    const statusCounts = await prisma.employerRequest.groupBy({
-      by: ['status'],
-      _count: {
-        status: true
-      }
-    });
-
-    // Format status counts
-    const statusSummary = statusCounts.reduce((acc, item) => {
-      acc[item.status] = item._count.status;
-      return acc;
-    }, {});
-
-    res.json({
-      requests: requestsWithCandidateDetails,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      },
-      filters: {
-        status,
-        priority,
-        search,
-        sortBy: finalSortBy,
-        sortOrder: finalSortOrder,
-        dateFrom,
-        dateTo
-      },
-      summary: {
-        statusCounts: statusSummary,
-        totalRequests: total
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to fetch employer requests.' });
-  }
-};
+// Removed incomplete function
 
 // Admin: Get request statistics
 exports.getRequestStats = async (req, res) => {
   try {
-    const prisma = await initPrisma();
+    const prisma = await getPrismaClient();
     const { period = '30' } = req.query; // Default to last 30 days
     const days = parseInt(period);
     
@@ -517,7 +317,7 @@ exports.getRequestStats = async (req, res) => {
 // Admin: Get specific employer request with messages
 exports.getEmployerRequest = async (req, res) => {
   try {
-    const prisma = await initPrisma();
+    const prisma = await getPrismaClient();
     const requestId = parseInt(req.params.id, 10);
 
     const request = await prisma.employerRequest.findUnique({
@@ -583,7 +383,7 @@ exports.getEmployerRequest = async (req, res) => {
 // Admin: Reply to employer request
 exports.replyToEmployerRequest = async (req, res) => {
   try {
-    const prisma = await initPrisma();
+    const prisma = await getPrismaClient();
     const requestId = parseInt(req.params.id, 10);
     const { content } = req.body;
     const adminUser = req.user; // Get admin user from auth middleware
@@ -669,7 +469,7 @@ exports.replyToEmployerRequest = async (req, res) => {
 // Admin: Select a job seeker for employer request
 exports.selectJobSeekerForRequest = async (req, res) => {
   try {
-    const prisma = await initPrisma();
+    const prisma = await getPrismaClient();
     const requestId = parseInt(req.params.id, 10);
     const { selectedUserId, detailsType = 'picture' } = req.body;
     const adminUser = req.user; // Get admin user from auth middleware
@@ -835,7 +635,7 @@ exports.selectJobSeekerForRequest = async (req, res) => {
 // Admin: Approve employer request
 exports.approveEmployerRequest = async (req, res) => {
   try {
-    const prisma = await initPrisma();
+    const prisma = await getPrismaClient();
     const requestId = parseInt(req.params.id, 10);
     const { adminNotes } = req.body;
 
@@ -955,7 +755,7 @@ exports.approveEmployerRequest = async (req, res) => {
 // Admin: Update request status
 exports.updateRequestStatus = async (req, res) => {
   try {
-    const prisma = await initPrisma();
+    const prisma = await getPrismaClient();
     const requestId = parseInt(req.params.id, 10);
     const { status, priority, adminNotes } = req.body;
 
@@ -1097,7 +897,7 @@ exports.updateRequestStatus = async (req, res) => {
 // Get employer dashboard data
 exports.getEmployerDashboard = async (req, res) => {
   try {
-    const prisma = await initPrisma();
+    const prisma = await getPrismaClient();
     const employerId = req.user.id;
 
     // Get employer account details
@@ -1351,5 +1151,233 @@ exports.getEmployerDashboard = async (req, res) => {
   } catch (error) {
     console.error('Error getting employer dashboard:', error);
     res.status(500).json({ error: 'Failed to get dashboard data' });
+  }
+}; 
+
+// Get all employer requests (admin only)
+exports.getAllEmployerRequests = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    
+    // Get query parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder || 'desc';
+    const status = req.query.status || 'all';
+    
+    // Calculate offset
+    const offset = (page - 1) * limit;
+    
+    // Build where clause
+    const whereClause = {};
+    if (status !== 'all') {
+      whereClause.status = status;
+    }
+    
+    // Get total count
+    const totalCount = await prisma.employerRequest.count({
+      where: whereClause
+    });
+    
+    // Get requests with pagination and sorting
+    const requests = await prisma.employerRequest.findMany({
+      where: whereClause,
+      include: {
+        employerAccount: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true
+              }
+            }
+          }
+        },
+        requestedCandidate: {
+          include: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+                skills: true,
+                experience: true,
+                experienceLevel: true,
+                educationLevel: true,
+                location: true,
+                city: true,
+                country: true,
+                gender: true,
+                monthlyRate: true,
+                availability: true,
+                languages: true,
+                certifications: true,
+                description: true,
+                photo: true,
+                contactNumber: true
+              }
+            }
+          }
+        },
+        selectedUser: {
+          include: {
+            profile: {
+              select: {
+                firstName: true,
+                lastName: true,
+                skills: true,
+                experience: true,
+                experienceLevel: true,
+                educationLevel: true,
+                location: true,
+                city: true,
+                country: true,
+                gender: true,
+                monthlyRate: true,
+                availability: true,
+                languages: true,
+                certifications: true,
+                description: true,
+                photo: true,
+                contactNumber: true
+              }
+            }
+          }
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
+        requestProgress: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
+        _count: {
+          select: {
+            messages: true,
+            payments: true,
+            requestProgress: true
+          }
+        }
+      },
+      orderBy: {
+        [sortBy]: sortOrder
+      },
+      skip: offset,
+      take: limit
+    });
+    
+    // Process requests using proper anonymization utility
+    const processedRequests = requests.map(request => {
+      const requestData = {
+        id: request.id,
+        status: request.status,
+        priority: request.priority,
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+        message: request.message,
+        paymentRequired: request.paymentRequired,
+        paymentAmount: request.paymentAmount,
+        paymentCurrency: request.paymentCurrency,
+        paymentDescription: request.paymentDescription,
+        paymentDueDate: request.paymentDueDate,
+        contactAccessGranted: request.contactAccessGranted,
+        imageAccessGranted: request.imageAccessGranted,
+        accessGrantedAt: request.accessGrantedAt,
+        messageCount: request._count.messages,
+        paymentCount: request._count.payments,
+        progressCount: request._count.requestProgress,
+        latestMessage: request.messages[0] || null,
+        latestPayment: request.payments[0] || null,
+        latestProgress: request.requestProgress[0] || null,
+        employer: {
+          id: request.employerAccount.id,
+          email: request.employerAccount.user.email,
+          name: request.employerAccount.user.name,
+          companyName: request.employerAccount.companyName
+        }
+      };
+
+      // Add candidate information using proper anonymization utility
+      if (request.requestedCandidate) {
+        const anonymizedCandidate = getAnonymizedJobSeekerData(request.requestedCandidate, request);
+        requestData.candidate = {
+          id: anonymizedCandidate.id,
+          name: `${anonymizedCandidate.profile.firstName} ${anonymizedCandidate.profile.lastName}`,
+          skills: anonymizedCandidate.profile.skills || 'Not specified',
+          experience: anonymizedCandidate.profile.experience || 'Not specified',
+          experienceLevel: anonymizedCandidate.profile.experienceLevel || 'Not specified',
+          educationLevel: anonymizedCandidate.profile.educationLevel || 'Not specified',
+          location: anonymizedCandidate.profile.location || 'Not specified',
+          city: anonymizedCandidate.profile.city || 'Not specified',
+          country: anonymizedCandidate.profile.country || 'Not specified',
+          gender: anonymizedCandidate.profile.gender || 'Not specified',
+          monthlyRate: anonymizedCandidate.profile.monthlyRate || 'Not specified',
+          availability: anonymizedCandidate.profile.availability || 'Not specified',
+          languages: anonymizedCandidate.profile.languages || 'Not specified',
+          certifications: anonymizedCandidate.profile.certifications || 'Not specified',
+          description: anonymizedCandidate.profile.description || 'Not specified',
+          photo: anonymizedCandidate.profile.photo,
+          contactNumber: anonymizedCandidate.profile.contactNumber,
+          accessLevel: anonymizedCandidate.accessLevel,
+          accessGranted: anonymizedCandidate.accessGranted
+        };
+      }
+
+      // Add selected user information if different from requested candidate
+      if (request.selectedUser && request.selectedUser.id !== request.requestedCandidate?.id) {
+        const anonymizedSelectedUser = getAnonymizedJobSeekerData(request.selectedUser, request);
+        requestData.selectedUser = {
+          id: anonymizedSelectedUser.id,
+          name: `${anonymizedSelectedUser.profile.firstName} ${anonymizedSelectedUser.profile.lastName}`,
+          skills: anonymizedSelectedUser.profile.skills || 'Not specified',
+          experience: anonymizedSelectedUser.profile.experience || 'Not specified',
+          experienceLevel: anonymizedSelectedUser.profile.experienceLevel || 'Not specified',
+          educationLevel: anonymizedSelectedUser.profile.educationLevel || 'Not specified',
+          location: anonymizedSelectedUser.profile.location || 'Not specified',
+          city: anonymizedSelectedUser.profile.city || 'Not specified',
+          country: anonymizedSelectedUser.profile.country || 'Not specified',
+          gender: anonymizedSelectedUser.profile.gender || 'Not specified',
+          monthlyRate: anonymizedSelectedUser.profile.monthlyRate || 'Not specified',
+          availability: anonymizedSelectedUser.profile.availability || 'Not specified',
+          languages: anonymizedSelectedUser.profile.languages || 'Not specified',
+          certifications: anonymizedSelectedUser.profile.certifications || 'Not specified',
+          description: anonymizedSelectedUser.profile.description || 'Not specified',
+          photo: anonymizedSelectedUser.profile.photo,
+          contactNumber: anonymizedSelectedUser.profile.contactNumber,
+          accessLevel: anonymizedSelectedUser.accessLevel,
+          accessGranted: anonymizedSelectedUser.accessGranted
+        };
+      }
+
+      return requestData;
+    });
+    
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+    
+    res.json({
+      requests: processedRequests,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage,
+        hasPrevPage,
+        limit
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error getting all employer requests:', error);
+    res.status(500).json({ error: 'Failed to get employer requests' });
   }
 }; 

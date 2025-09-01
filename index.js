@@ -89,6 +89,8 @@ app.use('/payments', require('./routes/paymentRoutes'));
 app.use('/payment-methods', require('./routes/paymentMethodRoutes'));
 // Payment confirmation routes
 app.use('/payment-confirmations', require('./routes/paymentConfirmationRoutes'));
+// Admin profile routes
+app.use('/admin-profile', require('./routes/adminProfileRoutes'));
 // Request history and reporting routes
 app.use('/request-history', require('./routes/requestHistoryRoutes'));
 // Dashboard analytics routes

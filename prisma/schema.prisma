@@ -25,6 +25,8 @@ model User {
   paymentApprovals PaymentApproval[]
   // Employer authentication
   employerAccounts EmployerAccount[]
+  // Admin profile
+  adminProfile     AdminProfile?
   // Audit trail
   auditLogs        AuditLog[]
 }
@@ -228,4 +230,20 @@ model EmployerAccount {
   updatedAt        DateTime          @updatedAt
   user             User              @relation(fields: [userId], references: [id])
   employerRequests EmployerRequest[]
+}
+
+// Admin profile model for dynamic profile management
+model AdminProfile {
+  id             Int      @id @default(autoincrement())
+  adminId        Int      @unique
+  personal       Json // Personal information (name, title, location, etc.)
+  skills         Json // Skills organized by category
+  experience     Json // Professional experience array
+  education      Json // Education history array
+  certifications Json // Professional certifications array
+  projects       Json // Portfolio projects array
+  systemStats    Json // System/platform statistics
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  admin          User     @relation(fields: [adminId], references: [id])
 }
