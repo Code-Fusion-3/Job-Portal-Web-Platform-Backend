@@ -97,13 +97,7 @@ The profile management is added to the admin dashboard navigation:
       tech: "Technology stack",
       status: "live"
     }
-  ],
-  systemStats: {
-    jobSeekers: 500,
-    uptime: 98,
-    companies: 50,
-    experience: 5
-  }
+  ]
 }
 ```
 

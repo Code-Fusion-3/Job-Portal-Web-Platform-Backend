@@ -234,16 +234,16 @@ model EmployerAccount {
 
 // Admin profile model for dynamic profile management
 model AdminProfile {
-  id             Int      @id @default(autoincrement())
-  adminId        Int      @unique
+  id             Int  @id @default(autoincrement())
+  adminId        Int  @unique
   personal       Json // Personal information (name, title, location, etc.)
   skills         Json // Skills organized by category
   experience     Json // Professional experience array
   education      Json // Education history array
   certifications Json // Professional certifications array
   projects       Json // Portfolio projects array
-  systemStats    Json // System/platform statistics
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  admin          User     @relation(fields: [adminId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  admin     User     @relation(fields: [adminId], references: [id])
 }

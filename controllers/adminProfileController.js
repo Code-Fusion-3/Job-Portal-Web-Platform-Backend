@@ -75,7 +75,9 @@ exports.getAdminProfile = async (req, res) => {
             frontend: ['React.js', 'Vue.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Next.js'],
             backend: ['Node.js', 'Express.js', 'Python', 'Django', 'PHP', 'Laravel'],
             database: ['PostgreSQL', 'MongoDB', 'MySQL', 'Redis', 'Prisma ORM'],
-            devops: ['Docker', 'AWS', 'CI/CD', 'Git', 'Linux', 'Nginx']
+            devops: ['Docker', 'AWS', 'CI/CD', 'Git', 'Linux', 'Nginx'],
+            design: ['UI/UX Design', 'Figma', 'Adobe Creative Suite', 'Responsive Design'],
+            management: ['Project Management', 'Team Leadership', 'Agile/Scrum', 'Strategic Planning']
           },
           experience: [],
           education: [],
@@ -204,7 +206,9 @@ exports.getPublicAdminProfile = async (req, res) => {
             frontend: ['React.js', 'Vue.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Next.js'],
             backend: ['Node.js', 'Express.js', 'Python', 'Django', 'PHP', 'Laravel'],
             database: ['PostgreSQL', 'MongoDB', 'MySQL', 'Redis', 'Prisma ORM'],
-            devops: ['Docker', 'AWS', 'CI/CD', 'Git', 'Linux', 'Nginx']
+            devops: ['Docker', 'AWS', 'CI/CD', 'Git', 'Linux', 'Nginx'],
+            design: ['UI/UX Design', 'Figma', 'Adobe Creative Suite', 'Responsive Design'],
+            management: ['Project Management', 'Team Leadership', 'Agile/Scrum', 'Strategic Planning']
           },
           experience: [
             {
