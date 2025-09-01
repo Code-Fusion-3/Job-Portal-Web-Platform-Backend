@@ -87,7 +87,18 @@ exports.getAdminProfile = async (req, res) => {
       });
     }
 
-    res.json(adminProfile);
+    // Return data in the format expected by Settings page
+    const userProfile = {
+      id: adminId,
+      firstName: adminProfile.personal.name ? adminProfile.personal.name.split(' ')[0] : '',
+      lastName: adminProfile.personal.name ? adminProfile.personal.name.split(' ').slice(1).join(' ') : '',
+      email: adminProfile.personal.email || '',
+      phone: adminProfile.personal.phone || '',
+      location: adminProfile.personal.location || '',
+      bio: adminProfile.personal.aboutMe || ''
+    };
+
+    res.json(userProfile);
   } catch (error) {
     console.error('Error getting admin profile:', error);
     res.status(500).json({ error: 'Failed to get admin profile' });
@@ -101,39 +112,118 @@ exports.updateAdminProfile = async (req, res) => {
     const adminId = req.user.id;
     const profileData = req.body;
 
-    // Sanitize and validate personal data, especially social media URLs
-    const sanitizedProfileData = {
-      ...profileData,
-      personal: sanitizePersonalData(profileData.personal)
-    };
+    // Check if this is a simple profile update (from Settings page) or detailed profile update
+    if (profileData.firstName || profileData.lastName || profileData.email || profileData.phone || profileData.location || profileData.bio) {
+      // This is a simple profile update from Settings page
+      // Update the User model with basic profile information
+      const updatedUser = await prisma.user.update({
+        where: { id: adminId },
+        data: {
+          name: profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : undefined,
+          email: profileData.email || undefined,
+          updatedAt: new Date()
+        }
+      });
 
-    // Update or create admin profile
-    const adminProfile = await prisma.adminProfile.upsert({
-      where: { adminId: adminId },
-      update: {
-        personal: sanitizedProfileData.personal,
-        skills: sanitizedProfileData.skills,
-        experience: sanitizedProfileData.experience,
-        education: sanitizedProfileData.education,
-        certifications: sanitizedProfileData.certifications,
-        projects: sanitizedProfileData.projects,
-        updatedAt: new Date()
-      },
-      create: {
-        adminId: adminId,
-        personal: sanitizedProfileData.personal,
-        skills: sanitizedProfileData.skills,
-        experience: sanitizedProfileData.experience,
-        education: sanitizedProfileData.education,
-        certifications: sanitizedProfileData.certifications,
-        projects: sanitizedProfileData.projects
+      // Get or create AdminProfile and update the personal section
+      let adminProfile = await prisma.adminProfile.findUnique({
+        where: { adminId: adminId }
+      });
+
+      if (!adminProfile) {
+        // Create new AdminProfile if it doesn't exist
+        adminProfile = await prisma.adminProfile.create({
+          data: {
+            adminId: adminId,
+            personal: {
+              name: profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : 'Admin User',
+              title: 'System Administrator',
+              location: profileData.location || 'Kigali, Rwanda',
+              email: profileData.email || 'admin@jobportal.com',
+              phone: profileData.phone || '',
+              aboutMe: profileData.bio || 'System Administrator for Job Portal Platform'
+            },
+            skills: {
+              frontend: ['React.js', 'Vue.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Next.js'],
+              backend: ['Node.js', 'Express.js', 'Python', 'Django', 'PHP', 'Laravel'],
+              database: ['PostgreSQL', 'MongoDB', 'MySQL', 'Redis', 'Prisma ORM'],
+              devops: ['Docker', 'AWS', 'CI/CD', 'Git', 'Linux', 'Nginx']
+            },
+            experience: [],
+            education: [],
+            certifications: [],
+            projects: []
+          }
+        });
+      } else {
+        // Update existing AdminProfile personal section
+        adminProfile = await prisma.adminProfile.update({
+          where: { adminId: adminId },
+          data: {
+            personal: {
+              ...adminProfile.personal,
+              name: profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : adminProfile.personal.name,
+              location: profileData.location || adminProfile.personal.location,
+              email: profileData.email || adminProfile.personal.email,
+              phone: profileData.phone || adminProfile.personal.phone,
+              aboutMe: profileData.bio || adminProfile.personal.aboutMe
+            },
+            updatedAt: new Date()
+          }
+        });
       }
-    });
 
-    res.json({ 
-      message: 'Profile updated successfully', 
-      profile: adminProfile 
-    });
+      // Return the updated user data in the format expected by Settings page
+      const userProfile = {
+        id: updatedUser.id,
+        firstName: profileData.firstName || '',
+        lastName: profileData.lastName || '',
+        email: updatedUser.email,
+        phone: profileData.phone || '',
+        location: profileData.location || '',
+        bio: profileData.bio || ''
+      };
+
+      res.json({ 
+        message: 'Profile updated successfully', 
+        profile: userProfile 
+      });
+    } else {
+      // This is a detailed profile update from AdminProfileManagement page
+      // Sanitize and validate personal data, especially social media URLs
+      const sanitizedProfileData = {
+        ...profileData,
+        personal: sanitizePersonalData(profileData.personal)
+      };
+
+      // Update or create admin profile
+      const adminProfile = await prisma.adminProfile.upsert({
+        where: { adminId: adminId },
+        update: {
+          personal: sanitizedProfileData.personal,
+          skills: sanitizedProfileData.skills,
+          experience: sanitizedProfileData.experience,
+          education: sanitizedProfileData.education,
+          certifications: sanitizedProfileData.certifications,
+          projects: sanitizedProfileData.projects,
+          updatedAt: new Date()
+        },
+        create: {
+          adminId: adminId,
+          personal: sanitizedProfileData.personal,
+          skills: sanitizedProfileData.skills,
+          experience: sanitizedProfileData.experience,
+          education: sanitizedProfileData.education,
+          certifications: sanitizedProfileData.certifications,
+          projects: sanitizedProfileData.projects
+        }
+      });
+
+      res.json({ 
+        message: 'Profile updated successfully', 
+        profile: adminProfile 
+      });
+    }
   } catch (error) {
     console.error('Error updating admin profile:', error);
     res.status(500).json({ error: 'Failed to update admin profile' });
