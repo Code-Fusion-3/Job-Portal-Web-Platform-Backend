@@ -98,6 +98,9 @@ app.use('/dashboard', require('./routes/dashboardAnalyticsRoutes'));
 // Employer authentication routes
 app.use('/employer/auth', require('./routes/employerAuthRoutes'));
 
+// Notification routes
+app.use('/notifications', require('./routes/notificationRoutes'));
+
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 

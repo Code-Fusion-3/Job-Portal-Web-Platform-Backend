@@ -4,6 +4,9 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
+const { getPrismaClient } = require('../utils/database');
+const PaymentService = require('../services/paymentService');
+const NotificationService = require('../services/notificationService');
 
 const prisma = new PrismaClient();
 
@@ -957,6 +960,1010 @@ const updateSystemSettings = async (req, res) => {
   }
 };
 
+// ===== NEW WORKFLOW FUNCTIONS =====
+
+/**
+ * Get single employer request with full details
+ */
+exports.getEmployerRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const prisma = await getPrismaClient();
+
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: {
+            user: true
+          }
+        },
+        requestedCandidate: {
+          include: {
+            profile: {
+              include: {
+                jobCategory: true
+              }
+            }
+          }
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' }
+        },
+        requestProgress: {
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    res.json(employerRequest);
+  } catch (error) {
+    console.error('Error fetching employer request:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Approve employer request
+ */
+exports.approveEmployerRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { notes } = req.body;
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+    
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: { user: true }
+        },
+        requestedCandidate: true
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (employerRequest.status !== 'pending') {
+      return res.status(400).json({ error: 'Request is not in pending status' });
+    }
+
+    // Update request status
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'approved',
+        requestApprovedBy: adminId,
+        requestApprovedAt: new Date()
+      }
+    });
+
+    // Create first payment request
+    await PaymentService.createFirstPaymentRequest(parseInt(requestId, 10));
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'approved',
+        status: 'completed',
+        description: `Request approved by admin${notes ? `: ${notes}` : ''}`,
+        completedAt: new Date(),
+        completedBy: adminId
+      }
+    });
+
+    // Send notification to employer
+    await NotificationService.sendEmployerNotification(
+      employerRequest.employerAccount.userId,
+      {
+        type: 'request_approved',
+        title: 'Request Approved',
+        message: 'Your request has been approved! Please pay 5,000 RWF for photo access.',
+        employerRequestId: parseInt(requestId, 10)
+      }
+    );
+
+    // Send notification to candidate
+    await NotificationService.sendCandidateNotification(
+      employerRequest.requestedCandidateId,
+      {
+        type: 'request_received',
+        title: 'Service Request Received',
+        message: 'Someone has requested your services. Details will be shared after payment confirmation.',
+        employerRequestId: parseInt(requestId, 10)
+      }
+    );
+
+    // Send email notifications (don't let email failures affect the main response)
+    try {
+      // Email to Employer - Request approved
+      if (employerRequest.employerAccount?.user?.email) {
+        const employerName = employerRequest.employerAccount.user.name || 'Valued Customer';
+        const candidateName = employerRequest.requestedCandidate?.profile ? 
+          `${employerRequest.requestedCandidate.profile.firstName} ${employerRequest.requestedCandidate.profile.lastName}` : 
+          'Requested Worker';
+        
+        await NotificationService.sendEmail({
+          to: employerRequest.employerAccount.user.email,
+          subject: 'Request Approved - Payment Required - Job Portal',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                <h1 style="margin: 0; font-size: 28px;">Request Approved</h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9;">Your request has been approved by our admin team.</p>
+              </div>
+              <div style="padding: 30px; background-color: #ffffff;">
+                <h2 style="color: #2c3e50;">Great News!</h2>
+                <p>Dear <strong>${employerName}</strong>,</p>
+                <p>We're excited to inform you that your request has been approved by our admin team. You're now ready to proceed with the next step.</p>
+                
+                <!-- Request Details Section -->
+                <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+                  <h3 style="color: #155724; margin-top: 0;">📋 Request Details</h3>
+                  <div style="background-color: #fff; padding: 15px; border-radius: 5px; border: 1px solid #c3e6cb;">
+                    <p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #28a745; font-weight: bold;">Approved</span></p>
+                    <p style="margin: 5px 0;"><strong>Requested Worker:</strong> ${candidateName}</p>
+                    <p style="margin: 5px 0;"><strong>Next Step:</strong> Payment Required</p>
+                  </div>
+                </div>
+                
+                <!-- Payment Information Section -->
+                <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                  <h3 style="color: #856404; margin-top: 0;">💰 Payment Information</h3>
+                  
+                  <!-- English Version -->
+                  <div style="margin-bottom: 20px;">
+                    <h4 style="color: #856404; margin-bottom: 10px;">🇬🇧 English</h4>
+                    <p style="color: #856404; line-height: 1.6;">
+                      Your request has been approved! To proceed, you need to pay a non-refundable fee of <strong>5,000 RWF</strong>. After payment confirmation, you'll receive access to the candidate's photo and can then request full details if needed.
+                    </p>
+                  </div>
+                  
+                  <!-- Kinyarwanda Version -->
+                  <div style="margin-bottom: 20px;">
+                    <h4 style="color: #856404; margin-bottom: 10px;">🇷🇼 Kinyarwanda</h4>
+                    <p style="color: #856404; line-height: 1.6;">
+                      Gusaba kwawe kwemejwe! Kugira ngo ukomeze, ukeneye kwishyura amafranga <strong>5,000 RWF</strong> adasubizwa. Nyuma y'emeza ko wishyuye, uzahabwa uburenganzira bwo kureba ifoto y'uwo mukeneye, hanyuma urashobora gusaba amakuru yose niba ukeneye.
+                    </p>
+                  </div>
+                  
+                  <div style="background-color: #fff; padding: 15px; border-radius: 5px; border: 1px solid #ffeaa7;">
+                    <p style="margin: 5px 0; color: #856404;"><strong>📋 Next Steps:</strong></p>
+                    <ol style="color: #856404; margin: 5px 0; padding-left: 20px;">
+                      <li>Pay the initial fee of <strong>5,000 RWF</strong> (non-refundable)</li>
+                      <li>Receive access to the candidate's photo</li>
+                      <li>Request full details if needed</li>
+                      <li>Complete the hiring process</li>
+                    </ol>
+                  </div>
+                </div>
+                
+                <p>If you have any questions, please reply to this email or contact our support team.</p>
+                <div class="signature" style="border-top: 2px solid #28a745; padding-top: 20px; margin-top: 30px;">
+                  <p>Best regards,</p>
+                  <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Job Portal Team</div>
+                  <div class="signature-title" style="color: #28a745; font-size: 14px;">Customer Success Manager</div>
+                </div>
+              </div>
+              <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
+                <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Job Portal. Please do not reply to this email.</p>
+              </div>
+            </div>
+          `
+        });
+      }
+
+      // Email to Admin - Request approved notification
+      await NotificationService.sendAdminNotification({
+        type: 'request_approved',
+        title: 'Request Approved',
+        message: `Request #${requestId} has been approved. Employer: ${employerRequest.employerAccount.user.name}`,
+        employerRequestId: parseInt(requestId, 10)
+      });
+    } catch (emailError) {
+      console.error('Failed to send email notifications:', emailError);
+      // Don't throw - email failure shouldn't affect the main operation
+    }
+
+    res.json({ message: 'Request approved successfully' });
+  } catch (error) {
+    console.error('Error approving employer request:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Reject employer request
+ */
+exports.rejectEmployerRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+    
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: { user: true }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    // Update request status
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'cancelled',
+        isActive: false,
+        deactivatedAt: new Date(),
+        deactivatedBy: adminId
+      }
+    });
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'rejected',
+        status: 'failed',
+        description: `Request rejected by admin${reason ? `: ${reason}` : ''}`,
+        completedAt: new Date(),
+        completedBy: adminId
+      }
+    });
+
+    // Send notification to employer
+    await NotificationService.sendEmployerNotification(
+      employerRequest.employerAccount.userId,
+      {
+        type: 'request_rejected',
+        title: 'Request Rejected',
+        message: `Your request has been rejected.${reason ? ` Reason: ${reason}` : ''}`,
+        employerRequestId: parseInt(requestId, 10)
+      }
+    );
+
+    res.json({ message: 'Request rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting employer request:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Approve payment
+ */
+exports.approvePayment = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { notes } = req.body;
+    const adminId = req.user.id;
+
+    await PaymentService.approvePayment(parseInt(paymentId, 10), adminId, notes);
+
+    res.json({ message: 'Payment approved successfully' });
+  } catch (error) {
+    console.error('Error approving payment:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Reject payment
+ */
+exports.rejectPayment = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+
+    await PaymentService.rejectPayment(parseInt(paymentId, 10), adminId, reason);
+
+    res.json({ message: 'Payment rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting payment:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Request second payment (admin initiated)
+ */
+exports.requestSecondPayment = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { amount } = req.body;
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+    
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: { user: true }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (employerRequest.status !== 'photo_access_granted') {
+      return res.status(400).json({ error: 'Request must have photo access before requesting second payment' });
+    }
+
+    // Create second payment request
+    await PaymentService.createSecondPaymentRequest(parseInt(requestId, 10), amount || 10000);
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'second_payment_required',
+        status: 'completed',
+        description: `Admin requested second payment of ${amount || 10000} RWF for full details`,
+        completedAt: new Date(),
+        completedBy: adminId
+      }
+    });
+
+    res.json({ message: 'Second payment requested successfully' });
+  } catch (error) {
+    console.error('Error requesting second payment:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Approve/Reject full details request from employer
+ */
+exports.approveFullDetailsRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { action, amount, notes } = req.body;
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+    
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: { user: true }
+        },
+        requestedCandidate: true
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (employerRequest.status !== 'full_details_requested') {
+      return res.status(400).json({ error: 'Request is not in full_details_requested status' });
+    }
+
+    if (action === 'approve') {
+      // Set second payment amount and request payment
+      await prisma.employerRequest.update({
+        where: { id: parseInt(requestId, 10) },
+        data: {
+          status: 'second_payment_required',
+          secondPaymentAmount: amount || 10000.0,
+          secondPaymentRequired: true
+        }
+      });
+
+      // Create second payment request
+      await PaymentService.createSecondPaymentRequest(parseInt(requestId, 10), amount || 10000.0);
+
+      // Create progress tracking
+      await prisma.requestProgress.create({
+        data: {
+          employerRequestId: parseInt(requestId, 10),
+          stage: 'second_payment_required',
+          status: 'completed',
+          description: `Admin approved full details request. Second payment of ${amount || 10000} RWF requested`,
+          completedAt: new Date(),
+          completedBy: adminId
+        }
+      });
+
+      // Send notification to employer
+      await NotificationService.sendEmployerNotification(
+        employerRequest.employerAccount.userId,
+        {
+          type: 'full_details_approved',
+          title: 'Full Details Request Approved',
+          message: `Your request for full details has been approved. Please pay ${amount || 10000} RWF to access complete candidate information.`,
+          employerRequestId: parseInt(requestId, 10)
+        }
+      );
+
+      res.json({ message: 'Full details request approved. Second payment requested from employer.' });
+    } else if (action === 'reject') {
+      // Reject the request and keep photo access only
+      await prisma.employerRequest.update({
+        where: { id: parseInt(requestId, 10) },
+        data: {
+          status: 'photo_access_granted',
+          hiringDecisionNotes: notes ? `Admin rejection reason: ${notes}` : 'Full details request rejected by admin'
+        }
+      });
+
+      // Create progress tracking
+      await prisma.requestProgress.create({
+        data: {
+          employerRequestId: parseInt(requestId, 10),
+          stage: 'full_details_rejected',
+          status: 'failed',
+          description: `Admin rejected full details request${notes ? `: ${notes}` : ''}`,
+          completedAt: new Date(),
+          completedBy: adminId
+        }
+      });
+
+      // Send notification to employer
+      await NotificationService.sendEmployerNotification(
+        employerRequest.employerAccount.userId,
+        {
+          type: 'full_details_rejected',
+          title: 'Full Details Request Rejected',
+          message: `Your request for full details has been rejected.${notes ? ` Reason: ${notes}` : ''} You still have photo access.`,
+          employerRequestId: parseInt(requestId, 10)
+        }
+      );
+
+      res.json({ message: 'Full details request rejected. Employer retains photo access only.' });
+    } else {
+      return res.status(400).json({ error: 'Invalid action. Must be "approve" or "reject"' });
+    }
+  } catch (error) {
+    console.error('Error processing full details request:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Update candidate availability after hiring decision
+ */
+exports.updateCandidateAvailability = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { action } = req.body;
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+    
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        requestedCandidate: true,
+        employerAccount: {
+          include: { user: true }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (employerRequest.status !== 'hiring_decision_made') {
+      return res.status(400).json({ error: 'Request must have hiring decision made before updating availability' });
+    }
+
+    if (action === 'mark_unavailable') {
+      // Mark candidate as unavailable
+      await prisma.user.update({
+        where: { id: employerRequest.requestedCandidateId },
+        data: {
+          isAvailableForMatching: false,
+          matchedAt: new Date(),
+          matchedWithEmployerId: parseInt(requestId, 10)
+        }
+      });
+
+      // Update request status
+      await prisma.employerRequest.update({
+        where: { id: parseInt(requestId, 10) },
+        data: {
+          status: 'completed',
+          isCompleted: true,
+          completedAt: new Date(),
+          completedBy: adminId,
+          isActive: false,
+          deactivatedAt: new Date(),
+          deactivatedBy: adminId
+        }
+      });
+
+      // Create progress tracking
+      await prisma.requestProgress.create({
+        data: {
+          employerRequestId: parseInt(requestId, 10),
+          stage: 'completed',
+          status: 'completed',
+          description: 'Candidate marked as unavailable and request completed',
+          completedAt: new Date(),
+          completedBy: adminId
+        }
+      });
+
+      // Send notification to candidate
+      await NotificationService.sendCandidateNotification(
+        employerRequest.requestedCandidateId,
+        {
+          type: 'matched_with_employer',
+          title: 'You Have Been Matched',
+          message: 'Congratulations! You have been matched with an employer.',
+          employerRequestId: parseInt(requestId, 10)
+        }
+      );
+
+      res.json({ message: 'Candidate marked as unavailable and request completed' });
+    } else if (action === 'keep_available') {
+      // Keep candidate available and deactivate request
+      await prisma.employerRequest.update({
+        where: { id: parseInt(requestId, 10) },
+        data: {
+          status: 'completed',
+          isCompleted: true,
+          completedAt: new Date(),
+          completedBy: adminId,
+          isActive: false,
+          deactivatedAt: new Date(),
+          deactivatedBy: adminId
+        }
+      });
+
+      // Create progress tracking
+      await prisma.requestProgress.create({
+        data: {
+          employerRequestId: parseInt(requestId, 10),
+          stage: 'completed',
+          status: 'completed',
+          description: 'Request completed but candidate remains available',
+          completedAt: new Date(),
+          completedBy: adminId
+        }
+      });
+
+      res.json({ message: 'Request completed. Candidate remains available for other requests.' });
+    } else {
+      return res.status(400).json({ error: 'Invalid action. Must be "mark_unavailable" or "keep_available"' });
+    }
+  } catch (error) {
+    console.error('Error updating candidate availability:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Admin: Get all job seekers
+exports.getAllJobSeekers = async (req, res) => {
+  try {
+    const { limit = 10, page = 1, search, status } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const whereClause = {
+      role: 'job_seeker'
+    };
+
+    // Add search filter
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    // Add status filter
+    if (status) {
+      whereClause.isAvailableForMatching = status === 'available';
+    }
+
+    const [jobSeekers, totalCount] = await Promise.all([
+      getPrismaClient().user.findMany({
+        where: whereClause,
+        include: {
+          profile: true,
+          matchedEmployerRequest: {
+            include: {
+              employer: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: skip,
+        take: parseInt(limit)
+      }),
+      getPrismaClient().user.count({
+        where: whereClause
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: jobSeekers,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalCount / parseInt(limit)),
+        totalCount,
+        hasNext: skip + parseInt(limit) < totalCount,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching job seekers:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch job seekers'
+    });
+  }
+};
+
+/**
+ * Approve first payment
+ */
+exports.approveFirstPayment = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { notes } = req.body;
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+
+    // Get the employer request
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: {
+            user: true
+          }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (!['first_payment_confirmed', 'payment_confirmed'].includes(employerRequest.status)) {
+      return res.status(400).json({ error: 'Request must be in first_payment_confirmed or payment_confirmed status' });
+    }
+
+    // Update request status
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'photo_access_granted',
+        updatedAt: new Date()
+      }
+    });
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'photo_access_granted',
+        status: 'completed',
+        description: `First payment approved by admin${notes ? `: ${notes}` : ''}`,
+        completedAt: new Date(),
+        completedBy: adminId
+      }
+    });
+
+    // Send notification to employer (don't let email failures affect the main response)
+    if (employerRequest.employerAccount?.user?.email) {
+      try {
+        await NotificationService.sendEmail({
+          to: employerRequest.employerAccount.user.email,
+          subject: 'Payment Approved - Photo Access Granted - Job Portal',
+          html: `
+            <h2>Payment Approved - Photo Access Granted</h2>
+            <p>Your first payment has been approved by the admin.</p>
+            <p>You now have access to the candidate's photo and can proceed with the next steps.</p>
+            ${notes ? `<p><strong>Admin Notes:</strong> ${notes}</p>` : ''}
+          `
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't throw - email failure shouldn't affect the main operation
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'First payment approved successfully',
+      newStatus: 'photo_access_granted'
+    });
+
+  } catch (error) {
+    console.error('Error approving first payment:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve first payment'
+    });
+  }
+};
+
+/**
+ * Reject first payment
+ */
+exports.rejectFirstPayment = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+
+    // Get the employer request
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: {
+            user: true
+          }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (!['first_payment_confirmed', 'payment_confirmed'].includes(employerRequest.status)) {
+      return res.status(400).json({ error: 'Request must be in first_payment_confirmed or payment_confirmed status' });
+    }
+
+    // Update request status
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'cancelled',
+        updatedAt: new Date()
+      }
+    });
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'payment_rejected',
+        status: 'completed',
+        description: `First payment rejected by admin${reason ? `: ${reason}` : ''}`,
+        completedAt: new Date(),
+        completedBy: adminId
+      }
+    });
+
+    // Send notification to employer (don't let email failures affect the main response)
+    if (employerRequest.employerAccount?.user?.email) {
+      try {
+        await NotificationService.sendEmail({
+          to: employerRequest.employerAccount.user.email,
+          subject: 'Payment Rejected - Job Portal',
+          html: `
+            <h2>Payment Rejected</h2>
+            <p>Your first payment has been rejected by the admin.</p>
+            <p>Please contact support for more information.</p>
+            ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+          `
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't throw - email failure shouldn't affect the main operation
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'First payment rejected successfully',
+      newStatus: 'cancelled'
+    });
+
+  } catch (error) {
+    console.error('Error rejecting first payment:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reject first payment'
+    });
+  }
+};
+
+/**
+ * Approve second payment
+ */
+exports.approveSecondPayment = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { notes } = req.body;
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+
+    // Get the employer request
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: {
+            user: true
+          }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (employerRequest.status !== 'second_payment_confirmed') {
+      return res.status(400).json({ error: 'Request must be in second_payment_confirmed status' });
+    }
+
+    // Update request status
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'full_access_granted',
+        updatedAt: new Date()
+      }
+    });
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'full_access_granted',
+        status: 'completed',
+        description: `Second payment approved by admin${notes ? `: ${notes}` : ''}`,
+        completedAt: new Date(),
+        completedBy: adminId
+      }
+    });
+
+    // Send notification to employer (don't let email failures affect the main response)
+    if (employerRequest.employerAccount?.user?.email) {
+      try {
+        await NotificationService.sendEmail({
+          to: employerRequest.employerAccount.user.email,
+          subject: 'Second Payment Approved - Full Access Granted - Job Portal',
+          html: `
+            <h2>Second Payment Approved - Full Access Granted</h2>
+            <p>Your second payment has been approved by the admin.</p>
+            <p>You now have full access to the candidate's details and can make your hiring decision.</p>
+            ${notes ? `<p><strong>Admin Notes:</strong> ${notes}</p>` : ''}
+          `
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't throw - email failure shouldn't affect the main operation
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Second payment approved successfully',
+      newStatus: 'full_access_granted'
+    });
+
+  } catch (error) {
+    console.error('Error approving second payment:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve second payment'
+    });
+  }
+};
+
+/**
+ * Reject second payment
+ */
+exports.rejectSecondPayment = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+
+    // Get the employer request
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: {
+            user: true
+          }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (employerRequest.status !== 'second_payment_confirmed') {
+      return res.status(400).json({ error: 'Request must be in second_payment_confirmed status' });
+    }
+
+    // Update request status
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'cancelled',
+        updatedAt: new Date()
+      }
+    });
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'payment_rejected',
+        status: 'completed',
+        description: `Second payment rejected by admin${reason ? `: ${reason}` : ''}`,
+        completedAt: new Date(),
+        completedBy: adminId
+      }
+    });
+
+    // Send notification to employer (don't let email failures affect the main response)
+    if (employerRequest.employerAccount?.user?.email) {
+      try {
+        await NotificationService.sendEmail({
+          to: employerRequest.employerAccount.user.email,
+          subject: 'Second Payment Rejected - Job Portal',
+          html: `
+            <h2>Second Payment Rejected</h2>
+            <p>Your second payment has been rejected by the admin.</p>
+            <p>Please contact support for more information.</p>
+            ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+          `
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't throw - email failure shouldn't affect the main operation
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Second payment rejected successfully',
+      newStatus: 'cancelled'
+    });
+
+  } catch (error) {
+    console.error('Error rejecting second payment:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reject second payment'
+    });
+  }
+};
+
 module.exports = {
   exportSystemData: exports.exportSystemData,
   getSystemHealth: exports.getSystemHealth,
@@ -967,5 +1974,19 @@ module.exports = {
   changeAdminPassword,
   updateAdminAvatar,
   getSystemSettings,
-  updateSystemSettings
+  updateSystemSettings,
+  getAllJobSeekers: exports.getAllJobSeekers,
+  // New workflow functions
+  getEmployerRequest: exports.getEmployerRequest,
+  approveEmployerRequest: exports.approveEmployerRequest,
+  rejectEmployerRequest: exports.rejectEmployerRequest,
+  approvePayment: exports.approvePayment,
+  rejectPayment: exports.rejectPayment,
+  requestSecondPayment: exports.requestSecondPayment,
+  approveFullDetailsRequest: exports.approveFullDetailsRequest,
+  updateCandidateAvailability: exports.updateCandidateAvailability,
+  approveFirstPayment: exports.approveFirstPayment,
+  rejectFirstPayment: exports.rejectFirstPayment,
+  approveSecondPayment: exports.approveSecondPayment,
+  rejectSecondPayment: exports.rejectSecondPayment
 }; 

@@ -52,4 +52,30 @@ router.put('/avatar', authenticateToken, requireAdmin, avatarUpload.single('avat
 router.get('/settings', authenticateToken, requireAdmin, adminController.getSystemSettings);
 router.put('/settings', authenticateToken, requireAdmin, adminController.updateSystemSettings);
 
+// ===== NEW WORKFLOW ROUTES =====
+
+// Employer Request Management
+router.get('/employer-requests/:requestId', authenticateToken, requireAdmin, adminController.getEmployerRequest);
+router.post('/employer-requests/:requestId/approve', authenticateToken, requireAdmin, adminController.approveEmployerRequest);
+router.post('/employer-requests/:requestId/reject', authenticateToken, requireAdmin, adminController.rejectEmployerRequest);
+router.post('/employer-requests/:requestId/request-second-payment', authenticateToken, requireAdmin, adminController.requestSecondPayment);
+router.post('/employer-requests/:requestId/approve-full-details-request', authenticateToken, requireAdmin, adminController.approveFullDetailsRequest);
+router.post('/employer-requests/:requestId/update-candidate-availability', authenticateToken, requireAdmin, adminController.updateCandidateAvailability);
+
+
+
+// Payment Management
+// Job seekers management routes
+router.get('/job-seekers', authenticateToken, requireAdmin, adminController.getAllJobSeekers);
+
+// Payment management routes
+router.post('/payments/:paymentId/approve', authenticateToken, requireAdmin, adminController.approvePayment);
+router.post('/payments/:paymentId/reject', authenticateToken, requireAdmin, adminController.rejectPayment);
+
+// Payment approval by request ID
+router.post('/employer-requests/:requestId/approve-first-payment', authenticateToken, requireAdmin, adminController.approveFirstPayment);
+router.post('/employer-requests/:requestId/reject-first-payment', authenticateToken, requireAdmin, adminController.rejectFirstPayment);
+router.post('/employer-requests/:requestId/approve-second-payment', authenticateToken, requireAdmin, adminController.approveSecondPayment);
+router.post('/employer-requests/:requestId/reject-second-payment', authenticateToken, requireAdmin, adminController.rejectSecondPayment);
+
 module.exports = router; 

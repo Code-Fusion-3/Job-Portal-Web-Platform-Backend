@@ -29,6 +29,15 @@ model User {
   adminProfile     AdminProfile?
   // Audit trail
   auditLogs        AuditLog[]
+
+  // Job seeker availability tracking
+  isAvailableForMatching Boolean          @default(true)
+  matchedAt              DateTime?
+  matchedWithEmployerId  Int?
+  matchedEmployerRequest EmployerRequest? @relation("MatchedEmployerRequest", fields: [matchedWithEmployerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  // Notifications
+  notifications Notification[]
 }
 
 model Profile {
@@ -74,7 +83,7 @@ model EmployerRequest {
   selectedUserId       Int?
   createdAt            DateTime          @default(now())
   priority             String            @default("normal") @db.VarChar(20)
-  status               String            @default("pending") @db.VarChar(20) // pending | reviewing | payment_required | payment_confirmed | approved | completed | cancelled
+  status               String            @default("pending") @db.VarChar(50) // pending | approved | first_payment_required | first_payment_confirmed | photo_access_granted | full_details_requested | second_payment_required | second_payment_confirmed | full_access_granted | hiring_decision_made | completed | cancelled
   updatedAt            DateTime          @updatedAt
   requestedCandidateId Int?
   requestedCandidate   User?             @relation("RequestedCandidate", fields: [requestedCandidateId], references: [id])
@@ -83,17 +92,68 @@ model EmployerRequest {
   messages             Message[]
   payments             Payment[]
   requestProgress      RequestProgress[]
-  // New fields for payment workflow
-  paymentRequired      Boolean           @default(false)
-  paymentAmount        Decimal?          @db.Decimal(10, 2)
-  paymentCurrency      String?           @default("RWF") @db.VarChar(10)
-  paymentDescription   String?           @db.Text
+
+  // Legacy fields for backward compatibility
+  paymentRequired      Boolean   @default(false)
+  paymentAmount        Decimal?  @db.Decimal(10, 2)
+  paymentCurrency      String?   @default("RWF") @db.VarChar(10)
+  paymentDescription   String?   @db.Text
   paymentDueDate       DateTime?
-  // Contact access control
-  contactAccessGranted Boolean           @default(false)
-  imageAccessGranted   Boolean           @default(false)
+  contactAccessGranted Boolean   @default(false)
+  imageAccessGranted   Boolean   @default(false)
   accessGrantedAt      DateTime?
   accessGrantedBy      Int?
+
+  // New workflow fields
+  // First payment tracking
+  firstPaymentRequired    Boolean   @default(true)
+  firstPaymentAmount      Decimal?  @default(5000.00) @db.Decimal(10, 2)
+  firstPaymentConfirmed   Boolean   @default(false)
+  firstPaymentConfirmedAt DateTime?
+
+  // Second payment tracking
+  secondPaymentRequired    Boolean   @default(false)
+  secondPaymentAmount      Decimal?  @db.Decimal(10, 2)
+  secondPaymentConfirmed   Boolean   @default(false)
+  secondPaymentConfirmedAt DateTime?
+
+  // Access control
+  partialAccessGranted Boolean @default(false)
+  fullAccessGranted    Boolean @default(false)
+
+  // Admin approval tracking
+  requestApprovedBy       Int?
+  requestApprovedAt       DateTime?
+  firstPaymentApprovedBy  Int?
+  firstPaymentApprovedAt  DateTime?
+  secondPaymentApprovedBy Int?
+  secondPaymentApprovedAt DateTime?
+
+  // Hiring decision
+  hiringDecision       String?   @db.VarChar(20) // hired | not_hired
+  hiringDecisionMadeBy Int?
+  hiringDecisionMadeAt DateTime?
+  hiringDecisionNotes  String?   @db.Text
+
+  // Completion tracking
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  completedBy Int?
+
+  // Deactivation
+  isActive      Boolean   @default(true)
+  deactivatedAt DateTime?
+  deactivatedBy Int?
+
+  // Candidate notification
+  candidateNotified   Boolean   @default(false)
+  candidateNotifiedAt DateTime?
+
+  // Notifications
+  notifications Notification[]
+
+  // Matched job seekers
+  matchedJobSeekers User[] @relation("MatchedEmployerRequest")
 }
 
 model Message {
@@ -113,27 +173,33 @@ model Message {
 
 // New model for payment tracking
 model Payment {
-  id                Int               @id @default(autoincrement())
+  id                Int     @id @default(autoincrement())
   employerRequestId Int
-  amount            Decimal           @db.Decimal(10, 2)
-  currency          String            @default("RWF") @db.VarChar(10)
+  amount            Decimal @db.Decimal(10, 2)
+  currency          String  @default("RWF") @db.VarChar(10)
   paymentMethodId   Int // Link to PaymentMethod
-  paymentType       String            @db.VarChar(50) // photo_access | full_details
-  paymentReference  String            @db.VarChar(255) // External payment reference
-  status            String            @default("pending") @db.VarChar(20) // pending | confirmed | approved | rejected
-  description       String?           @db.Text
+  paymentType       String  @db.VarChar(50) // first_installment | second_installment
+  paymentReference  String  @db.VarChar(255) // External payment reference
+  status            String  @default("pending") @db.VarChar(50) // pending | confirmed | approved | rejected
+  description       String? @db.Text
+
   // Payment confirmation details
-  confirmationName  String?           @db.VarChar(255) // Name on the account that made payment
-  confirmationPhone String?           @db.VarChar(20) // Phone number that made payment
+  confirmationName  String?   @db.VarChar(255) // Name on the account that made payment
+  confirmationPhone String?   @db.VarChar(20) // Phone number that made payment
   confirmationDate  DateTime?
-  adminNotes        String?           @db.Text
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  employerRequest   EmployerRequest   @relation(fields: [employerRequestId], references: [id])
-  paymentMethod     PaymentMethod     @relation(fields: [paymentMethodId], references: [id])
-  user              User?             @relation(fields: [userId], references: [id])
-  userId            Int?
-  approvals         PaymentApproval[]
+  adminNotes        String?   @db.Text
+
+  // Installment tracking
+  installmentNumber Int     @default(1) // 1 for first, 2 for second
+  isNonRefundable   Boolean @default(false) // First installment is non-refundable
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  employerRequest EmployerRequest   @relation(fields: [employerRequestId], references: [id])
+  paymentMethod   PaymentMethod     @relation(fields: [paymentMethodId], references: [id])
+  user            User?             @relation(fields: [userId], references: [id])
+  userId          Int?
+  approvals       PaymentApproval[]
 }
 
 // New model for payment approval workflow
@@ -152,7 +218,7 @@ model PaymentApproval {
 model RequestProgress {
   id                Int             @id @default(autoincrement())
   employerRequestId Int
-  stage             String          @db.VarChar(50) // request_received | admin_review | payment_requested | payment_confirmed | contact_shared | completed
+  stage             String          @db.VarChar(50) // request_received | approved | first_payment_required | first_payment_confirmed | photo_access_granted | full_details_requested | second_payment_required | second_payment_confirmed | full_access_granted | hiring_decision_made | completed
   status            String          @db.VarChar(20) // pending | in_progress | completed | failed
   description       String          @db.Text
   adminNotes        String?         @db.Text
@@ -246,4 +312,20 @@ model AdminProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   admin     User     @relation(fields: [adminId], references: [id])
+}
+
+// Notification system for tracking all notifications
+model Notification {
+  id                Int       @id @default(autoincrement())
+  userId            Int
+  employerRequestId Int?
+  type              String    @db.VarChar(50) // request_received | request_approved | payment_request | payment_confirmed | access_granted | completion | full_details_requested
+  title             String    @db.VarChar(255)
+  message           String    @db.Text
+  isRead            Boolean   @default(false)
+  readAt            DateTime?
+  createdAt         DateTime  @default(now())
+
+  user            User             @relation(fields: [userId], references: [id])
+  employerRequest EmployerRequest? @relation(fields: [employerRequestId], references: [id])
 }

@@ -1,4 +1,5 @@
 const { getPrismaClient } = require('../utils/database');
+const NotificationService = require('../services/notificationService');
 let prisma = null;
 
 // Initialize Prisma client
@@ -81,6 +82,47 @@ exports.confirmPayment = async (req, res) => {
         completedAt: new Date()
       }
     });
+
+    // Send email notifications (don't let email failures affect the main response)
+    try {
+      // Email to Admin - Payment confirmation received
+      await NotificationService.sendAdminNotification({
+        type: 'payment_confirmed',
+        title: 'Payment Confirmation Received',
+        message: `Employer ${payment.employerRequest.employerAccount.user.name} has confirmed payment for request #${payment.employerRequestId}. Amount: ${payment.amount} ${payment.currency}`,
+        employerRequestId: payment.employerRequestId
+      });
+
+      // Email to Employer - Confirmation received
+      if (payment.employerRequest.employerAccount?.user?.email) {
+        await NotificationService.sendEmail({
+          to: payment.employerRequest.employerAccount.user.email,
+          subject: 'Payment Confirmation Received - Job Portal',
+          html: `
+            <h2>Payment Confirmation Received</h2>
+            <p>Dear ${payment.employerRequest.employerAccount.user.name},</p>
+            <p>Your payment confirmation has been received and is being reviewed by our admin team.</p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <h3>Payment Details:</h3>
+              <p><strong>Amount:</strong> ${payment.amount} ${payment.currency}</p>
+              <p><strong>Payment Reference:</strong> ${paymentReference || 'Not provided'}</p>
+              <p><strong>Confirmed by:</strong> ${confirmationName} (${confirmationPhone})</p>
+              <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+              <li>Admin will review your payment confirmation</li>
+              <li>Access will be granted after approval</li>
+              <li>You will be notified when access is granted</li>
+            </ul>
+            <p>Thank you for using our job portal service.</p>
+          `
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send email notifications:', emailError);
+      // Don't throw - email failure shouldn't affect the main operation
+    }
 
     res.json({
       message: 'Payment confirmation received successfully',

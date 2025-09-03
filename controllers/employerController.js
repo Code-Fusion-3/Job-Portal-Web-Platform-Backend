@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const { generateRandomPassword } = require('../utils/passwordGenerator');
 const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/mailer');
 const { getAdminEmail } = require('../utils/adminUtils');
+const PaymentService = require('../services/paymentService');
+const NotificationService = require('../services/notificationService');
 
 // Prisma client is managed by the database utility
 
@@ -55,7 +57,7 @@ exports.submitEmployerRequest = async (req, res) => {
         // User exists with employer role but no employer account - create one
         console.log(`🔄 Creating employer account for existing employer user`);
         employerAccount = await prisma.employerAccount.create({
-          data: {
+      data: {
             userId: existingUser.id,
             phoneNumber,
             companyName
@@ -90,7 +92,7 @@ exports.submitEmployerRequest = async (req, res) => {
       // Create user record
       const user = await prisma.user.create({
         data: {
-          email,
+        email,
           password: hashedPassword,
           name,
           role: 'employer'
@@ -102,7 +104,7 @@ exports.submitEmployerRequest = async (req, res) => {
       employerAccount = await prisma.employerAccount.create({
         data: {
           userId: user.id,
-          phoneNumber,
+        phoneNumber,
           companyName
         }
       });
@@ -170,7 +172,7 @@ exports.submitEmployerRequest = async (req, res) => {
         );
       } else {
         // Send regular notification for existing accounts
-        await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, email, priority);
+      await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, email, priority);
       }
     } catch (emailError) {
       console.error('Failed to send employer request notification:', emailError);
@@ -397,7 +399,20 @@ exports.replyToEmployerRequest = async (req, res) => {
 
     // Check if request exists
     const request = await prisma.employerRequest.findUnique({
-      where: { id: requestId }
+      where: { id: requestId },
+      include: {
+        employerAccount: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!request) {
@@ -405,7 +420,7 @@ exports.replyToEmployerRequest = async (req, res) => {
       return res.status(404).json({ error: 'Employer request not found.' });
     }
 
-    console.log(`📋 Request details - Employer: ${request.name} (${request.email}), Status: ${request.status}`);
+    console.log(`📋 Request details - Employer: ${request.employerAccount?.user?.name || 'Employer'} (${request.employerAccount?.user?.email}), Status: ${request.status}`);
 
     // Check if request is approved - block further communication
     if (request.status === 'approved') {
@@ -428,7 +443,7 @@ exports.replyToEmployerRequest = async (req, res) => {
       data: {
         employerRequestId: requestId,
         fromAdmin: true,
-        employerEmail: request.email,
+        employerEmail: request.employerAccount?.user?.email,
         content,
         messageType: 'admin_reply'
       }
@@ -439,25 +454,25 @@ exports.replyToEmployerRequest = async (req, res) => {
     // Send email notification to employer
     let emailSent = false;
     try {
-      console.log(`📤 Sending email to employer: ${request.email}`);
-      await sendAdminReplyNotification(request.email, request.name, content);
+      console.log(`📤 Sending email to employer: ${request.employerAccount?.user?.email}`);
+      await sendAdminReplyNotification(request.employerAccount?.user?.email, request.employerAccount?.user?.name || 'Employer', content);
       emailSent = true;
-      console.log(`✅ Email sent successfully to: ${request.email}`);
+      console.log(`✅ Email sent successfully to: ${request.employerAccount?.user?.email}`);
     } catch (emailError) {
       console.error('❌ Failed to send admin reply notification:', emailError);
       // Continue even if email fails
     }
 
     // Log the reply action
-    console.log(`📝 Reply completed - Request: ${requestId}, Employer: ${request.name}, Email: ${emailSent ? 'Sent' : 'Failed'}`);
+    console.log(`📝 Reply completed - Request: ${requestId}, Employer: ${request.employerAccount?.user?.name || 'Employer'}, Email: ${emailSent ? 'Sent' : 'Failed'}`);
 
     res.status(201).json({
       message: 'Reply sent successfully',
       messageData: {
         ...message,
         emailSent,
-        employerName: request.name,
-        employerEmail: request.email
+        employerName: request.employerAccount?.user?.name || 'Employer',
+        employerEmail: request.employerAccount?.user?.email
       }
     });
   } catch (err) {
@@ -491,7 +506,7 @@ exports.selectJobSeekerForRequest = async (req, res) => {
       return res.status(404).json({ error: 'Employer request not found.' });
     }
 
-    console.log(`📋 Request details - Employer: ${request.name} (${request.email}), Status: ${request.status}`);
+    console.log(`📋 Request details - Employer: ${request.employerAccount?.user?.name || 'Employer'} (${request.employerAccount?.user?.email}), Status: ${request.status}`);
 
     // Check if request is already approved
     if (request.status === 'approved') {
@@ -597,23 +612,23 @@ exports.selectJobSeekerForRequest = async (req, res) => {
     // Send email notification to employer based on details type
     let emailSent = false;
     try {
-      console.log(`📤 Sending candidate selection email to employer: ${request.email}`);
+      console.log(`📤 Sending candidate selection email to employer: ${request.employerAccount?.user?.email}`);
       
       if (detailsType === 'picture') {
-        await sendCandidatePictureNotification(request.email, request.name, selectedUser);
+        await sendCandidatePictureNotification(request.employerAccount?.user?.email, request.employerAccount?.user?.name || 'Employer', selectedUser);
       } else {
-        await sendCandidateFullDetailsNotification(request.email, request.name, selectedUser);
+        await sendCandidateFullDetailsNotification(request.employerAccount?.user?.email, request.employerAccount?.user?.name || 'Employer', selectedUser);
       }
       
       emailSent = true;
-      console.log(`✅ Candidate selection email sent successfully to: ${request.email}`);
+      console.log(`✅ Candidate selection email sent successfully to: ${request.employerAccount?.user?.email}`);
     } catch (emailError) {
       console.error('❌ Failed to send candidate selection notification:', emailError);
       // Continue even if email fails
     }
 
     // Log the selection action
-    console.log(`📝 Candidate selection completed - Request: ${requestId}, Employer: ${request.name}, Candidate: ${selectedUser.profile?.firstName} ${selectedUser.profile?.lastName}, Details: ${detailsType}, Email: ${emailSent ? 'Sent' : 'Failed'}`);
+    console.log(`📝 Candidate selection completed - Request: ${requestId}, Employer: ${request.employerAccount?.user?.name || 'Employer'}, Candidate: ${selectedUser.profile?.firstName} ${selectedUser.profile?.lastName}, Details: ${detailsType}, Email: ${emailSent ? 'Sent' : 'Failed'}`);
 
     res.json({
       message: 'Job seeker selected successfully',
@@ -621,8 +636,8 @@ exports.selectJobSeekerForRequest = async (req, res) => {
         ...updatedRequest,
         emailSent,
         detailsType,
-        employerName: request.name,
-        employerEmail: request.email,
+        employerName: request.employerAccount?.user?.name || 'Employer',
+        employerEmail: request.employerAccount?.user?.email,
         candidateName: `${selectedUser.profile?.firstName} ${selectedUser.profile?.lastName}`
       }
     });
@@ -707,7 +722,7 @@ exports.approveEmployerRequest = async (req, res) => {
         data: {
           employerRequestId: requestId,
           fromAdmin: true,
-          employerEmail: request.email,
+          employerEmail: request.employerAccount?.user?.email,
           content: `Request approved. ${adminNotes}`,
           messageType: 'system'
         }
@@ -717,7 +732,7 @@ exports.approveEmployerRequest = async (req, res) => {
         data: {
           employerRequestId: requestId,
           fromAdmin: true,
-          employerEmail: request.email,
+          employerEmail: request.employerAccount?.user?.email,
           content: 'Request approved by admin.',
           messageType: 'system'
         }
@@ -727,8 +742,8 @@ exports.approveEmployerRequest = async (req, res) => {
     // Send approval notification email to employer
     try {
       await sendRequestApprovalNotification(
-        request.email, 
-        request.name, 
+        request.employerAccount?.user?.email, 
+        request.employerAccount?.user?.name || 'Employer', 
         request.selectedUser,
         adminNotes
       );
@@ -795,6 +810,17 @@ exports.updateRequestStatus = async (req, res) => {
               }
             }
           }
+        },
+        employerAccount: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true
+              }
+            }
+          }
         }
       }
     });
@@ -836,13 +862,17 @@ exports.updateRequestStatus = async (req, res) => {
       }
     });
 
+    // Get employer email from the related user account
+    const employerEmail = request.employerAccount?.user?.email;
+    const employerName = request.employerAccount?.user?.name || 'Employer';
+
     // Create system message for status change
     if (adminNotes) {
       await prisma.message.create({
         data: {
           employerRequestId: requestId,
           fromAdmin: true,
-          employerEmail: request.email,
+          employerEmail: employerEmail,
           content: `Status updated to ${status}. ${adminNotes}`,
           messageType: 'system'
         }
@@ -852,7 +882,7 @@ exports.updateRequestStatus = async (req, res) => {
         data: {
           employerRequestId: requestId,
           fromAdmin: true,
-          employerEmail: request.email,
+          employerEmail: employerEmail,
           content: `Status updated to ${status} by admin.`,
           messageType: 'system'
         }
@@ -862,24 +892,33 @@ exports.updateRequestStatus = async (req, res) => {
     // Send email notification for status changes (except for pending)
     // Also send email if admin notes are provided, even if status hasn't changed
     if ((status !== 'pending' && status !== request.status) || adminNotes) {
-      try {
-        console.log(`📧 Sending status update email to: ${request.email}, Status: ${status}, Previous: ${request.status}, Has Notes: ${adminNotes ? 'Yes' : 'No'}`);
-        await sendStatusUpdateNotification(
-          request.email,
-          request.name,
-          status,
-          adminNotes,
-          {
-            id: request.id,
-            message: request.message,
-            companyName: request.companyName,
-            phoneNumber: request.phoneNumber
-          }
-        );
-        console.log(`✅ Status update email sent successfully to: ${request.email}`);
-      } catch (emailError) {
-        console.error('❌ Failed to send status update notification:', emailError);
-        // Continue even if email fails
+      if (employerEmail) {
+        try {
+          console.log(`📧 Sending status update email to: ${employerEmail}, Status: ${status}, Previous: ${request.status}, Has Notes: ${adminNotes ? 'Yes' : 'No'}`);
+          await sendStatusUpdateNotification(
+            employerEmail,
+            employerName,
+            status,
+            adminNotes,
+            {
+              id: request.id,
+              message: request.message,
+              companyName: request.employerAccount?.companyName,
+              phoneNumber: request.employerAccount?.phoneNumber
+            }
+          );
+          console.log(`✅ Status update email sent successfully to: ${employerEmail}`);
+        } catch (emailError) {
+          console.error('❌ Failed to send status update notification:', emailError);
+          console.error('❌ Error details:', {
+            message: emailError.message,
+            code: emailError.code,
+            command: emailError.command
+          });
+          // Continue even if email fails
+        }
+      } else {
+        console.log(`⚠️ Cannot send email notification - No employer email found for request ${requestId}`);
       }
     } else {
       console.log(`ℹ️ Skipping email notification - Status: ${status}, Previous: ${request.status}, No Notes`);
@@ -1379,5 +1418,276 @@ exports.getAllEmployerRequests = async (req, res) => {
   } catch (error) {
     console.error('Error getting all employer requests:', error);
     res.status(500).json({ error: 'Failed to get employer requests' });
+  }
+};
+
+// ===== NEW WORKFLOW FUNCTIONS =====
+
+/**
+ * Request full details (employer initiated)
+ */
+exports.requestFullDetails = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { reason } = req.body;
+    const employerUserId = req.user.id;
+
+    const prisma = await getPrismaClient();
+    
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: { user: true }
+        },
+        requestedCandidate: true
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    // Check if the request belongs to the authenticated employer
+    if (employerRequest.employerAccount.userId !== employerUserId) {
+      return res.status(403).json({ error: 'Access denied. This request does not belong to you.' });
+    }
+
+    // Check if employer has photo access
+    if (employerRequest.status !== 'photo_access_granted') {
+      return res.status(400).json({ 
+        error: 'You must have photo access before requesting full details.' 
+      });
+    }
+
+    // Update request status
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'full_details_requested',
+        hiringDecisionNotes: reason ? `Employer request reason: ${reason}` : null
+      }
+    });
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'full_details_requested',
+        status: 'completed',
+        description: `Employer requested full details access${reason ? `: ${reason}` : ''}`,
+        completedAt: new Date()
+      }
+    });
+
+    // Send notification to admin
+    await NotificationService.sendAdminNotification({
+      type: 'full_details_requested',
+      title: 'Employer Requests Full Details',
+      message: `Employer ${employerRequest.employerAccount.user.name} has requested full details access for candidate. Please review and approve/reject.`,
+      employerRequestId: parseInt(requestId, 10)
+    });
+
+    res.json({ 
+      message: 'Full details request submitted successfully. Admin will review your request.' 
+    });
+  } catch (error) {
+    console.error('Error requesting full details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Mark hiring decision
+ */
+exports.markHiringDecision = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { decision, notes } = req.body; // decision: 'hired' | 'not_hired'
+    const employerUserId = req.user.id;
+
+    const prisma = await getPrismaClient();
+    
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: { user: true }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    // Check if the request belongs to the authenticated employer
+    if (employerRequest.employerAccount.userId !== employerUserId) {
+      return res.status(403).json({ error: 'Access denied. This request does not belong to you.' });
+    }
+
+    // Check if employer has full access
+    if (employerRequest.status !== 'full_access_granted') {
+      return res.status(400).json({ 
+        error: 'You must have full access before making hiring decision.' 
+      });
+    }
+
+    // Update request status
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'hiring_decision_made',
+        hiringDecision: decision,
+        hiringDecisionMadeBy: employerUserId,
+        hiringDecisionMadeAt: new Date(),
+        hiringDecisionNotes: notes
+      }
+    });
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'hiring_decision_made',
+        status: 'completed',
+        description: `Employer marked candidate as ${decision}${notes ? `: ${notes}` : ''}`,
+        completedAt: new Date()
+      }
+    });
+
+    // Send notification to admin
+    await NotificationService.sendAdminNotification({
+      type: 'hiring_decision_made',
+      title: 'Hiring Decision Made',
+      message: `Employer has marked candidate as ${decision}. Please review and update candidate availability.`,
+      employerRequestId: parseInt(requestId, 10)
+    });
+
+    res.json({ message: 'Hiring decision recorded successfully' });
+  } catch (error) {
+    console.error('Error marking hiring decision:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Get photo access for candidate
+ */
+exports.getPhotoAccess = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const employerUserId = req.user.id;
+
+    const prisma = await getPrismaClient();
+    
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: { user: true }
+        },
+        requestedCandidate: {
+          include: {
+            profile: true
+          }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    // Check if the request belongs to the authenticated employer
+    if (employerRequest.employerAccount.userId !== employerUserId) {
+      return res.status(403).json({ error: 'Access denied. This request does not belong to you.' });
+    }
+
+    // Check if employer has photo access
+    if (!employerRequest.partialAccessGranted) {
+      return res.status(403).json({ error: 'You do not have photo access for this candidate.' });
+    }
+
+    // Return photo access data
+    const photoData = {
+      candidateId: employerRequest.requestedCandidate.id,
+      candidateName: employerRequest.requestedCandidate.name,
+      candidatePhoto: employerRequest.requestedCandidate.profile?.photo || null,
+      // Add other photo-level information
+      basicInfo: {
+        age: employerRequest.requestedCandidate.profile?.age || null,
+        location: employerRequest.requestedCandidate.profile?.location || null,
+        experience: employerRequest.requestedCandidate.profile?.experience || null
+      }
+    };
+
+    res.json(photoData);
+  } catch (error) {
+    console.error('Error getting photo access:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Get full details for candidate
+ */
+exports.getFullDetails = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const employerUserId = req.user.id;
+
+    const prisma = await getPrismaClient();
+    
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: { user: true }
+        },
+        requestedCandidate: {
+          include: {
+            profile: true
+          }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    // Check if the request belongs to the authenticated employer
+    if (employerRequest.employerAccount.userId !== employerUserId) {
+      return res.status(403).json({ error: 'Access denied. This request does not belong to you.' });
+    }
+
+    // Check if employer has full access
+    if (!employerRequest.fullAccessGranted) {
+      return res.status(403).json({ error: 'You do not have full access for this candidate.' });
+    }
+
+    // Return full candidate details
+    const fullData = {
+      candidateId: employerRequest.requestedCandidate.id,
+      candidateName: employerRequest.requestedCandidate.name,
+      candidateEmail: employerRequest.requestedCandidate.email,
+      candidatePhone: employerRequest.requestedCandidate.profile?.phone || null,
+      candidatePhoto: employerRequest.requestedCandidate.profile?.photo || null,
+      fullProfile: employerRequest.requestedCandidate.profile,
+      // Add all other candidate information
+      completeInfo: {
+        personal: employerRequest.requestedCandidate.profile?.personal || {},
+        skills: employerRequest.requestedCandidate.profile?.skills || {},
+        experience: employerRequest.requestedCandidate.profile?.experience || {},
+        education: employerRequest.requestedCandidate.profile?.education || {},
+        certifications: employerRequest.requestedCandidate.profile?.certifications || {}
+      }
+    };
+
+    res.json(fullData);
+  } catch (error) {
+    console.error('Error getting full details:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 }; 

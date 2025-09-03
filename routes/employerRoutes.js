@@ -30,4 +30,17 @@ router.post('/requests/:id/approve', authenticateToken, requireAdmin, employerCo
 // Admin: Update request status
 router.put('/requests/:id/status', authenticateToken, requireAdmin, employerController.updateRequestStatus);
 
+// ===== NEW WORKFLOW ROUTES =====
+
+// Employer: Request full details
+router.post('/requests/:requestId/request-full-details', authenticateToken, employerController.requestFullDetails);
+
+// Employer: Mark hiring decision
+router.post('/requests/:requestId/mark-hired', authenticateToken, employerController.markHiringDecision);
+router.post('/requests/:requestId/mark-not-hired', authenticateToken, employerController.markHiringDecision);
+
+// Employer: Get candidate access
+router.get('/requests/:requestId/photo-access', authenticateToken, employerController.getPhotoAccess);
+router.get('/requests/:requestId/full-details', authenticateToken, employerController.getFullDetails);
+
 module.exports = router; 
