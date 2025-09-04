@@ -2051,6 +2051,116 @@ exports.rejectSecondPayment = async (req, res) => {
   }
 };
 
+/**
+ * Clean testing data - Remove all non-admin users, employer requests, and related data
+ * Preserves: Admin accounts, Job categories
+ */
+exports.cleanTestingData = async (req, res) => {
+  try {
+    const { getPrismaClient } = require('../utils/database');
+    const prisma = await getPrismaClient();
+    
+    console.log('🧹 Starting testing data cleanup...');
+    
+    // Start a transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      let deletedCounts = {};
+      
+      // 1. Delete messages (cascade will handle related data)
+      const deletedMessages = await tx.message.deleteMany({});
+      deletedCounts.messages = deletedMessages.count;
+      console.log(`✅ Deleted ${deletedMessages.count} messages`);
+      
+      // 2. Delete request progress
+      const deletedProgress = await tx.requestProgress.deleteMany({});
+      deletedCounts.requestProgress = deletedProgress.count;
+      console.log(`✅ Deleted ${deletedProgress.count} request progress records`);
+      
+      // 3. Delete payment approvals
+      const deletedApprovals = await tx.paymentApproval.deleteMany({});
+      deletedCounts.paymentApprovals = deletedApprovals.count;
+      console.log(`✅ Deleted ${deletedApprovals.count} payment approvals`);
+      
+      // 4. Delete payments
+      const deletedPayments = await tx.payment.deleteMany({});
+      deletedCounts.payments = deletedPayments.count;
+      console.log(`✅ Deleted ${deletedPayments.count} payments`);
+      
+      // 5. Delete employer requests
+      const deletedRequests = await tx.employerRequest.deleteMany({});
+      deletedCounts.employerRequests = deletedRequests.count;
+      console.log(`✅ Deleted ${deletedRequests.count} employer requests`);
+      
+      // 6. Delete job seeker profiles
+      const deletedProfiles = await tx.profile.deleteMany({});
+      deletedCounts.profiles = deletedProfiles.count;
+      console.log(`✅ Deleted ${deletedProfiles.count} job seeker profiles`);
+      
+      // 7. Delete employer accounts
+      const deletedEmployerAccounts = await tx.employerAccount.deleteMany({});
+      deletedCounts.employerAccounts = deletedEmployerAccounts.count;
+      console.log(`✅ Deleted ${deletedEmployerAccounts.count} employer accounts`);
+      
+      // 8. Clean up notifications (must be before deleting users due to foreign key)
+      const deletedNotifications = await tx.notification.deleteMany({});
+      deletedCounts.notifications = deletedNotifications.count;
+      console.log(`✅ Deleted ${deletedNotifications.count} notifications`);
+      
+      // 9. Delete contacts (references users)
+      const deletedContacts = await tx.contact.deleteMany({});
+      deletedCounts.contacts = deletedContacts.count;
+      console.log(`✅ Deleted ${deletedContacts.count} contacts`);
+      
+      // 10. Delete audit logs (references users - but only non-admin related ones)
+      const deletedAuditLogs = await tx.auditLog.deleteMany({
+        where: {
+          userId: {
+            not: null
+          },
+          user: {
+            role: {
+              not: 'admin'
+            }
+          }
+        }
+      });
+      deletedCounts.auditLogs = deletedAuditLogs.count;
+      console.log(`✅ Deleted ${deletedAuditLogs.count} audit logs`);
+      
+      // 11. Delete non-admin users (preserve admin accounts)
+      const deletedUsers = await tx.user.deleteMany({
+        where: {
+          role: {
+            not: 'admin'
+          }
+        }
+      });
+      deletedCounts.users = deletedUsers.count;
+      console.log(`✅ Deleted ${deletedUsers.count} non-admin users`);
+      
+      return deletedCounts;
+    });
+    
+    console.log('🎉 Testing data cleanup completed successfully!');
+    console.log('📊 Summary:', result);
+    
+    res.json({
+      success: true,
+      message: 'Testing data cleaned successfully',
+      summary: result,
+      preserved: ['Admin accounts', 'Job categories', 'System configuration']
+    });
+    
+  } catch (error) {
+    console.error('❌ Error cleaning testing data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clean testing data',
+      details: error.message
+    });
+  }
+};
+
 module.exports = {
   exportSystemData: exports.exportSystemData,
   getSystemHealth: exports.getSystemHealth,
@@ -2076,5 +2186,6 @@ module.exports = {
   approveFirstPayment: exports.approveFirstPayment,
   rejectFirstPayment: exports.rejectFirstPayment,
   approveSecondPayment: exports.approveSecondPayment,
-  rejectSecondPayment: exports.rejectSecondPayment
+  rejectSecondPayment: exports.rejectSecondPayment,
+  cleanTestingData: exports.cleanTestingData
 }; 

@@ -81,4 +81,7 @@ router.post('/employer-requests/:requestId/reject-first-payment', authenticateTo
 router.post('/employer-requests/:requestId/approve-second-payment', authenticateToken, requireAdmin, adminController.approveSecondPayment);
 router.post('/employer-requests/:requestId/reject-second-payment', authenticateToken, requireAdmin, adminController.rejectSecondPayment);
 
+// System administration
+router.post('/clean-testing-data', authenticateToken, requireAdmin, adminController.cleanTestingData);
+
 module.exports = router; 
