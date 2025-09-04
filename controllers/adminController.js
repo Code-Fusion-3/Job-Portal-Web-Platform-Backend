@@ -2062,56 +2062,59 @@ exports.cleanTestingData = async (req, res) => {
     
     console.log('🧹 Starting testing data cleanup...');
     
-    // Start a transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx) => {
+    // Try transaction approach first, fallback to individual operations if timeout
+    let result;
+    try {
+      // Start a transaction with extended timeout for production environments
+      result = await prisma.$transaction(async (tx) => {
       let deletedCounts = {};
       
-      // 1. Delete messages (cascade will handle related data)
+      console.log('🗂️ Step 1: Deleting messages...');
       const deletedMessages = await tx.message.deleteMany({});
       deletedCounts.messages = deletedMessages.count;
       console.log(`✅ Deleted ${deletedMessages.count} messages`);
       
-      // 2. Delete request progress
+      console.log('🗂️ Step 2: Deleting request progress...');
       const deletedProgress = await tx.requestProgress.deleteMany({});
       deletedCounts.requestProgress = deletedProgress.count;
       console.log(`✅ Deleted ${deletedProgress.count} request progress records`);
       
-      // 3. Delete payment approvals
+      console.log('🗂️ Step 3: Deleting payment approvals...');
       const deletedApprovals = await tx.paymentApproval.deleteMany({});
       deletedCounts.paymentApprovals = deletedApprovals.count;
       console.log(`✅ Deleted ${deletedApprovals.count} payment approvals`);
       
-      // 4. Delete payments
+      console.log('🗂️ Step 4: Deleting payments...');
       const deletedPayments = await tx.payment.deleteMany({});
       deletedCounts.payments = deletedPayments.count;
       console.log(`✅ Deleted ${deletedPayments.count} payments`);
       
-      // 5. Delete employer requests
+      console.log('🗂️ Step 5: Deleting employer requests...');
       const deletedRequests = await tx.employerRequest.deleteMany({});
       deletedCounts.employerRequests = deletedRequests.count;
       console.log(`✅ Deleted ${deletedRequests.count} employer requests`);
       
-      // 6. Delete job seeker profiles
+      console.log('🗂️ Step 6: Deleting job seeker profiles...');
       const deletedProfiles = await tx.profile.deleteMany({});
       deletedCounts.profiles = deletedProfiles.count;
       console.log(`✅ Deleted ${deletedProfiles.count} job seeker profiles`);
       
-      // 7. Delete employer accounts
+      console.log('🗂️ Step 7: Deleting employer accounts...');
       const deletedEmployerAccounts = await tx.employerAccount.deleteMany({});
       deletedCounts.employerAccounts = deletedEmployerAccounts.count;
       console.log(`✅ Deleted ${deletedEmployerAccounts.count} employer accounts`);
       
-      // 8. Clean up notifications (must be before deleting users due to foreign key)
+      console.log('🗂️ Step 8: Deleting notifications...');
       const deletedNotifications = await tx.notification.deleteMany({});
       deletedCounts.notifications = deletedNotifications.count;
       console.log(`✅ Deleted ${deletedNotifications.count} notifications`);
       
-      // 9. Delete contacts (references users)
+      console.log('🗂️ Step 9: Deleting contacts...');
       const deletedContacts = await tx.contact.deleteMany({});
       deletedCounts.contacts = deletedContacts.count;
       console.log(`✅ Deleted ${deletedContacts.count} contacts`);
       
-      // 10. Delete audit logs (references users - but only non-admin related ones)
+      console.log('🗂️ Step 10: Deleting audit logs...');
       const deletedAuditLogs = await tx.auditLog.deleteMany({
         where: {
           userId: {
@@ -2127,7 +2130,7 @@ exports.cleanTestingData = async (req, res) => {
       deletedCounts.auditLogs = deletedAuditLogs.count;
       console.log(`✅ Deleted ${deletedAuditLogs.count} audit logs`);
       
-      // 11. Delete non-admin users (preserve admin accounts)
+      console.log('🗂️ Step 11: Deleting non-admin users...');
       const deletedUsers = await tx.user.deleteMany({
         where: {
           role: {
@@ -2139,7 +2142,88 @@ exports.cleanTestingData = async (req, res) => {
       console.log(`✅ Deleted ${deletedUsers.count} non-admin users`);
       
       return deletedCounts;
-    });
+      }, {
+        maxWait: 20000, // Maximum time to wait for transaction to start (20 seconds)
+        timeout: 30000,  // Maximum time the transaction can run (30 seconds)
+      });
+    } catch (transactionError) {
+      console.warn('⚠️ Transaction approach failed, trying individual operations...', transactionError.message);
+      
+      // Fallback: Execute deletions individually (slower but more reliable in production)
+      result = {};
+      
+      console.log('🗂️ Fallback Step 1: Deleting messages...');
+      const deletedMessages = await prisma.message.deleteMany({});
+      result.messages = deletedMessages.count;
+      console.log(`✅ Deleted ${deletedMessages.count} messages`);
+      
+      console.log('🗂️ Fallback Step 2: Deleting request progress...');
+      const deletedProgress = await prisma.requestProgress.deleteMany({});
+      result.requestProgress = deletedProgress.count;
+      console.log(`✅ Deleted ${deletedProgress.count} request progress records`);
+      
+      console.log('🗂️ Fallback Step 3: Deleting payment approvals...');
+      const deletedApprovals = await prisma.paymentApproval.deleteMany({});
+      result.paymentApprovals = deletedApprovals.count;
+      console.log(`✅ Deleted ${deletedApprovals.count} payment approvals`);
+      
+      console.log('🗂️ Fallback Step 4: Deleting payments...');
+      const deletedPayments = await prisma.payment.deleteMany({});
+      result.payments = deletedPayments.count;
+      console.log(`✅ Deleted ${deletedPayments.count} payments`);
+      
+      console.log('🗂️ Fallback Step 5: Deleting employer requests...');
+      const deletedRequests = await prisma.employerRequest.deleteMany({});
+      result.employerRequests = deletedRequests.count;
+      console.log(`✅ Deleted ${deletedRequests.count} employer requests`);
+      
+      console.log('🗂️ Fallback Step 6: Deleting job seeker profiles...');
+      const deletedProfiles = await prisma.profile.deleteMany({});
+      result.profiles = deletedProfiles.count;
+      console.log(`✅ Deleted ${deletedProfiles.count} job seeker profiles`);
+      
+      console.log('🗂️ Fallback Step 7: Deleting employer accounts...');
+      const deletedEmployerAccounts = await prisma.employerAccount.deleteMany({});
+      result.employerAccounts = deletedEmployerAccounts.count;
+      console.log(`✅ Deleted ${deletedEmployerAccounts.count} employer accounts`);
+      
+      console.log('🗂️ Fallback Step 8: Deleting notifications...');
+      const deletedNotifications = await prisma.notification.deleteMany({});
+      result.notifications = deletedNotifications.count;
+      console.log(`✅ Deleted ${deletedNotifications.count} notifications`);
+      
+      console.log('🗂️ Fallback Step 9: Deleting contacts...');
+      const deletedContacts = await prisma.contact.deleteMany({});
+      result.contacts = deletedContacts.count;
+      console.log(`✅ Deleted ${deletedContacts.count} contacts`);
+      
+      console.log('🗂️ Fallback Step 10: Deleting audit logs...');
+      const deletedAuditLogs = await prisma.auditLog.deleteMany({
+        where: {
+          userId: {
+            not: null
+          },
+          user: {
+            role: {
+              not: 'admin'
+            }
+          }
+        }
+      });
+      result.auditLogs = deletedAuditLogs.count;
+      console.log(`✅ Deleted ${deletedAuditLogs.count} audit logs`);
+      
+      console.log('🗂️ Fallback Step 11: Deleting non-admin users...');
+      const deletedUsers = await prisma.user.deleteMany({
+        where: {
+          role: {
+            not: 'admin'
+          }
+        }
+      });
+      result.users = deletedUsers.count;
+      console.log(`✅ Deleted ${deletedUsers.count} non-admin users`);
+    }
     
     console.log('🎉 Testing data cleanup completed successfully!');
     console.log('📊 Summary:', result);
