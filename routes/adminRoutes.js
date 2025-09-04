@@ -68,6 +68,9 @@ router.post('/employer-requests/:requestId/update-candidate-availability', authe
 // Job seekers management routes
 router.get('/job-seekers', authenticateToken, requireAdmin, adminController.getAllJobSeekers);
 
+// Get all employer requests with rich data (admin)
+router.get('/employer-requests', authenticateToken, requireAdmin, adminController.getAllEmployerRequestsWithRichData);
+
 // Payment management routes
 router.post('/payments/:paymentId/approve', authenticateToken, requireAdmin, adminController.approvePayment);
 router.post('/payments/:paymentId/reject', authenticateToken, requireAdmin, adminController.rejectPayment);

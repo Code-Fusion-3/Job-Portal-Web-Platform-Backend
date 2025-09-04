@@ -1008,6 +1008,86 @@ exports.getEmployerRequest = async (req, res) => {
 };
 
 /**
+ * Get all employer requests with rich data (Admin)
+ */
+exports.getAllEmployerRequestsWithRichData = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    
+    // Get query parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder || 'desc';
+    const status = req.query.status || 'all';
+    
+    // Calculate offset
+    const offset = (page - 1) * limit;
+    
+    // Build where clause
+    const whereClause = {};
+    if (status !== 'all') {
+      whereClause.status = status;
+    }
+    
+    // Get total count
+    const totalCount = await prisma.employerRequest.count({
+      where: whereClause
+    });
+    
+    // Get requests with pagination and sorting
+    const requests = await prisma.employerRequest.findMany({
+      where: whereClause,
+      include: {
+        employerAccount: {
+          include: {
+            user: true
+          }
+        },
+        requestedCandidate: {
+          include: {
+            profile: {
+              include: {
+                jobCategory: true
+              }
+            }
+          }
+        },
+        payments: {
+          orderBy: { createdAt: 'desc' }
+        },
+        requestProgress: {
+          orderBy: { createdAt: 'desc' }
+        }
+      },
+      skip: offset,
+      take: limit,
+      orderBy: {
+        [sortBy]: sortOrder
+      }
+    });
+    
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limit);
+    
+    res.json({
+      requests,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching employer requests with rich data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
  * Approve employer request
  */
 exports.approveEmployerRequest = async (req, res) => {
@@ -1976,6 +2056,7 @@ module.exports = {
   getSystemSettings,
   updateSystemSettings,
   getAllJobSeekers: exports.getAllJobSeekers,
+  getAllEmployerRequestsWithRichData: exports.getAllEmployerRequestsWithRichData,
   // New workflow functions
   getEmployerRequest: exports.getEmployerRequest,
   approveEmployerRequest: exports.approveEmployerRequest,
