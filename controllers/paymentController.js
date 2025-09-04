@@ -466,10 +466,12 @@ exports.approvePayment = async (req, res) => {
 // Get payment details for employer
 exports.getPaymentDetails = async (req, res) => {
   try {
-    const prisma = await initPrisma();
+    const { getPrismaClient } = require('../utils/database');
+    const prisma = await getPrismaClient();
     const { employerRequestId } = req.params;
 
-    const payment = await prisma.payment.findFirst({
+    // Get all payments for this request, ordered by creation date
+    const payments = await prisma.payment.findMany({
       where: { 
         employerRequestId: parseInt(employerRequestId, 10) 
       },
@@ -484,56 +486,66 @@ exports.getPaymentDetails = async (req, res) => {
         approvals: {
           include: {
             admin: {
-              select: { email: true }
+              select: { email: true, name: true }
             }
           }
         }
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
     });
 
-    if (!payment) {
-      return res.status(404).json({ error: 'Payment not found for this request.' });
+    if (!payments || payments.length === 0) {
+      return res.status(404).json({ error: 'No payments found for this request.' });
     }
 
+    // Get employer request details from the first payment
+    const firstPayment = payments[0];
+    
     res.json({
-      payment: {
+      payments: payments.map(payment => ({
         id: payment.id,
         amount: payment.amount,
         currency: payment.currency,
         paymentMethod: payment.paymentMethod,
+        paymentType: payment.paymentType,
         status: payment.status,
         description: payment.description,
         createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
         confirmationName: payment.confirmationName,
         confirmationPhone: payment.confirmationPhone,
         confirmationDate: payment.confirmationDate,
-        adminNotes: payment.adminNotes
-      },
+        confirmationReference: payment.confirmationReference,
+        adminNotes: payment.adminNotes,
+        approvals: payment.approvals
+      })),
       employerRequest: {
-        id: payment.employerRequest.id,
-        status: payment.employerRequest.status,
-        paymentRequired: payment.employerRequest.paymentRequired,
-        paymentAmount: payment.employerRequest.paymentAmount,
-        paymentCurrency: payment.employerRequest.paymentCurrency,
-        paymentDescription: payment.employerRequest.paymentDescription,
-        paymentDueDate: payment.employerRequest.paymentDueDate,
-        contactAccessGranted: payment.employerRequest.contactAccessGranted,
-        imageAccessGranted: payment.employerRequest.imageAccessGranted
+        id: firstPayment.employerRequest.id,
+        status: firstPayment.employerRequest.status,
+        paymentRequired: firstPayment.employerRequest.paymentRequired,
+        paymentAmount: firstPayment.employerRequest.paymentAmount,
+        paymentCurrency: firstPayment.employerRequest.paymentCurrency,
+        paymentDescription: firstPayment.employerRequest.paymentDescription,
+        paymentDueDate: firstPayment.employerRequest.paymentDueDate,
+        contactAccessGranted: firstPayment.employerRequest.contactAccessGranted,
+        imageAccessGranted: firstPayment.employerRequest.imageAccessGranted
       },
-      jobSeeker: payment.employerRequest.requestedCandidate ? {
-        name: `${payment.employerRequest.requestedCandidate.profile?.firstName} ${payment.employerRequest.requestedCandidate.profile?.lastName}`,
-        skills: payment.employerRequest.requestedCandidate.profile?.skills,
-        experience: payment.employerRequest.requestedCandidate.profile?.experience,
-        location: payment.employerRequest.requestedCandidate.profile?.location,
-        city: payment.employerRequest.requestedCandidate.profile?.city,
-        country: payment.employerRequest.requestedCandidate.profile?.country,
+      jobSeeker: firstPayment.employerRequest.requestedCandidate ? {
+        name: `${firstPayment.employerRequest.requestedCandidate.profile?.firstName} ${firstPayment.employerRequest.requestedCandidate.profile?.lastName}`,
+        skills: firstPayment.employerRequest.requestedCandidate.profile?.skills,
+        experience: firstPayment.employerRequest.requestedCandidate.profile?.experience,
+        location: firstPayment.employerRequest.requestedCandidate.profile?.location,
+        city: firstPayment.employerRequest.requestedCandidate.profile?.city,
+        country: firstPayment.employerRequest.requestedCandidate.profile?.country,
         // Only show contact and photo if access is granted
-        contactNumber: payment.employerRequest.contactAccessGranted ? 
-          payment.employerRequest.requestedCandidate.profile?.contactNumber : null,
-        photo: payment.employerRequest.imageAccessGranted ? 
-          payment.employerRequest.requestedCandidate.profile?.photo : null
+        contactNumber: firstPayment.employerRequest.contactAccessGranted ? 
+          firstPayment.employerRequest.requestedCandidate.profile?.contactNumber : null,
+        photo: firstPayment.employerRequest.imageAccessGranted ? 
+          firstPayment.employerRequest.requestedCandidate.profile?.photo : null
       } : null,
-      adminApprovals: payment.approvals.map(approval => ({
+      adminApprovals: firstPayment.approvals.map(approval => ({
         action: approval.action,
         notes: approval.notes,
         adminEmail: approval.admin.email,

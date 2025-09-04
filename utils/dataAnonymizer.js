@@ -165,12 +165,40 @@ function anonymizeProfile(profile, accessLevel = 'none') {
 function getAnonymizedJobSeekerData(user, employerRequest) {
   if (!user || !user.profile) return null;
 
-  // Determine current access level based on request status
+  // Determine current access level based on flags AND status
   let accessLevel = 'none';
+  let hasPhotoAccess = false;
+  let hasContactAccess = false;
   
-  if (employerRequest.imageAccessGranted && employerRequest.contactAccessGranted) {
+  // Check explicit flags first
+  if (employerRequest.imageAccessGranted) {
+    hasPhotoAccess = true;
+  }
+  if (employerRequest.contactAccessGranted) {
+    hasContactAccess = true;
+  }
+  
+  // Fallback to status-based access for new workflow
+  const status = employerRequest.status;
+  const photoAccessStatuses = [
+    'photo_access_granted', 'second_payment_confirmed', 
+    'full_details_granted', 'full_access_granted', 'completed'
+  ];
+  const fullAccessStatuses = [
+    'full_details_granted', 'full_access_granted', 'completed'
+  ];
+  
+  if (!hasPhotoAccess && photoAccessStatuses.includes(status)) {
+    hasPhotoAccess = true;
+  }
+  if (!hasContactAccess && fullAccessStatuses.includes(status)) {
+    hasContactAccess = true;
+  }
+  
+  // Determine final access level
+  if (hasPhotoAccess && hasContactAccess) {
     accessLevel = 'full';
-  } else if (employerRequest.imageAccessGranted) {
+  } else if (hasPhotoAccess) {
     accessLevel = 'photo';
   }
 
@@ -179,9 +207,9 @@ function getAnonymizedJobSeekerData(user, employerRequest) {
     profile: anonymizeProfile(user.profile, accessLevel),
     accessLevel,
     accessGranted: {
-      photo: employerRequest.imageAccessGranted,
-      contact: employerRequest.contactAccessGranted,
-      full: employerRequest.imageAccessGranted && employerRequest.contactAccessGranted
+      photo: hasPhotoAccess,
+      contact: hasContactAccess,
+      full: hasPhotoAccess && hasContactAccess
     }
   };
 }

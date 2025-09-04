@@ -1731,11 +1731,14 @@ exports.approveFirstPayment = async (req, res) => {
       return res.status(400).json({ error: 'Request must be in first_payment_confirmed or payment_confirmed status' });
     }
 
-    // Update request status
+    // Update request status and grant image access
     await prisma.employerRequest.update({
       where: { id: parseInt(requestId, 10) },
       data: {
         status: 'photo_access_granted',
+        imageAccessGranted: true,
+        accessGrantedAt: new Date(),
+        accessGrantedBy: adminId,
         updatedAt: new Date()
       }
     });
@@ -1903,11 +1906,15 @@ exports.approveSecondPayment = async (req, res) => {
       return res.status(400).json({ error: 'Request must be in second_payment_confirmed status' });
     }
 
-    // Update request status
+    // Update request status and grant full access
     await prisma.employerRequest.update({
       where: { id: parseInt(requestId, 10) },
       data: {
         status: 'full_access_granted',
+        imageAccessGranted: true,
+        contactAccessGranted: true,
+        accessGrantedAt: new Date(),
+        accessGrantedBy: adminId,
         updatedAt: new Date()
       }
     });
