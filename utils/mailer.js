@@ -565,8 +565,6 @@ const sendProfileRejectedEmail = async (toEmail, name, reason) => {
   } catch (e) { console.error('Rejection email failed', e); return false; }
 };
 
-module.exports.sendProfileApprovedEmail = sendProfileApprovedEmail;
-module.exports.sendProfileRejectedEmail = sendProfileRejectedEmail;
 
 // Send notification email to admin when admin replies
 const sendAdminReplyNotification = async (employerEmail, employerName, adminMessage, attachmentName = null) => {
@@ -1405,5 +1403,7 @@ module.exports = {
   sendContactResponse,
   sendCandidatePictureNotification,
   sendCandidateFullDetailsNotification,
-  sendPaymentRequestEmail
+  sendPaymentRequestEmail,
+  sendProfileApprovedEmail,
+  sendProfileRejectedEmail
 }; 
