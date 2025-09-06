@@ -527,26 +527,376 @@ const sendPaymentRequestEmail = async (employerName, employerEmail, requestId, c
   }
 };
 
-// Generate simple status change email
-const getStatusChangeTemplate = (userName, status, reason=null) => `
-  <html><body style="font-family:Arial,Helvetica,sans-serif;line-height:1.5;">
-    <h2 style="color:#444;">Profile Status Update</h2>
-    <p>Dear <strong>${userName}</strong>,</p>
-    <p>Your job seeker profile status has changed to: <strong style="text-transform:uppercase;">${status}</strong>.</p>
-    ${status === 'approved' ? '<p>Your profile is now publicly visible and searchable by employers.</p>' : ''}
-    ${status === 'rejected' && reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
-    <p>If you have any questions, reply to this email.</p>
-    <p style="margin-top:30px;font-size:12px;color:#888;">Job Portal &copy; ${new Date().getFullYear()}</p>
-  </body></html>`;
+// Professional profile status change email template
+const getProfileApprovalTemplate = (userName, userEmail) => {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Profile Approved - Job Portal</title>
+      <style>
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          margin: 0;
+          padding: 0;
+          background-color: #f4f4f4;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #ffffff;
+          box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          color: white;
+          padding: 30px 20px;
+          text-align: center;
+        }
+        .logo {
+          font-size: 28px;
+          font-weight: bold;
+          margin-bottom: 10px;
+        }
+        .tagline {
+          font-size: 16px;
+          opacity: 0.9;
+        }
+        .content {
+          padding: 40px 30px;
+        }
+        .welcome-text {
+          font-size: 18px;
+          margin-bottom: 25px;
+          color: #2c3e50;
+        }
+        .success-box {
+          background-color: #d4edda;
+          padding: 25px;
+          border-radius: 8px;
+          margin: 25px 0;
+          border-left: 4px solid #28a745;
+        }
+        .success-box h3 {
+          color: #155724;
+          margin-top: 0;
+        }
+        .success-box ul {
+          margin: 15px 0;
+          padding-left: 20px;
+        }
+        .success-box li {
+          margin-bottom: 8px;
+          color: #155724;
+        }
+        .cta-button {
+          display: inline-block;
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          color: white;
+          padding: 12px 30px;
+          text-decoration: none;
+          border-radius: 25px;
+          font-weight: bold;
+          margin: 20px 0;
+        }
+        .footer {
+          background-color: #2c3e50;
+          color: white;
+          padding: 30px 20px;
+          text-align: center;
+        }
+        .contact-info {
+          margin: 20px 0;
+          font-size: 14px;
+        }
+        .social-links {
+          margin: 20px 0;
+        }
+        .social-links a {
+          color: #28a745;
+          text-decoration: none;
+          margin: 0 10px;
+        }
+        .signature {
+          border-top: 2px solid #28a745;
+          padding-top: 20px;
+          margin-top: 30px;
+        }
+        .signature-name {
+          font-weight: bold;
+          color: #2c3e50;
+        }
+        .signature-title {
+          color: #28a745;
+          font-size: 14px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">Job Portal</div>
+          <div class="tagline">Connecting Talent with Opportunity</div>
+        </div>
+        
+        <div class="content">
+          <div class="welcome-text">
+            Dear <strong>${userName}</strong>,
+          </div>
+          
+          <p>Congratulations! 🎉 We're excited to inform you that your profile has been <strong>approved</strong> by our admin team.</p>
+          
+          <div class="success-box">
+            <h3>✅ Your Profile is Now Active!</h3>
+            <p style="color: #155724; margin-bottom: 15px;">Your profile is now publicly visible and searchable by employers. Here's what this means for you:</p>
+            <ul>
+              <li><strong>Employer Visibility</strong> - Your profile can now be found by potential employers</li>
+              <li><strong>Job Matching</strong> - Employers can request your services directly</li>
+              <li><strong>Professional Network</strong> - You're now part of our active talent pool</li>
+              <li><strong>Opportunity Access</strong> - Receive notifications for relevant job opportunities</li>
+            </ul>
+          </div>
+          
+          <p>We're committed to helping you find the perfect opportunity that matches your skills and career goals.</p>
+          
+          <div style="text-align: center;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/jobseeker/dashboard" class="cta-button">View Your Dashboard</a>
+          </div>
+          
+          <div class="signature">
+            <p>Best regards,</p>
+            <div class="signature-name">The Job Portal Team</div>
+            <div class="signature-title">Profile Review Department</div>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <div class="contact-info">
+            <p><strong>Job Portal</strong></p>
+            <p>📍 Kigali, Rwanda</p>
+            <p>📧 support@jobportal.com</p>
+            <p>📞 +250 788 123 456</p>
+          </div>
+          
+          <div class="social-links">
+            <a href="#">LinkedIn</a> |
+            <a href="#">Twitter</a> |
+            <a href="#">Facebook</a>
+          </div>
+          
+          <p style="font-size: 12px; opacity: 0.8; margin-top: 20px;">
+            © 2024 Job Portal. All rights reserved.<br>
+            This email was sent to ${userEmail}. If you have any questions about your profile status, please contact us.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// Professional profile rejection email template
+const getProfileRejectionTemplate = (userName, userEmail, reason) => {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Profile Review Result - Job Portal</title>
+      <style>
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          margin: 0;
+          padding: 0;
+          background-color: #f4f4f4;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #ffffff;
+          box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+          background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+          color: white;
+          padding: 30px 20px;
+          text-align: center;
+        }
+        .logo {
+          font-size: 28px;
+          font-weight: bold;
+          margin-bottom: 10px;
+        }
+        .tagline {
+          font-size: 16px;
+          opacity: 0.9;
+        }
+        .content {
+          padding: 40px 30px;
+        }
+        .welcome-text {
+          font-size: 18px;
+          margin-bottom: 25px;
+          color: #2c3e50;
+        }
+        .rejection-box {
+          background-color: #f8d7da;
+          padding: 25px;
+          border-radius: 8px;
+          margin: 25px 0;
+          border-left: 4px solid #dc3545;
+        }
+        .rejection-box h3 {
+          color: #721c24;
+          margin-top: 0;
+        }
+        .improvement-box {
+          background-color: #fff3cd;
+          padding: 25px;
+          border-radius: 8px;
+          margin: 25px 0;
+          border-left: 4px solid #ffc107;
+        }
+        .improvement-box h3 {
+          color: #856404;
+          margin-top: 0;
+        }
+        .improvement-box ul {
+          margin: 15px 0;
+          padding-left: 20px;
+        }
+        .improvement-box li {
+          margin-bottom: 8px;
+          color: #856404;
+        }
+        .cta-button {
+          display: inline-block;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 12px 30px;
+          text-decoration: none;
+          border-radius: 25px;
+          font-weight: bold;
+          margin: 20px 0;
+        }
+        .footer {
+          background-color: #2c3e50;
+          color: white;
+          padding: 30px 20px;
+          text-align: center;
+        }
+        .contact-info {
+          margin: 20px 0;
+          font-size: 14px;
+        }
+        .social-links {
+          margin: 20px 0;
+        }
+        .social-links a {
+          color: #667eea;
+          text-decoration: none;
+          margin: 0 10px;
+        }
+        .signature {
+          border-top: 2px solid #667eea;
+          padding-top: 20px;
+          margin-top: 30px;
+        }
+        .signature-name {
+          font-weight: bold;
+          color: #2c3e50;
+        }
+        .signature-title {
+          color: #667eea;
+          font-size: 14px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">Job Portal</div>
+          <div class="tagline">Connecting Talent with Opportunity</div>
+        </div>
+        
+        <div class="content">
+          <div class="welcome-text">
+            Dear <strong>${userName}</strong>,
+          </div>
+          
+          <p>Thank you for submitting your profile to Job Portal. After careful review, we need to inform you that your profile requires some improvements before it can be approved.</p>
+          
+          <div class="rejection-box">
+            <h3>⚠️ Profile Review Result</h3>
+            <p style="color: #721c24; margin-bottom: 15px;"><strong>Status:</strong> Requires Improvement</p>
+            <p style="color: #721c24;"><strong>Reason:</strong> ${reason || 'Your profile needs some adjustments to meet our quality standards.'}</p>
+          </div>
+          
+          <div class="improvement-box">
+            <h3>💡 How to Improve Your Profile</h3>
+            <p style="color: #856404; margin-bottom: 15px;">Here are some tips to get your profile approved:</p>
+            <ul>
+              <li><strong>Complete all sections</strong> - Ensure all required fields are filled out</li>
+              <li><strong>Professional photo</strong> - Upload a clear, professional headshot</li>
+              <li><strong>Detailed experience</strong> - Provide comprehensive work history and skills</li>
+              <li><strong>Accurate information</strong> - Verify all contact details and personal information</li>
+              <li><strong>Professional language</strong> - Use clear, professional language in descriptions</li>
+            </ul>
+          </div>
+          
+          <p>Don't worry - you can update your profile and resubmit it for review. Our team is here to help you succeed!</p>
+          
+          <div style="text-align: center;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/jobseeker/profile" class="cta-button">Update Your Profile</a>
+          </div>
+          
+          <div class="signature">
+            <p>Best regards,</p>
+            <div class="signature-name">The Job Portal Team</div>
+            <div class="signature-title">Profile Review Department</div>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <div class="contact-info">
+            <p><strong>Job Portal</strong></p>
+            <p>📍 Kigali, Rwanda</p>
+            <p>📧 support@jobportal.com</p>
+            <p>📞 +250 788 123 456</p>
+          </div>
+          
+          <div class="social-links">
+            <a href="#">LinkedIn</a> |
+            <a href="#">Twitter</a> |
+            <a href="#">Facebook</a>
+          </div>
+          
+          <p style="font-size: 12px; opacity: 0.8; margin-top: 20px;">
+            © 2024 Job Portal. All rights reserved.<br>
+            This email was sent to ${userEmail}. If you have any questions about your profile review, please contact us.
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
 
 const sendProfileApprovedEmail = async (toEmail, name) => {
   if (!toEmail) return false;
   try {
     await transporter.sendMail({
-      from: `Job Portal <${process.env.GMAIL_USER}>`,
+      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
       to: toEmail,
-      subject: 'Your Profile Has Been Approved ✅',
-      html: getStatusChangeTemplate(name, 'approved')
+      subject: 'Profile Approved - Welcome to Job Portal! 🎉',
+      html: getProfileApprovalTemplate(name, toEmail)
     });
     return true;
   } catch (e) { console.error('Approval email failed', e); return false; }
@@ -556,10 +906,10 @@ const sendProfileRejectedEmail = async (toEmail, name, reason) => {
   if (!toEmail) return false;
   try {
     await transporter.sendMail({
-      from: `Job Portal <${process.env.GMAIL_USER}>`,
+      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
       to: toEmail,
-      subject: 'Your Profile Review Result ❌',
-      html: getStatusChangeTemplate(name, 'rejected', reason)
+      subject: 'Profile Review Result - Action Required 📝',
+      html: getProfileRejectionTemplate(name, toEmail, reason)
     });
     return true;
   } catch (e) { console.error('Rejection email failed', e); return false; }
