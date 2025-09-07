@@ -1705,16 +1705,63 @@ exports.getAllJobSeekers = async (req, res) => {
  */
 exports.approveFirstPayment = async (req, res) => {
   try {
-    const prisma = await getPrismaClient();
     const { requestId } = req.params;
     const { notes } = req.body;
-    // Find the first payment for this request
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+
+    // Get the employer request
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: {
+            user: true
+          }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (!['first_payment_confirmed', 'payment_confirmed'].includes(employerRequest.status)) {
+      return res.status(400).json({ error: 'Request must be in first_payment_confirmed or payment_confirmed status' });
+    }
+
+    // Update request status and grant image access
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'photo_access_granted',
+        imageAccessGranted: true,
+        accessGrantedAt: new Date(),
+        accessGrantedBy: adminId,
+        updatedAt: new Date()
+      }
+    });
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'photo_access_granted',
+        status: 'completed',
+        description: `First payment approved by admin${notes ? `: ${notes}` : ''}`,
+        completedAt: new Date(),
+        completedBy: adminId
+      }
+    });
+  // Find the latest first_installment payment for this request
     const payment = await prisma.payment.findFirst({
       where: {
         employerRequestId: parseInt(requestId, 10),
         paymentType: 'first_installment',
         status: 'confirmed'
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     });
     if (!payment) {
       return res.status(404).json({ error: 'First payment not found or not confirmed.' });
@@ -1724,10 +1771,97 @@ exports.approveFirstPayment = async (req, res) => {
       where: { id: payment.id },
       data: { status: 'approved', adminNotes: notes }
     });
-    // ...existing logic for access granting, notifications, etc...
-    res.json({ message: 'First payment approved and access granted.' });
+    // Add payment approval record
+    await prisma.paymentApproval.create({
+      data: {
+        paymentId: payment.id,
+        adminId,
+        action: 'approve',
+        notes
+      }
+    });
+    // Send notification to employer (don't let email failures affect the main response)
+    if (employerRequest.employerAccount?.user?.email) {
+      try {
+        await NotificationService.sendEmail({
+          to: employerRequest.employerAccount.user.email,
+          subject: 'Payment Approved - Photo Access Granted - Job Portal',
+          html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">Payment Approved</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Photo Access Granted</p>
+          </div>
+
+          <!-- Body -->
+          <div style="padding: 30px; background-color: #ffffff;">
+            <p>Dear ${employerRequest.employerAccount.user.name || 'Employer'},</p>
+            <p>We are pleased to inform you that your first payment has been <strong>approved by the admin</strong>.</p>
+            
+            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;
+                        border-left: 4px solid #28a745;">
+              <h3 style="color: #155724; margin-top: 0;">✅ Access Granted</h3>
+              <p style="color: #155724;">You now have access to the candidate's photo and can proceed with the next steps in the hiring process.</p>
+            </div>
+
+            ${notes
+              ? `
+                <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0;
+                            border-left: 4px solid #ffc107;">
+                  <h3 style="color: #856404; margin-top: 0;">📝 Admin Notes</h3>
+                  <p style="color: #856404;">${notes}</p>
+                </div>
+                `
+              : ''
+            }
+
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #2c3e50; margin-top: 0;">📋 Next Steps</h3>
+              <ol style="color: #2c3e50; margin: 5px 0; padding-left: 20px;">
+                <li>Review the candidate’s profile with the newly unlocked photo</li>
+                <li>Proceed with further payments if you need full contact details</li>
+                <li>Communicate with our support team if you need assistance</li>
+              </ol>
+            </div>
+
+            <div class="signature" style="border-top: 2px solid #667eea; padding-top: 20px; margin-top: 30px;">
+              <p>Best regards,</p>
+              <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Job Portal Team</div>
+              <div class="signature-title" style="color: #667eea; font-size: 14px;">Customer Success Manager</div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center;
+                      border-radius: 0 0 8px 8px;">
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">
+              This is an automated notification from Job Portal. Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't throw - email failure shouldn't affect the main operation
+      }
+    }
+
+
+    res.json({
+      success: true,
+      message: 'First payment approved successfully',
+      newStatus: 'photo_access_granted'
+    });
+
   } catch (error) {
-    res.status(500).json({ error: 'Failed to approve first payment.' });
+    console.error('Error approving first payment:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve first payment'
+    });
   }
 };
 
@@ -1780,6 +1914,32 @@ exports.rejectFirstPayment = async (req, res) => {
         description: `First payment rejected by admin${reason ? `: ${reason}` : ''}`,
         completedAt: new Date(),
         completedBy: adminId
+      }
+    });
+    // Find the latest first_installment payment for this request
+    const payment = await prisma.payment.findFirst({
+      where: {
+        employerRequestId: parseInt(requestId, 10),
+        paymentType: 'first_installment',
+        status: 'confirmed'
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    if (!payment) {
+      return res.status(404).json({ error: 'First payment not found or not confirmed.' });
+    }
+    // Update payment status to approved
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'rejected', adminNotes: notes }
+    });
+    // Add payment approval record
+    await prisma.paymentApproval.create({
+      data: {
+        paymentId: payment.id,
+        adminId,
+        action: 'reject',
+        notes
       }
     });
 
@@ -1873,16 +2033,52 @@ exports.rejectFirstPayment = async (req, res) => {
  */
 exports.approveSecondPayment = async (req, res) => {
   try {
-    const prisma = await getPrismaClient();
     const { requestId } = req.params;
     const { notes } = req.body;
-    // Find the second payment for this request
+    const adminId = req.user.id;
+
+    const prisma = await getPrismaClient();
+
+    // Get the employer request
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: {
+        employerAccount: {
+          include: {
+            user: true
+          }
+        }
+      }
+    });
+
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+
+    if (employerRequest.status !== 'second_payment_confirmed') {
+      return res.status(400).json({ error: 'Request must be in second_payment_confirmed status' });
+    }
+
+    // Update request status and grant full access
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: {
+        status: 'full_access_granted',
+        imageAccessGranted: true,
+        contactAccessGranted: true,
+        accessGrantedAt: new Date(),
+        accessGrantedBy: adminId,
+        updatedAt: new Date()
+      }
+    });
+    // Find the latest second_installment payment for this request
     const payment = await prisma.payment.findFirst({
       where: {
         employerRequestId: parseInt(requestId, 10),
         paymentType: 'second_installment',
         status: 'confirmed'
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     });
     if (!payment) {
       return res.status(404).json({ error: 'Second payment not found or not confirmed.' });
@@ -1892,10 +2088,109 @@ exports.approveSecondPayment = async (req, res) => {
       where: { id: payment.id },
       data: { status: 'approved', adminNotes: notes }
     });
-    // ...existing logic for access granting, notifications, etc...
-    res.json({ message: 'Second payment approved and full access granted.' });
+    // Add payment approval record
+    await prisma.paymentApproval.create({
+      data: {
+        paymentId: payment.id,
+        adminId,
+        action: 'approve',
+        notes
+      }
+    });
+
+    // Create progress tracking
+    await prisma.requestProgress.create({
+      data: {
+        employerRequestId: parseInt(requestId, 10),
+        stage: 'full_access_granted',
+        status: 'completed',
+        description: `Second payment approved by admin${notes ? `: ${notes}` : ''}`,
+        completedAt: new Date(),
+        completedBy: adminId
+      }
+    });
+    // Send notification to employer (don't let email failures affect the main response)
+    if (employerRequest.employerAccount?.user?.email) {
+      try {
+        await NotificationService.sendEmail({
+          to: employerRequest.employerAccount.user.email,
+          subject: 'Second Payment Approved - Full Access Granted - Job Portal',
+          html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">Second Payment Approved</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Full Access Granted</p>
+          </div>
+
+          <!-- Body -->
+          <div style="padding: 30px; background-color: #ffffff;">
+            <p>Dear ${employerRequest.employerAccount.user.name || 'Employer'},</p>
+            <p>Your <strong>second payment</strong> has been <strong>approved by the admin</strong>.</p>
+
+            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;
+                        border-left: 4px solid #28a745;">
+              <h3 style="color: #155724; margin-top: 0;">✅ Full Access Granted</h3>
+              <p style="color: #155724;">You now have complete access to the candidate’s details and can proceed with your hiring decision.</p>
+            </div>
+
+            ${notes
+              ? `
+                <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0;
+                            border-left: 4px solid #ffc107;">
+                  <h3 style="color: #856404; margin-top: 0;">📝 Admin Notes</h3>
+                  <p style="color: #856404;">${notes}</p>
+                </div>
+                `
+              : ''
+            }
+
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #2c3e50; margin-top: 0;">📋 Next Steps</h3>
+              <ol style="color: #2c3e50; margin: 5px 0; padding-left: 20px;">
+                <li>Review the candidate’s full profile</li>
+                <li>Make your hiring decision with confidence</li>
+                <li>Contact support if you need assistance</li>
+              </ol>
+            </div>
+
+            <div style="border-top: 2px solid #667eea; padding-top: 20px; margin-top: 30px;">
+              <p>Best regards,</p>
+              <div style="font-weight: bold; color: #2c3e50;">The Job Portal Team</div>
+              <div style="color: #667eea; font-size: 14px;">Customer Success Manager</div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center;
+                      border-radius: 0 0 8px 8px;">
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">
+              This is an automated notification from Job Portal. Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `
+        });
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't throw - email failure shouldn't affect the main operation
+      }
+    }
+
+
+    res.json({
+      success: true,
+      message: 'Second payment approved successfully',
+      newStatus: 'full_access_granted'
+    });
+
   } catch (error) {
-    res.status(500).json({ error: 'Failed to approve second payment.' });
+    console.error('Error approving second payment:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to approve second payment'
+    });
   }
 };
 
@@ -1950,6 +2245,32 @@ exports.rejectSecondPayment = async (req, res) => {
         completedBy: adminId
       }
     });
+    // Find the latest second_installment payment for this request
+    const payment = await prisma.payment.findFirst({
+      where: {
+        employerRequestId: parseInt(requestId, 10),
+        paymentType: 'second_installment',
+        status: 'confirmed'
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    if (!payment) {
+      return res.status(404).json({ error: 'Second payment not found or not confirmed.' });
+    }
+    // Update payment status to approved
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'rejected', adminNotes: reason }
+    });
+    // Add payment approval record
+    await prisma.paymentApproval.create({
+      data: {
+        paymentId: payment.id,
+        adminId,
+        action: 'reject',
+        notes: reason
+      }
+    });
 
     // Send notification to employer (don't let email failures affect the main response)
     if (employerRequest.employerAccount?.user?.email) {
@@ -1974,7 +2295,7 @@ exports.rejectSecondPayment = async (req, res) => {
             <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;
                         border-left: 4px solid #28a745;">
               <h3 style="color: #155724; margin-top: 0;">✅ Full Access Granted</h3>
-              <p style="color: #155724;">You now have complete access to the candidate's details and can proceed with your hiring decision.</p>
+              <p style="color: #155724;">You now have complete access to the candidate’s details and can proceed with your hiring decision.</p>
             </div>
 
             ${notes
@@ -1991,7 +2312,7 @@ exports.rejectSecondPayment = async (req, res) => {
             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="color: #2c3e50; margin-top: 0;">📋 Next Steps</h3>
               <ol style="color: #2c3e50; margin: 5px 0; padding-left: 20px;">
-                <li>Review the candidate's complete profile and details</li>
+                <li>Review the candidate’s complete profile and details</li>
                 <li>Make your hiring decision with confidence</li>
                 <li>Reach out to our support team if you require assistance</li>
               </ol>
