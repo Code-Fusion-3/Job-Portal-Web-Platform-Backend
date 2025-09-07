@@ -37,7 +37,9 @@ model User {
   matchedEmployerRequest EmployerRequest? @relation("MatchedEmployerRequest", fields: [matchedWithEmployerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   // Notifications
-  notifications Notification[]
+  notifications           Notification[]
+  notificationLogs        NotificationLog[]
+  notificationPreferences NotificationPreference[]
 }
 
 model Profile {
@@ -83,7 +85,7 @@ model EmployerRequest {
   selectedUserId       Int?
   createdAt            DateTime          @default(now())
   priority             String            @default("normal") @db.VarChar(20)
-  status               String            @default("pending") @db.VarChar(50) // pending | approved | first_payment_required | first_payment_confirmed | photo_access_granted | full_details_requested | second_payment_required | second_payment_confirmed | full_access_granted | hiring_decision_made | completed | cancelled
+  status               String            @default("pending") @db.VarChar(50) // pending | approved | first_payment_required | first_payment_confirmed | photo_access_granted | full_details_requested | second_payment_required | second_payment_confirmed | full_access_granted | hiring_decision_made | hiring_decision_not_made | hired | available | completed | cancelled | process_complete
   updatedAt            DateTime          @updatedAt
   requestedCandidateId Int?
   requestedCandidate   User?             @relation("RequestedCandidate", fields: [requestedCandidateId], references: [id])
@@ -118,8 +120,9 @@ model EmployerRequest {
   secondPaymentConfirmedAt DateTime?
 
   // Access control
-  partialAccessGranted Boolean @default(false)
-  fullAccessGranted    Boolean @default(false)
+  partialAccessGranted       Boolean @default(false)
+  fullAccessGranted          Boolean @default(false)
+  employerVisibleToCandidate Boolean @default(false) // Only true when hired
 
   // Admin approval tracking
   requestApprovedBy       Int?
@@ -150,7 +153,8 @@ model EmployerRequest {
   candidateNotifiedAt DateTime?
 
   // Notifications
-  notifications Notification[]
+  notifications    Notification[]
+  notificationLogs NotificationLog[]
 
   // Matched job seekers
   matchedJobSeekers User[] @relation("MatchedEmployerRequest")
@@ -316,16 +320,35 @@ model AdminProfile {
 
 // Notification system for tracking all notifications
 model Notification {
-  id                Int       @id @default(autoincrement())
+  id                Int              @id @default(autoincrement())
   userId            Int
   employerRequestId Int?
-  type              String    @db.VarChar(50) // request_received | request_approved | payment_request | payment_confirmed | access_granted | completion | full_details_requested
-  title             String    @db.VarChar(255)
-  message           String    @db.Text
-  isRead            Boolean   @default(false)
+  type              String           @db.VarChar(50) // request_received | request_approved | payment_request | payment_confirmed | access_granted | completion | full_details_requested | hired | custom
+  title             String           @db.VarChar(255)
+  message           String           @db.Text
+  isRead            Boolean          @default(false)
   readAt            DateTime?
-  createdAt         DateTime  @default(now())
+  createdAt         DateTime         @default(now())
+  user              User             @relation(fields: [userId], references: [id])
+  employerRequest   EmployerRequest? @relation(fields: [employerRequestId], references: [id])
+}
 
-  user            User             @relation(fields: [userId], references: [id])
-  employerRequest EmployerRequest? @relation(fields: [employerRequestId], references: [id])
+model NotificationLog {
+  id                Int              @id @default(autoincrement())
+  userId            Int
+  employerRequestId Int?
+  type              String           @db.VarChar(50) // request_received | request_approved | hired | etc.
+  sentAt            DateTime         @default(now())
+  via               String           @db.VarChar(20) // email | inapp | sms
+  user              User             @relation(fields: [userId], references: [id])
+  employerRequest   EmployerRequest? @relation(fields: [employerRequestId], references: [id])
+}
+
+model NotificationPreference {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   @db.VarChar(50) // request_received | request_approved | hired | etc.
+  optedOut  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
 }
