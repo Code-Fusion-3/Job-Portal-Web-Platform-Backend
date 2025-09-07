@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { sessionManager, rateLimiter } = require('../utils/redis');
-const { sendPasswordResetEmail, sendPasswordResetConfirmation } = require('../utils/mailer');
+const { sendPasswordResetEmail, sendPasswordResetConfirmation } = require('../utils/notificationMailer');
 
 const prisma = new PrismaClient();
 

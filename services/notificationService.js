@@ -1,5 +1,5 @@
 const { getPrismaClient } = require('../utils/database');
-const { sendStatusUpdateNotification } = require('../utils/mailer');
+const { sendStatusUpdateNotification } = require('../utils/notificationMailer');
 
 /**
  * Notification Service for managing all notifications in the system

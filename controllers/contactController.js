@@ -1,5 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
-const { sendContactNotification, sendContactConfirmation, sendContactResponse } = require('../utils/mailer');
+const { sendContactNotification, sendContactConfirmation, sendContactResponse } = require('../utils/contactNotification');
 const { getAdminEmail } = require('../utils/adminUtils');
 
 const prisma = new PrismaClient();

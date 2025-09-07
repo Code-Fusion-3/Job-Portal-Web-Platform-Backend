@@ -2,10 +2,30 @@ const { getPrismaClient } = require('../utils/database');
 const { getAnonymizedJobSeekerData } = require('../utils/dataAnonymizer');
 const bcrypt = require('bcrypt');
 const { generateRandomPassword } = require('../utils/passwordGenerator');
-const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/mailer');
+const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/notificationMailer');
 const { getAdminEmail } = require('../utils/adminUtils');
 const PaymentService = require('../services/paymentService');
 const NotificationService = require('../services/notificationService');
+
+// Helper to check candidate notification opt-out
+async function checkCandidateNotificationOptOut(userId, type) {
+  const prisma = await getPrismaClient();
+  const pref = await prisma.notificationPreference.findFirst({
+    where: { userId, type }
+  });
+  return pref && pref.optedOut;
+}
+
+// PATCH: Guard against undefined id/userId in employerAccount.findUnique
+async function safeFindEmployerAccount(prisma, { id, userId }, include) {
+  if (!id && !userId) {
+    throw new Error('EmployerAccount lookup requires id or userId');
+  }
+  return await prisma.employerAccount.findUnique({
+    where: id ? { id } : { userId },
+    include
+  });
+}
 
 // Prisma client is managed by the database utility
 
@@ -177,6 +197,36 @@ exports.submitEmployerRequest = async (req, res) => {
     } catch (emailError) {
       console.error('Failed to send employer request notification:', emailError);
       // Continue even if email fails
+    }
+
+    // After creating the employer request, send an email to the candidate if requestedCandidateId is present
+    if (employerRequest.requestedCandidateId) {
+      try {
+        // Fetch candidate email
+        const candidate = await prisma.user.findUnique({ where: { id: employerRequest.requestedCandidateId } });
+        if (candidate && candidate.email) {
+          // Send email notification to candidate
+          await sendStatusUpdateNotification(
+            candidate.email,
+            candidate.name || 'Candidate',
+            'request_received',
+            null,
+            {
+              id: employerRequest.id,
+              message: employerRequest.message,
+              companyName: employerAccount.companyName,
+              phoneNumber: employerAccount.phoneNumber
+            }
+          );
+          // Log success
+          console.log(`✅ Email sent to candidate ${candidate.email} for request #${employerRequest.id}`);
+        } else {
+          console.warn(`⚠️ Candidate email not found for userId ${employerRequest.requestedCandidateId}`);
+        }
+      } catch (emailError) {
+        console.error('❌ Failed to send candidate request notification email:', emailError);
+        // Continue even if email fails
+      }
     }
 
     // Send WebSocket notification
@@ -647,123 +697,191 @@ exports.selectJobSeekerForRequest = async (req, res) => {
   }
 };
 
-// Admin: Approve employer request
+// Refactor approval transition
 exports.approveEmployerRequest = async (req, res) => {
   try {
     const prisma = await getPrismaClient();
     const requestId = parseInt(req.params.id, 10);
-    const { adminNotes } = req.body;
-
+    const { adminNotes, paymentMethodId } = req.body;
     // Check if request exists
-    const request = await prisma.employerRequest.findUnique({
-      where: { id: requestId },
-      include: {
-        selectedUser: {
-          select: {
-            id: true,
-            email: true,
-            profile: {
-              select: {
-                firstName: true,
-                lastName: true,
-                skills: true,
-                experience: true,
-                contactNumber: true
-              }
-            }
-          }
-        }
-      }
-    });
-
+    const request = await prisma.employerRequest.findUnique({ where: { id: requestId } });
     if (!request) {
       return res.status(404).json({ error: 'Employer request not found.' });
     }
-
-    // Check if request is already approved
-    if (request.status === 'approved') {
-      return res.status(400).json({ error: 'Request is already approved.' });
+    if (request.status !== 'pending') {
+      return res.status(400).json({ error: 'Request is not in pending status' });
     }
-
-    // Check if request is cancelled or completed
-    if (request.status === 'cancelled' || request.status === 'completed') {
-      return res.status(400).json({ error: 'Cannot approve a cancelled or completed request.' });
+    // Enforce payment method selection for first payment
+    let selectedPaymentMethodId = paymentMethodId;
+    if (!selectedPaymentMethodId) {
+      // If not provided, select the first active payment method as default
+      const firstActiveMethod = await prisma.paymentMethod.findFirst({ where: { isActive: true }, orderBy: { id: 'asc' } });
+      if (!firstActiveMethod) {
+        return res.status(400).json({ error: 'No active payment method found. Please add a payment method before approving requests.' });
+      }
+      selectedPaymentMethodId = firstActiveMethod.id;
     }
-
-    // Update request status to approved
-    const updatedRequest = await prisma.employerRequest.update({
+    // Update status to approved
+    await prisma.employerRequest.update({
       where: { id: requestId },
-      data: { 
-        status: 'approved',
-        updatedAt: new Date()
-      },
-      include: {
-        selectedUser: {
-          select: {
-            id: true,
-            email: true,
-            profile: {
-              select: {
-                firstName: true,
-                lastName: true,
-                skills: true,
-                experience: true,
-                contactNumber: true
-              }
-            }
-          }
-        }
+      data: { status: 'approved', requestApprovedAt: new Date() }
+    });
+    // Create first payment record with selected payment method
+    await prisma.payment.create({
+      data: {
+        employerRequestId: requestId,
+        amount: 5000.00,
+        currency: 'RWF',
+        paymentMethodId: selectedPaymentMethodId,
+        paymentType: 'first_installment',
+        paymentReference: `PAY-${Date.now()}-${requestId}`,
+        status: 'pending',
+        description: 'First installment for photo access',
+        installmentNumber: 1,
+        isNonRefundable: true
       }
     });
-
-    // Create system message indicating approval
-    if (adminNotes) {
-      await prisma.message.create({
-        data: {
-          employerRequestId: requestId,
-          fromAdmin: true,
-          employerEmail: request.employerAccount?.user?.email,
-          content: `Request approved. ${adminNotes}`,
-          messageType: 'system'
-        }
-      });
-    } else {
-      await prisma.message.create({
-        data: {
-          employerRequestId: requestId,
-          fromAdmin: true,
-          employerEmail: request.employerAccount?.user?.email,
-          content: 'Request approved by admin.',
-          messageType: 'system'
-        }
-      });
-    }
-
-    // Send approval notification email to employer
-    try {
-      await sendRequestApprovalNotification(
-        request.employerAccount?.user?.email, 
-        request.employerAccount?.user?.name || 'Employer', 
-        request.selectedUser,
-        adminNotes
-      );
-    } catch (emailError) {
-      console.error('Failed to send approval notification:', emailError);
-      // Continue even if email fails
-    }
-
-    // Send WebSocket notification
-    if (global.wsServer) {
-      global.wsServer.notifyRequestStatusChange(requestId, 'approved');
-      // global.wsServer.notifyDashboardUpdate();
-    }
-
-    res.json({
-      message: 'Employer request approved successfully',
-      request: updatedRequest
-    });
+    // TODO: Trigger employer notification (first payment required)
+    res.json({ message: 'Employer request approved and first payment required. Payment method set.' });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to approve request.' });
+  }
+};
+
+// Refactor first payment confirmation
+exports.confirmFirstPayment = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    const { requestId } = req.body;
+    // Confirm first payment
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: { status: 'first_payment_confirmed', firstPaymentConfirmed: true, firstPaymentConfirmedAt: new Date() }
+    });
+    // TODO: Trigger admin notification (first payment confirmed)
+    // Move to photo access granted
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: { status: 'photo_access_granted', partialAccessGranted: true, accessGrantedAt: new Date() }
+    });
+    // TODO: Trigger employer notification (photo access granted)
+    res.json({ message: 'First payment confirmed and photo access granted.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to confirm first payment.' });
+  }
+};
+
+// Refactor full details request
+exports.requestFullDetails = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { reason } = req.body;
+    const employerUserId = req.user.id;
+    const prisma = await getPrismaClient();
+    const employerRequest = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: { employerAccount: { include: { user: true } } }
+    });
+    if (!employerRequest) {
+      return res.status(404).json({ error: 'Employer request not found' });
+    }
+    if (employerRequest.employerAccount.userId !== employerUserId) {
+      return res.status(403).json({ error: 'Access denied. This request does not belong to you.' });
+    }
+    if (employerRequest.status !== 'photo_access_granted') {
+      return res.status(400).json({ error: 'You must have photo access before requesting full details.' });
+    }
+    // Update status to full_details_requested
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: { status: 'full_details_requested', hiringDecisionNotes: reason ? `Employer request reason: ${reason}` : null }
+    });
+    // TODO: Trigger admin notification (full details requested)
+    // Move to second payment required (admin sets amount in next step)
+    res.json({ message: 'Full details request submitted. Awaiting admin review.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Refactor admin sets second payment
+exports.setSecondPayment = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    const { requestId, amount } = req.body;
+    // Only allow if status is full_details_requested
+    const request = await prisma.employerRequest.findUnique({ where: { id: parseInt(requestId, 10) } });
+    if (!request || request.status !== 'full_details_requested') {
+      return res.status(400).json({ error: 'Request must be in full_details_requested status' });
+    }
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: { status: 'second_payment_required', secondPaymentRequired: true, secondPaymentAmount: amount }
+    });
+    // TODO: Trigger employer notification (second payment required)
+    res.json({ message: 'Second payment required set.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to set second payment.' });
+  }
+};
+
+// Refactor second payment confirmation
+exports.confirmSecondPayment = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    const { requestId } = req.body;
+    // Confirm second payment
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: { status: 'second_payment_confirmed', secondPaymentConfirmed: true, secondPaymentConfirmedAt: new Date() }
+    });
+    // TODO: Trigger admin notification (second payment confirmed)
+    // Move to full access granted
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: { status: 'full_access_granted', fullAccessGranted: true, accessGrantedAt: new Date() }
+    });
+    // TODO: Trigger employer notification (full access granted)
+    res.json({ message: 'Second payment confirmed and full access granted.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to confirm second payment.' });
+  }
+};
+
+// Refactor process exit (employer stops after photo access)
+exports.exitAfterPhotoAccess = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    const { requestId } = req.body;
+    // Only allow if status is photo_access_granted
+    const request = await prisma.employerRequest.findUnique({ where: { id: parseInt(requestId, 10) } });
+    if (!request || request.status !== 'photo_access_granted') {
+      return res.status(400).json({ error: 'Request must be in photo_access_granted status' });
+    }
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: { status: 'process_complete', isCompleted: true, completedAt: new Date() }
+    });
+    // TODO: Trigger admin notification (process exited after photo access)
+    res.json({ message: 'Process exited after photo access.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to exit process.' });
+  }
+};
+
+// Refactor cancellation
+exports.cancelRequest = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    const { requestId } = req.body;
+    await prisma.employerRequest.update({
+      where: { id: parseInt(requestId, 10) },
+      data: { status: 'cancelled', isActive: false, deactivatedAt: new Date() }
+    });
+    // TODO: Trigger admin and employer notification (request cancelled)
+    res.json({ message: 'Request cancelled.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to cancel request.' });
   }
 };
 
@@ -1424,80 +1542,6 @@ exports.getAllEmployerRequests = async (req, res) => {
 // ===== NEW WORKFLOW FUNCTIONS =====
 
 /**
- * Request full details (employer initiated)
- */
-exports.requestFullDetails = async (req, res) => {
-  try {
-    const { requestId } = req.params;
-    const { reason } = req.body;
-    const employerUserId = req.user.id;
-
-    const prisma = await getPrismaClient();
-    
-    const employerRequest = await prisma.employerRequest.findUnique({
-      where: { id: parseInt(requestId, 10) },
-      include: {
-        employerAccount: {
-          include: { user: true }
-        },
-        requestedCandidate: true
-      }
-    });
-
-    if (!employerRequest) {
-      return res.status(404).json({ error: 'Employer request not found' });
-    }
-
-    // Check if the request belongs to the authenticated employer
-    if (employerRequest.employerAccount.userId !== employerUserId) {
-      return res.status(403).json({ error: 'Access denied. This request does not belong to you.' });
-    }
-
-    // Check if employer has photo access
-    if (employerRequest.status !== 'photo_access_granted') {
-      return res.status(400).json({ 
-        error: 'You must have photo access before requesting full details.' 
-      });
-    }
-
-    // Update request status
-    await prisma.employerRequest.update({
-      where: { id: parseInt(requestId, 10) },
-      data: {
-        status: 'full_details_requested',
-        hiringDecisionNotes: reason ? `Employer request reason: ${reason}` : null
-      }
-    });
-
-    // Create progress tracking
-    await prisma.requestProgress.create({
-      data: {
-        employerRequestId: parseInt(requestId, 10),
-        stage: 'full_details_requested',
-        status: 'completed',
-        description: `Employer requested full details access${reason ? `: ${reason}` : ''}`,
-        completedAt: new Date()
-      }
-    });
-
-    // Send notification to admin
-    await NotificationService.sendAdminNotification({
-      type: 'full_details_requested',
-      title: 'Employer Requests Full Details',
-      message: `Employer ${employerRequest.employerAccount.user.name} has requested full details access for candidate. Please review and approve/reject.`,
-      employerRequestId: parseInt(requestId, 10)
-    });
-
-    res.json({ 
-      message: 'Full details request submitted successfully. Admin will review your request.' 
-    });
-  } catch (error) {
-    console.error('Error requesting full details:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-/**
  * Mark hiring decision
  */
 exports.markHiringDecision = async (req, res) => {
@@ -1505,65 +1549,54 @@ exports.markHiringDecision = async (req, res) => {
     const { requestId } = req.params;
     const { decision, notes } = req.body; // decision: 'hired' | 'not_hired'
     const employerUserId = req.user.id;
-
     const prisma = await getPrismaClient();
-    
     const employerRequest = await prisma.employerRequest.findUnique({
       where: { id: parseInt(requestId, 10) },
       include: {
-        employerAccount: {
-          include: { user: true }
-        }
+        employerAccount: { include: { user: true } }
       }
     });
-
     if (!employerRequest) {
       return res.status(404).json({ error: 'Employer request not found' });
     }
-
-    // Check if the request belongs to the authenticated employer
     if (employerRequest.employerAccount.userId !== employerUserId) {
       return res.status(403).json({ error: 'Access denied. This request does not belong to you.' });
     }
-
-    // Check if employer has full access
     if (employerRequest.status !== 'full_access_granted') {
-      return res.status(400).json({ 
-        error: 'You must have full access before making hiring decision.' 
-      });
+      return res.status(400).json({ error: 'You must have full access before making hiring decision.' });
     }
-
-    // Update request status
+    // Determine new status and employer visibility
+    let newStatus = 'hiring_decision_not_made';
+    let employerVisible = false;
+    if (decision === 'hired') {
+      newStatus = 'hired';
+      employerVisible = true;
+    } else if (decision === 'not_hired') {
+      newStatus = 'available';
+      employerVisible = false;
+    }
     await prisma.employerRequest.update({
       where: { id: parseInt(requestId, 10) },
       data: {
-        status: 'hiring_decision_made',
+        status: newStatus,
         hiringDecision: decision,
         hiringDecisionMadeBy: employerUserId,
         hiringDecisionMadeAt: new Date(),
-        hiringDecisionNotes: notes
+        hiringDecisionNotes: notes,
+        employerVisibleToCandidate: employerVisible
       }
     });
-
-    // Create progress tracking
     await prisma.requestProgress.create({
       data: {
         employerRequestId: parseInt(requestId, 10),
-        stage: 'hiring_decision_made',
+        stage: newStatus,
         status: 'completed',
         description: `Employer marked candidate as ${decision}${notes ? `: ${notes}` : ''}`,
         completedAt: new Date()
       }
     });
-
-    // Send notification to admin
-    await NotificationService.sendAdminNotification({
-      type: 'hiring_decision_made',
-      title: 'Hiring Decision Made',
-      message: `Employer has marked candidate as ${decision}. Please review and update candidate availability.`,
-      employerRequestId: parseInt(requestId, 10)
-    });
-
+    // TODO: Trigger candidate notification (hired or not_hired)
+    // TODO: Trigger admin notification for hiring decision
     res.json({ message: 'Hiring decision recorded successfully' });
   } catch (error) {
     console.error('Error marking hiring decision:', error);
@@ -1688,6 +1721,112 @@ exports.getFullDetails = async (req, res) => {
     res.json(fullData);
   } catch (error) {
     console.error('Error getting full details:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Admin: Approve/Reject full details request and set second payment
+exports.approveFullDetailsRequest = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    const { requestId } = req.params;
+    const { action, amount, notes } = req.body; // action: 'approve' | 'reject'
+    const adminId = req.user.id;
+    const request = await prisma.employerRequest.findUnique({ where: { id: parseInt(requestId, 10) } });
+    if (!request || request.status !== 'full_details_requested') {
+      return res.status(400).json({ error: 'Request is not in full_details_requested status' });
+    }
+    if (action === 'approve') {
+      // Set second payment required and amount
+      await prisma.employerRequest.update({
+        where: { id: parseInt(requestId, 10) },
+        data: {
+          status: 'second_payment_required',
+          secondPaymentRequired: true,
+          secondPaymentAmount: amount || 10000.0,
+          secondPaymentApprovedBy: adminId,
+          secondPaymentApprovedAt: new Date()
+        }
+      });
+      // TODO: Trigger employer notification (second payment required)
+      res.json({ message: 'Full details request approved. Second payment required.' });
+    } else if (action === 'reject') {
+      // Revert to photo access granted
+      await prisma.employerRequest.update({
+        where: { id: parseInt(requestId, 10) },
+        data: {
+          status: 'photo_access_granted',
+          hiringDecisionNotes: notes ? `Admin rejection reason: ${notes}` : 'Full details request rejected by admin'
+        }
+      });
+      // TODO: Trigger employer notification (full details rejected)
+      res.json({ message: 'Full details request rejected. Employer retains photo access only.' });
+    } else {
+      return res.status(400).json({ error: 'Invalid action. Must be "approve" or "reject"' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Admin: Update candidate availability after hiring decision
+exports.updateCandidateAvailability = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    const { requestId } = req.params;
+    const { action } = req.body; // action: 'mark_unavailable' | 'keep_available'
+    const adminId = req.user.id;
+    const request = await prisma.employerRequest.findUnique({
+      where: { id: parseInt(requestId, 10) },
+      include: { requestedCandidate: true }
+    });
+    if (!request || request.status !== 'hired') {
+      return res.status(400).json({ error: 'Request must be in hired status' });
+    }
+    if (action === 'mark_unavailable') {
+      // Mark candidate as unavailable
+      await prisma.user.update({
+        where: { id: request.requestedCandidateId },
+        data: {
+          isAvailableForMatching: false,
+          matchedAt: new Date(),
+          matchedWithEmployerId: parseInt(requestId, 10)
+        }
+      });
+      await prisma.employerRequest.update({
+        where: { id: parseInt(requestId, 10) },
+        data: {
+          status: 'completed',
+          isCompleted: true,
+          completedAt: new Date(),
+          completedBy: adminId,
+          isActive: false,
+          deactivatedAt: new Date(),
+          deactivatedBy: adminId
+        }
+      });
+      // TODO: Trigger candidate notification (marked as hired/unavailable)
+      res.json({ message: 'Candidate marked as unavailable and request completed' });
+    } else if (action === 'keep_available') {
+      // Keep candidate available and deactivate request
+      await prisma.employerRequest.update({
+        where: { id: parseInt(requestId, 10) },
+        data: {
+          status: 'completed',
+          isCompleted: true,
+          completedAt: new Date(),
+          completedBy: adminId,
+          isActive: false,
+          deactivatedAt: new Date(),
+          deactivatedBy: adminId
+        }
+      });
+      // TODO: Trigger candidate notification (request completed, still available)
+      res.json({ message: 'Request completed. Candidate remains available for other requests.' });
+    } else {
+      return res.status(400).json({ error: 'Invalid action. Must be "mark_unavailable" or "keep_available"' });
+    }
+  } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }; 
