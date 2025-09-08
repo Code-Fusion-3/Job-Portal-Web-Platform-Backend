@@ -1097,29 +1097,7 @@ exports.getEmployerDashboard = async (req, res) => {
         requestedCandidate: {
           include: {
             profile: {
-              select: {
-                firstName: true,
-                lastName: true,
-                skills: true,
-                experience: true,
-                experienceLevel: true,
-                photo: true,
-                location: true,
-                city: true,
-                country: true,
-                contactNumber: true,
-                monthlyRate: true,
-                jobCategoryId: true,
-                educationLevel: true,
-                availability: true,
-                languages: true,
-                certifications: true,
-                description: true,
-                gender: true,
-                maritalStatus: true,
-                idNumber: true,
-                references: true,
-                dateOfBirth: true,
+              include: {
                 jobCategory: {
                   select: {
                     id: true,
@@ -1134,29 +1112,7 @@ exports.getEmployerDashboard = async (req, res) => {
         selectedUser: {
           include: {
             profile: {
-              select: {
-                firstName: true,
-                lastName: true,
-                skills: true,
-                experience: true,
-                experienceLevel: true,
-                photo: true,
-                location: true,
-                city: true,
-                country: true,
-                contactNumber: true,
-                monthlyRate: true,
-                jobCategoryId: true,
-                educationLevel: true,
-                availability: true,
-                languages: true,
-                certifications: true,
-                description: true,
-                gender: true,
-                maritalStatus: true,
-                idNumber: true,
-                references: true,
-                dateOfBirth: true,
+              include: {
                 jobCategory: {
                   select: {
                     id: true,
@@ -1256,7 +1212,17 @@ exports.getEmployerDashboard = async (req, res) => {
         const anonymizedCandidate = getAnonymizedJobSeekerData(request.requestedCandidate, request);
         requestData.candidate = {
           id: anonymizedCandidate.id,
+          email: anonymizedCandidate.email,
           name: `${anonymizedCandidate.profile.firstName} ${anonymizedCandidate.profile.lastName}`,
+          role: anonymizedCandidate.role,
+          createdAt: anonymizedCandidate.createdAt,
+          updatedAt: anonymizedCandidate.updatedAt,
+          isAvailableForMatching: anonymizedCandidate.isAvailableForMatching,
+          matchedAt: anonymizedCandidate.matchedAt,
+          // Profile data
+          profileId: anonymizedCandidate.profile.id,
+          firstName: anonymizedCandidate.profile.firstName,
+          lastName: anonymizedCandidate.profile.lastName,
           skills: anonymizedCandidate.profile.skills || 'Not specified',
           experience: anonymizedCandidate.profile.experience || 'Not specified',
           experienceLevel: anonymizedCandidate.profile.experienceLevel || 'Not specified',
@@ -1272,6 +1238,14 @@ exports.getEmployerDashboard = async (req, res) => {
           description: anonymizedCandidate.profile.description || 'Not specified',
           photo: anonymizedCandidate.profile.photo,
           contactNumber: anonymizedCandidate.profile.contactNumber,
+          idNumber: anonymizedCandidate.profile.idNumber,
+          references: anonymizedCandidate.profile.references,
+          dateOfBirth: anonymizedCandidate.profile.dateOfBirth,
+          maritalStatus: anonymizedCandidate.profile.maritalStatus,
+          approvalStatus: anonymizedCandidate.profile.approvalStatus,
+          isActive: anonymizedCandidate.profile.isActive,
+          approvedAt: anonymizedCandidate.profile.approvedAt,
+          jobCategory: anonymizedCandidate.profile.jobCategory,
           accessLevel: anonymizedCandidate.accessLevel,
           accessGranted: anonymizedCandidate.accessGranted
         };
