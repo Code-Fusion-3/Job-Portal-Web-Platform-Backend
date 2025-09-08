@@ -1727,8 +1727,8 @@ exports.approveFirstPayment = async (req, res) => {
       return res.status(404).json({ error: 'Employer request not found' });
     }
 
-    if (!['first_payment_confirmed', 'payment_confirmed'].includes(employerRequest.status)) {
-      return res.status(400).json({ error: 'Request must be in first_payment_confirmed or payment_confirmed status' });
+    if (!['first_payment_confirmed', 'payment_confirmed', 'second_payment_confirmed'].includes(employerRequest.status)) {
+      return res.status(400).json({ error: 'Request must be in first_payment_confirmed, payment_confirmed, or second_payment_confirmed status' });
     }
 
     // Update request status and grant image access
@@ -1754,7 +1754,7 @@ exports.approveFirstPayment = async (req, res) => {
         completedBy: adminId
       }
     });
-  // Find the latest first_installment payment for this request
+    // Find the latest first_installment payment for this request
     const payment = await prisma.payment.findFirst({
       where: {
         employerRequestId: parseInt(requestId, 10),
@@ -1892,8 +1892,8 @@ exports.rejectFirstPayment = async (req, res) => {
       return res.status(404).json({ error: 'Employer request not found' });
     }
 
-    if (!['first_payment_confirmed', 'payment_confirmed'].includes(employerRequest.status)) {
-      return res.status(400).json({ error: 'Request must be in first_payment_confirmed or payment_confirmed status' });
+    if (!['first_payment_confirmed', 'payment_confirmed', 'second_payment_confirmed'].includes(employerRequest.status)) {
+      return res.status(400).json({ error: 'Request must be in first_payment_confirmed, payment_confirmed, or second_payment_confirmed status' });
     }
 
     // Update request status

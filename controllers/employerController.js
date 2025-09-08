@@ -2,7 +2,8 @@ const { getPrismaClient } = require('../utils/database');
 const { getAnonymizedJobSeekerData } = require('../utils/dataAnonymizer');
 const bcrypt = require('bcrypt');
 const { generateRandomPassword } = require('../utils/passwordGenerator');
-const { sendEmployerRequestNotification, sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/notificationMailer');
+const { sendAdminReplyNotification, sendCandidatePictureNotification, sendCandidateFullDetailsNotification, sendStatusUpdateNotification } = require('../utils/notificationMailer');
+const { sendEmployerRequestNotification } = require('../utils/mailer');
 const { getAdminEmail } = require('../utils/adminUtils');
 const PaymentService = require('../services/paymentService');
 const NotificationService = require('../services/notificationService');
@@ -45,7 +46,7 @@ exports.submitEmployerRequest = async (req, res) => {
         where: { id: parseInt(requestedCandidateId, 10) },
         include: { profile: true }
       });
-      
+
       if (!candidate || candidate.role !== 'jobseeker') {
         return res.status(400).json({ error: 'Invalid candidate ID or candidate not found.' });
       }
@@ -54,9 +55,9 @@ exports.submitEmployerRequest = async (req, res) => {
     // Check if employer account exists, if not create one
     let employerAccount = null;
     let existingUser = null;
-    
+
     console.log(`🔍 Checking for existing user with email: ${email}`);
-    
+
     // First, find the user by email
     existingUser = await prisma.user.findUnique({
       where: { email },
@@ -67,7 +68,7 @@ exports.submitEmployerRequest = async (req, res) => {
 
     if (existingUser) {
       console.log(`✅ Found existing user: ${existingUser.id}, role: ${existingUser.role}, employer accounts: ${existingUser.employerAccounts.length}`);
-      
+
       // User exists - check if they already have an employer account
       if (existingUser.employerAccounts.length > 0) {
         // User exists and has employer account(s)
@@ -77,7 +78,7 @@ exports.submitEmployerRequest = async (req, res) => {
         // User exists with employer role but no employer account - create one
         console.log(`🔄 Creating employer account for existing employer user`);
         employerAccount = await prisma.employerAccount.create({
-      data: {
+          data: {
             userId: existingUser.id,
             phoneNumber,
             companyName
@@ -91,7 +92,7 @@ exports.submitEmployerRequest = async (req, res) => {
           where: { id: existingUser.id },
           data: { role: 'employer' }
         });
-        
+
         employerAccount = await prisma.employerAccount.create({
           data: {
             userId: existingUser.id,
@@ -112,7 +113,7 @@ exports.submitEmployerRequest = async (req, res) => {
       // Create user record
       const user = await prisma.user.create({
         data: {
-        email,
+          email,
           password: hashedPassword,
           name,
           role: 'employer'
@@ -124,7 +125,7 @@ exports.submitEmployerRequest = async (req, res) => {
       employerAccount = await prisma.employerAccount.create({
         data: {
           userId: user.id,
-        phoneNumber,
+          phoneNumber,
           companyName
         }
       });
@@ -176,23 +177,23 @@ exports.submitEmployerRequest = async (req, res) => {
       const adminEmail = await getAdminEmail();
       // Send to admin
       await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, adminEmail, priority);
-      
+
       // Send to employer with login credentials if new account
       if (employerAccount.plainPassword) {
         await sendEmployerRequestNotification(
-          name, 
-          email, 
-          message, 
-          phoneNumber, 
-          companyName, 
-          requestedCandidateId, 
-          email, 
+          name,
+          email,
+          message,
+          phoneNumber,
+          companyName,
+          requestedCandidateId,
+          email,
           priority,
           employerAccount.plainPassword // Pass the plain password for email
         );
       } else {
         // Send regular notification for existing accounts
-      await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, email, priority);
+        await sendEmployerRequestNotification(name, email, message, phoneNumber, companyName, requestedCandidateId, email, priority);
       }
     } catch (emailError) {
       console.error('Failed to send employer request notification:', emailError);
@@ -269,7 +270,7 @@ exports.getRequestStats = async (req, res) => {
     const prisma = await getPrismaClient();
     const { period = '30' } = req.query; // Default to last 30 days
     const days = parseInt(period);
-    
+
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
@@ -475,16 +476,16 @@ exports.replyToEmployerRequest = async (req, res) => {
     // Check if request is approved - block further communication
     if (request.status === 'approved') {
       console.log(`❌ Reply blocked: Request already approved - ID: ${requestId}`);
-      return res.status(400).json({ 
-        error: 'Cannot send messages for approved requests. Communication is closed after approval.' 
+      return res.status(400).json({
+        error: 'Cannot send messages for approved requests. Communication is closed after approval.'
       });
     }
 
     // Check if request is cancelled or completed
     if (request.status === 'cancelled' || request.status === 'completed') {
       console.log(`❌ Reply blocked: Request ${request.status} - ID: ${requestId}`);
-      return res.status(400).json({ 
-        error: `Cannot send messages for ${request.status} requests.` 
+      return res.status(400).json({
+        error: `Cannot send messages for ${request.status} requests.`
       });
     }
 
@@ -561,8 +562,8 @@ exports.selectJobSeekerForRequest = async (req, res) => {
     // Check if request is already approved
     if (request.status === 'approved') {
       console.log(`❌ Selection blocked: Request already approved - ID: ${requestId}`);
-      return res.status(400).json({ 
-        error: 'Cannot select candidate for approved requests.' 
+      return res.status(400).json({
+        error: 'Cannot select candidate for approved requests.'
       });
     }
 
@@ -613,7 +614,7 @@ exports.selectJobSeekerForRequest = async (req, res) => {
     // Update request with selected user
     const updatedRequest = await prisma.employerRequest.update({
       where: { id: requestId },
-      data: { 
+      data: {
         selectedUserId,
         status: 'in_progress' // Update status to in progress
       },
@@ -663,13 +664,13 @@ exports.selectJobSeekerForRequest = async (req, res) => {
     let emailSent = false;
     try {
       console.log(`📤 Sending candidate selection email to employer: ${request.employerAccount?.user?.email}`);
-      
+
       if (detailsType === 'picture') {
         await sendCandidatePictureNotification(request.employerAccount?.user?.email, request.employerAccount?.user?.name || 'Employer', selectedUser);
       } else {
         await sendCandidateFullDetailsNotification(request.employerAccount?.user?.email, request.employerAccount?.user?.name || 'Employer', selectedUser);
       }
-      
+
       emailSent = true;
       console.log(`✅ Candidate selection email sent successfully to: ${request.employerAccount?.user?.email}`);
     } catch (emailError) {
@@ -721,10 +722,15 @@ exports.approveEmployerRequest = async (req, res) => {
       }
       selectedPaymentMethodId = firstActiveMethod.id;
     }
-    // Update status to approved
+    // Update status to first_payment_required (instead of just approved)
     await prisma.employerRequest.update({
       where: { id: requestId },
-      data: { status: 'approved', requestApprovedAt: new Date() }
+      data: {
+        status: 'first_payment_required',
+        requestApprovedAt: new Date(),
+        firstPaymentRequired: true,
+        firstPaymentAmount: 5000.00
+      }
     });
     // Create first payment record with selected payment method
     await prisma.payment.create({
@@ -804,22 +810,30 @@ exports.requestFullDetails = async (req, res) => {
   }
 };
 
-// Refactor admin sets second payment
+// PATCH: Only admin can trigger second_payment_required
 exports.setSecondPayment = async (req, res) => {
   try {
     const prisma = await getPrismaClient();
     const { requestId, amount } = req.body;
-    // Only allow if status is full_details_requested
+    const adminId = req.user.id;
+    // Find the request and ensure correct status
     const request = await prisma.employerRequest.findUnique({ where: { id: parseInt(requestId, 10) } });
-    if (!request || request.status !== 'full_details_requested') {
-      return res.status(400).json({ error: 'Request must be in full_details_requested status' });
+    if (!request || !['photo_access_granted', 'full_details_requested'].includes(request.status)) {
+      return res.status(400).json({ error: 'Second payment can only be requested from photo_access_granted or full_details_requested status.' });
     }
+    // Set second payment required, amount, initiator, and timestamp
     await prisma.employerRequest.update({
       where: { id: parseInt(requestId, 10) },
-      data: { status: 'second_payment_required', secondPaymentRequired: true, secondPaymentAmount: amount }
+      data: {
+        status: 'second_payment_required',
+        secondPaymentRequired: true,
+        secondPaymentAmount: amount,
+        secondPaymentInitiator: `admin:${adminId}`,
+        secondPaymentInitiatedAt: new Date()
+      }
     });
     // TODO: Trigger employer notification (second payment required)
-    res.json({ message: 'Second payment required set.' });
+    res.json({ message: 'Second payment required set by admin.' });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to set second payment.' });
   }
@@ -1049,7 +1063,7 @@ exports.updateRequestStatus = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to update request status.' });
   }
-}; 
+};
 
 // Get employer dashboard data
 exports.getEmployerDashboard = async (req, res) => {
@@ -1309,34 +1323,34 @@ exports.getEmployerDashboard = async (req, res) => {
     console.error('Error getting employer dashboard:', error);
     res.status(500).json({ error: 'Failed to get dashboard data' });
   }
-}; 
+};
 
 // Get all employer requests (admin only)
 exports.getAllEmployerRequests = async (req, res) => {
   try {
     const prisma = await getPrismaClient();
-    
+
     // Get query parameters
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const sortBy = req.query.sortBy || 'createdAt';
     const sortOrder = req.query.sortOrder || 'desc';
     const status = req.query.status || 'all';
-    
+
     // Calculate offset
     const offset = (page - 1) * limit;
-    
+
     // Build where clause
     const whereClause = {};
     if (status !== 'all') {
       whereClause.status = status;
     }
-    
+
     // Get total count
     const totalCount = await prisma.employerRequest.count({
       where: whereClause
     });
-    
+
     // Get requests with pagination and sorting
     const requests = await prisma.employerRequest.findMany({
       where: whereClause,
@@ -1408,8 +1422,10 @@ exports.getAllEmployerRequests = async (req, res) => {
           take: 1
         },
         payments: {
-          orderBy: { createdAt: 'desc' },
-          take: 1
+          include: {
+            paymentMethod: true
+          },
+          orderBy: { createdAt: 'desc' }
         },
         requestProgress: {
           orderBy: { createdAt: 'desc' },
@@ -1429,7 +1445,7 @@ exports.getAllEmployerRequests = async (req, res) => {
       skip: offset,
       take: limit
     });
-    
+
     // Process requests using proper anonymization utility
     const processedRequests = requests.map(request => {
       const requestData = {
@@ -1444,6 +1460,9 @@ exports.getAllEmployerRequests = async (req, res) => {
         paymentCurrency: request.paymentCurrency,
         paymentDescription: request.paymentDescription,
         paymentDueDate: request.paymentDueDate,
+        secondPaymentRequired: request.secondPaymentRequired,
+        secondPaymentAmount: request.secondPaymentAmount,
+        secondPaymentInitiator: request.secondPaymentInitiator,
         contactAccessGranted: request.contactAccessGranted,
         imageAccessGranted: request.imageAccessGranted,
         accessGrantedAt: request.accessGrantedAt,
@@ -1453,6 +1472,21 @@ exports.getAllEmployerRequests = async (req, res) => {
         latestMessage: request.messages[0] || null,
         latestPayment: request.payments[0] || null,
         latestProgress: request.requestProgress[0] || null,
+        // Add specific payment installments (get the latest pending payment for each type)
+        firstInstallmentPayment: request.payments
+          .filter(p => p.paymentType === 'first_installment' && p.status === 'pending')
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null,
+        secondInstallmentPayment: request.payments
+          .filter(p => p.paymentType === 'second_installment' && p.status === 'pending')
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null,
+        // Add current payment for UI (based on status) - get the LATEST pending payment
+        currentPayment: request.status === 'second_payment_required'
+          ? (request.payments
+            .filter(p => p.paymentType === 'second_installment' && p.status === 'pending')
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null)
+          : (request.payments
+            .filter(p => p.paymentType === 'first_installment' && p.status === 'pending')
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null),
         employer: {
           id: request.employerAccount.id,
           email: request.employerAccount.user.email,
@@ -1515,12 +1549,12 @@ exports.getAllEmployerRequests = async (req, res) => {
 
       return requestData;
     });
-    
+
     // Calculate pagination info
     const totalPages = Math.ceil(totalCount / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
-    
+
     res.json({
       requests: processedRequests,
       pagination: {
@@ -1532,7 +1566,7 @@ exports.getAllEmployerRequests = async (req, res) => {
         limit
       }
     });
-    
+
   } catch (error) {
     console.error('Error getting all employer requests:', error);
     res.status(500).json({ error: 'Failed to get employer requests' });
@@ -1613,7 +1647,7 @@ exports.getPhotoAccess = async (req, res) => {
     const employerUserId = req.user.id;
 
     const prisma = await getPrismaClient();
-    
+
     const employerRequest = await prisma.employerRequest.findUnique({
       where: { id: parseInt(requestId, 10) },
       include: {
@@ -1671,7 +1705,7 @@ exports.getFullDetails = async (req, res) => {
     const employerUserId = req.user.id;
 
     const prisma = await getPrismaClient();
-    
+
     const employerRequest = await prisma.employerRequest.findUnique({
       where: { id: parseInt(requestId, 10) },
       include: {
@@ -1737,13 +1771,14 @@ exports.approveFullDetailsRequest = async (req, res) => {
       return res.status(400).json({ error: 'Request is not in full_details_requested status' });
     }
     if (action === 'approve') {
-      // Set second payment required and amount
+      // Create second payment using PaymentService
+      const PaymentService = require('../services/paymentService');
+      await PaymentService.createSecondPayment(parseInt(requestId, 10), amount || 10000.0);
+
+      // Update additional tracking fields
       await prisma.employerRequest.update({
         where: { id: parseInt(requestId, 10) },
         data: {
-          status: 'second_payment_required',
-          secondPaymentRequired: true,
-          secondPaymentAmount: amount || 10000.0,
           secondPaymentApprovedBy: adminId,
           secondPaymentApprovedAt: new Date()
         }

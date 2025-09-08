@@ -118,6 +118,8 @@ model EmployerRequest {
   secondPaymentAmount      Decimal?  @db.Decimal(10, 2)
   secondPaymentConfirmed   Boolean   @default(false)
   secondPaymentConfirmedAt DateTime?
+  secondPaymentInitiator   String?   @db.VarChar(100) // Who triggered second payment (admin id or name)
+  secondPaymentInitiatedAt DateTime? // When second payment was requested
 
   // Access control
   partialAccessGranted       Boolean @default(false)

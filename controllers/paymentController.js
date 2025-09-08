@@ -1,8 +1,8 @@
 const { getPrismaClient } = require('../utils/database');
-const { 
-  sendPaymentRequestNotification, 
-  sendPaymentConfirmationNotification, 
-  sendPaymentApprovalNotification 
+const {
+  sendPaymentRequestNotification,
+  sendPaymentConfirmationNotification,
+  sendPaymentApprovalNotification
 } = require('../utils/paymentNotifications');
 const { getAdminEmail } = require('../utils/adminUtils');
 const NotificationService = require('../services/notificationService');
@@ -20,20 +20,20 @@ const initPrisma = async () => {
 exports.requestPayment = async (req, res) => {
   try {
     const prisma = await initPrisma();
-    const { 
-      employerRequestId, 
-      amount, 
-      currency = 'RWF', 
+    const {
+      employerRequestId,
+      amount,
+      currency = 'RWF',
       description,
       paymentMethodId,
       paymentType = 'photo_access', // photo_access | full_details
-      dueDate 
+      dueDate
     } = req.body;
 
     // Validate required fields
     if (!employerRequestId || !amount) {
-      return res.status(400).json({ 
-        error: 'Employer request ID and amount are required.' 
+      return res.status(400).json({
+        error: 'Employer request ID and amount are required.'
       });
     }
 
@@ -48,15 +48,15 @@ exports.requestPayment = async (req, res) => {
 
     // Check if any payment already exists for this request
     const existingPaymentCheck = await prisma.payment.findFirst({
-      where: { 
+      where: {
         employerRequestId: parseInt(employerRequestId, 10),
         status: { in: ['pending', 'confirmed'] }
       }
     });
 
     if (existingPaymentCheck) {
-      return res.status(409).json({ 
-        error: 'Payment already requested for this employer request.' 
+      return res.status(409).json({
+        error: 'Payment already requested for this employer request.'
       });
     }
 
@@ -82,7 +82,7 @@ exports.requestPayment = async (req, res) => {
 
     // Check if payment of this type already exists for this request
     const existingPayment = await prisma.payment.findFirst({
-      where: { 
+      where: {
         employerRequestId: parseInt(employerRequestId, 10),
         paymentType,
         status: { in: ['pending', 'confirmed'] }
@@ -90,8 +90,8 @@ exports.requestPayment = async (req, res) => {
     });
 
     if (existingPayment) {
-      return res.status(409).json({ 
-        error: `${paymentType === 'photo_access' ? 'Photo access' : 'Full details'} payment already requested for this employer request.` 
+      return res.status(409).json({
+        error: `${paymentType === 'photo_access' ? 'Photo access' : 'Full details'} payment already requested for this employer request.`
       });
     }
 
@@ -195,17 +195,17 @@ exports.requestPayment = async (req, res) => {
 exports.confirmPayment = async (req, res) => {
   try {
     const prisma = await initPrisma();
-    const { 
-      paymentId, 
-      confirmationName, 
-      confirmationPhone, 
-      paymentReference 
+    const {
+      paymentId,
+      confirmationName,
+      confirmationPhone,
+      paymentReference
     } = req.body;
 
     // Validate required fields
     if (!paymentId || !confirmationName || !confirmationPhone) {
-      return res.status(400).json({ 
-        error: 'Payment ID, confirmation name, and phone are required.' 
+      return res.status(400).json({
+        error: 'Payment ID, confirmation name, and phone are required.'
       });
     }
 
@@ -221,8 +221,8 @@ exports.confirmPayment = async (req, res) => {
 
     // Check if payment is already confirmed
     if (payment.status !== 'pending') {
-      return res.status(400).json({ 
-        error: 'Payment is already confirmed or processed.' 
+      return res.status(400).json({
+        error: 'Payment is already confirmed or processed.'
       });
     }
 
@@ -238,11 +238,15 @@ exports.confirmPayment = async (req, res) => {
       }
     });
 
-    // Update employer request status
+    // Update employer request status based on payment type
+    const newStatus = payment.paymentType === 'second_installment'
+      ? 'second_payment_confirmed'
+      : 'first_payment_confirmed';
+
     await prisma.employerRequest.update({
       where: { id: payment.employerRequestId },
       data: {
-        status: 'payment_confirmed'
+        status: newStatus
       }
     });
 
@@ -250,9 +254,9 @@ exports.confirmPayment = async (req, res) => {
     await prisma.requestProgress.create({
       data: {
         employerRequestId: payment.employerRequestId,
-        stage: 'payment_confirmed',
+        stage: newStatus,
         status: 'completed',
-        description: `Payment confirmed by ${confirmationName} (${confirmationPhone})`,
+        description: `${payment.paymentType === 'second_installment' ? 'Second' : 'First'} payment confirmed by ${confirmationName} (${confirmationPhone})`,
         completedAt: new Date()
       }
     });
@@ -336,21 +340,21 @@ exports.approvePayment = async (req, res) => {
 
     // Validate required fields
     if (!paymentId || !action) {
-      return res.status(400).json({ 
-        error: 'Payment ID and action are required.' 
+      return res.status(400).json({
+        error: 'Payment ID and action are required.'
       });
     }
 
     if (!['approve', 'reject'].includes(action)) {
-      return res.status(400).json({ 
-        error: 'Action must be either "approve" or "reject".' 
+      return res.status(400).json({
+        error: 'Action must be either "approve" or "reject".'
       });
     }
 
     // Find payment with employer request
     const payment = await prisma.payment.findUnique({
       where: { id: parseInt(paymentId, 10) },
-      include: { 
+      include: {
         employerRequest: {
           include: {
             requestedCandidate: {
@@ -367,8 +371,8 @@ exports.approvePayment = async (req, res) => {
 
     // Check if payment is confirmed
     if (payment.status !== 'confirmed') {
-      return res.status(400).json({ 
-        error: 'Payment must be confirmed before approval.' 
+      return res.status(400).json({
+        error: 'Payment must be confirmed before approval.'
       });
     }
 
@@ -472,8 +476,8 @@ exports.getPaymentDetails = async (req, res) => {
 
     // Get all payments for this request, ordered by creation date
     const payments = await prisma.payment.findMany({
-      where: { 
-        employerRequestId: parseInt(employerRequestId, 10) 
+      where: {
+        employerRequestId: parseInt(employerRequestId, 10)
       },
       include: {
         employerRequest: {
@@ -502,7 +506,7 @@ exports.getPaymentDetails = async (req, res) => {
 
     // Get employer request details from the first payment
     const firstPayment = payments[0];
-    
+
     res.json({
       payments: payments.map(payment => ({
         id: payment.id,
@@ -540,9 +544,9 @@ exports.getPaymentDetails = async (req, res) => {
         city: firstPayment.employerRequest.requestedCandidate.profile?.city,
         country: firstPayment.employerRequest.requestedCandidate.profile?.country,
         // Only show contact and photo if access is granted
-        contactNumber: firstPayment.employerRequest.contactAccessGranted ? 
+        contactNumber: firstPayment.employerRequest.contactAccessGranted ?
           firstPayment.employerRequest.requestedCandidate.profile?.contactNumber : null,
-        photo: firstPayment.employerRequest.imageAccessGranted ? 
+        photo: firstPayment.employerRequest.imageAccessGranted ?
           firstPayment.employerRequest.requestedCandidate.profile?.photo : null
       } : null,
       adminApprovals: firstPayment.approvals.map(approval => ({
@@ -649,8 +653,8 @@ exports.getRequestProgress = async (req, res) => {
     const { employerRequestId } = req.params;
 
     const progress = await prisma.requestProgress.findMany({
-      where: { 
-        employerRequestId: parseInt(employerRequestId, 10) 
+      where: {
+        employerRequestId: parseInt(employerRequestId, 10)
       },
       orderBy: { createdAt: 'asc' }
     });

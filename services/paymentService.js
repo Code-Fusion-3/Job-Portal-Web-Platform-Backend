@@ -13,7 +13,7 @@ class PaymentService {
   static async createFirstPaymentRequest(employerRequestId, amount = 5000) {
     try {
       const prisma = await getPrismaClient();
-      
+
       // Get employer request details
       const employerRequest = await prisma.employerRequest.findUnique({
         where: { id: employerRequestId },
@@ -29,13 +29,22 @@ class PaymentService {
         throw new Error('Employer request not found');
       }
 
+      // Get first active payment method
+      const firstActiveMethod = await prisma.paymentMethod.findFirst({
+        where: { isActive: true },
+        orderBy: { id: 'asc' }
+      });
+      if (!firstActiveMethod) {
+        throw new Error('No active payment method found. Please add a payment method before requesting payment.');
+      }
+
       // Create first payment
       const payment = await prisma.payment.create({
         data: {
           employerRequestId,
           amount: amount,
           currency: 'RWF',
-          paymentMethodId: 1, // Default payment method
+          paymentMethodId: firstActiveMethod.id,
           paymentType: 'first_installment',
           paymentReference: `PAY-${Date.now()}-${employerRequestId}`,
           status: 'pending',
@@ -93,7 +102,7 @@ class PaymentService {
   static async createSecondPaymentRequest(employerRequestId, amount = 10000) {
     try {
       const prisma = await getPrismaClient();
-      
+
       // Get employer request details
       const employerRequest = await prisma.employerRequest.findUnique({
         where: { id: employerRequestId },
@@ -109,13 +118,22 @@ class PaymentService {
         throw new Error('Employer request not found');
       }
 
+      // Get first active payment method
+      const firstActiveMethod = await prisma.paymentMethod.findFirst({
+        where: { isActive: true },
+        orderBy: { id: 'asc' }
+      });
+      if (!firstActiveMethod) {
+        throw new Error('No active payment method found. Please add a payment method before requesting payment.');
+      }
+
       // Create second payment
       const payment = await prisma.payment.create({
         data: {
           employerRequestId,
           amount: amount,
           currency: 'RWF',
-          paymentMethodId: 1, // Default payment method
+          paymentMethodId: firstActiveMethod.id,
           paymentType: 'second_installment',
           paymentReference: `PAY-${Date.now()}-${employerRequestId}-2`,
           status: 'pending',
@@ -173,7 +191,7 @@ class PaymentService {
   static async confirmPayment(paymentId, confirmationData) {
     try {
       const prisma = await getPrismaClient();
-      
+
       const payment = await prisma.payment.update({
         where: { id: paymentId },
         data: {
@@ -194,15 +212,15 @@ class PaymentService {
       });
 
       // Update employer request status
-      const newStatus = payment.paymentType === 'first_installment' 
-        ? 'first_payment_confirmed' 
+      const newStatus = payment.paymentType === 'first_installment'
+        ? 'first_payment_confirmed'
         : 'second_payment_confirmed';
 
       await prisma.employerRequest.update({
         where: { id: payment.employerRequestId },
         data: {
           status: newStatus,
-          ...(payment.paymentType === 'first_installment' 
+          ...(payment.paymentType === 'first_installment'
             ? { firstPaymentConfirmed: true, firstPaymentConfirmedAt: new Date() }
             : { secondPaymentConfirmed: true, secondPaymentConfirmedAt: new Date() }
           )
@@ -245,7 +263,7 @@ class PaymentService {
   static async approvePayment(paymentId, adminId, notes = '') {
     try {
       const prisma = await getPrismaClient();
-      
+
       const payment = await prisma.payment.update({
         where: { id: paymentId },
         data: {
@@ -273,7 +291,7 @@ class PaymentService {
         notificationType = 'photo_access_granted';
         notificationTitle = 'Photo Access Granted';
         notificationMessage = 'Your payment has been approved! You now have access to candidate photo.';
-        
+
         await prisma.employerRequest.update({
           where: { id: payment.employerRequestId },
           data: {
@@ -289,7 +307,7 @@ class PaymentService {
         notificationType = 'full_access_granted';
         notificationTitle = 'Full Access Granted';
         notificationMessage = 'Your payment has been approved! You now have full access to candidate details.';
-        
+
         await prisma.employerRequest.update({
           where: { id: payment.employerRequestId },
           data: {
@@ -341,7 +359,7 @@ class PaymentService {
   static async rejectPayment(paymentId, adminId, reason = '') {
     try {
       const prisma = await getPrismaClient();
-      
+
       const payment = await prisma.payment.update({
         where: { id: paymentId },
         data: {
@@ -397,7 +415,7 @@ class PaymentService {
   static async getPaymentDetails(paymentId) {
     try {
       const prisma = await getPrismaClient();
-      
+
       const payment = await prisma.payment.findUnique({
         where: { id: paymentId },
         include: {
