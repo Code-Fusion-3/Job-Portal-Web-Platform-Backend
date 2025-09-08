@@ -7,7 +7,7 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const getWorkflowNotifications = async (req, res) => {
   try {
     const prisma = await getPrismaClient();
-    
+
     // Get notifications for the current admin user
     const notifications = await prisma.notification.findMany({
       where: {
@@ -49,7 +49,7 @@ const getWorkflowNotifications = async (req, res) => {
 const getUserNotifications = async (req, res) => {
   try {
     const prisma = await getPrismaClient();
-    
+
     const notifications = await prisma.notification.findMany({
       where: {
         userId: req.user.id
@@ -80,7 +80,7 @@ const getUserNotifications = async (req, res) => {
 const getNotificationStats = async (req, res) => {
   try {
     const prisma = await getPrismaClient();
-    
+
     const total = await prisma.notification.count({
       where: {
         userId: req.user.id
@@ -127,7 +127,7 @@ const markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
     const prisma = await getPrismaClient();
-    
+
     const notification = await prisma.notification.update({
       where: {
         id: parseInt(id),
@@ -158,7 +158,7 @@ const markAsRead = async (req, res) => {
 const markAllAsRead = async (req, res) => {
   try {
     const prisma = await getPrismaClient();
-    
+
     await prisma.notification.updateMany({
       where: {
         userId: req.user.id,
@@ -190,7 +190,7 @@ const createWorkflowNotification = async (req, res) => {
   try {
     const { type, message, requestId, status } = req.body;
     const prisma = await getPrismaClient();
-    
+
     const notification = await prisma.notification.create({
       data: {
         userId: req.user.id,
@@ -222,7 +222,7 @@ const createWorkflowNotification = async (req, res) => {
 const getNotificationCount = async (req, res) => {
   try {
     const prisma = await getPrismaClient();
-    
+
     const unreadCount = await prisma.notification.count({
       where: {
         userId: req.user.id,
@@ -244,6 +244,88 @@ const getNotificationCount = async (req, res) => {
   }
 };
 
+/**
+ * Get notification preferences
+ */
+const getNotificationPreferences = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+
+    // Get user's notification preferences
+    const preferences = await prisma.notificationPreference.findMany({
+      where: {
+        userId: req.user.id
+      }
+    });
+
+    // Extract opted out types
+    const optedOutTypes = preferences
+      .filter(pref => pref.optedOut)
+      .map(pref => pref.type);
+
+    res.json({
+      success: true,
+      optedOutTypes,
+      preferences
+    });
+  } catch (error) {
+    console.error('Error fetching notification preferences:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch notification preferences',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update notification preference
+ */
+const updateNotificationPreference = async (req, res) => {
+  try {
+    const prisma = await getPrismaClient();
+    const { type, optedOut } = req.body;
+
+    if (!type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Notification type is required'
+      });
+    }
+
+    // Upsert notification preference
+    const preference = await prisma.notificationPreference.upsert({
+      where: {
+        userId_type: {
+          userId: req.user.id,
+          type: type
+        }
+      },
+      update: {
+        optedOut: Boolean(optedOut)
+      },
+      create: {
+        userId: req.user.id,
+        type: type,
+        optedOut: Boolean(optedOut)
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Notification preference updated for ${type}`,
+      preference
+    });
+  } catch (error) {
+    console.error('Error updating notification preference:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update notification preference',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getWorkflowNotifications,
   getUserNotifications,
@@ -251,5 +333,7 @@ module.exports = {
   markAsRead,
   markAllAsRead,
   createWorkflowNotification,
-  getNotificationCount
+  getNotificationCount,
+  getNotificationPreferences,
+  updateNotificationPreference
 };

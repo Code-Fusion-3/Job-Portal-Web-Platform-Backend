@@ -27,4 +27,10 @@ router.post('/mark-all-read', notificationController.markAllAsRead);
 // Create workflow notification (admin only)
 router.post('/workflow', requireAdmin, notificationController.createWorkflowNotification);
 
+// Get notification preferences
+router.get('/preferences', notificationController.getNotificationPreferences);
+
+// Update notification preferences
+router.post('/preferences', notificationController.updateNotificationPreference);
+
 module.exports = router;
