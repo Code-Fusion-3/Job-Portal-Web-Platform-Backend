@@ -5,7 +5,7 @@ const redis = require('redis');
 const redisClient = redis.createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379',
   socket: {
-    tls: process.env.REDIS_URL?.startsWith('rediss://'), // enable TLS if needed
+    tls: true,
     rejectUnauthorized: false // sometimes required in VPS environments
   }
 });
