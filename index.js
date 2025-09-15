@@ -48,24 +48,24 @@ app.use(cors(corsOptions));
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
-    'http://localhost:5174', 
-    'http://localhost:3000', 
-    'http://localhost:5173', 
-    'http://localhost:4173', 
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:4173',
     'http://localhost:4174',
     'https://braziconnect.netlify.app',
     'https://braziconnect.rw',
     'https://braziconnect.rw/'
   ];
-  
+
   if (allowedOrigins.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
   }
-  
+
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-  
+
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
   } else {
