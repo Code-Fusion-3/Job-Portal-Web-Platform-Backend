@@ -16,15 +16,15 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: [
-    'http://localhost:5174', 
-    'http://localhost:3000', 
-    'http://localhost:5173', 
-    'http://localhost:4173', 
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:4173',
     'http://localhost:4174',
     'https://braziconnect.netlify.app',
-    'https://braziconnect.rw/'
+    'https://braziconnect.rw'
   ],
-  
+
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -120,14 +120,14 @@ app.get('/health', async (req, res) => {
   try {
     const dbHealth = await checkDatabaseHealth();
     const redisHealth = redisClient.isReady ? 'healthy' : 'unhealthy';
-    
+
     // Test database operations if database is healthy
     let dbOperations = null;
     if (dbHealth.status === 'healthy') {
       const { testDatabaseOperations } = require('./utils/database');
       dbOperations = await testDatabaseOperations();
     }
-    
+
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
