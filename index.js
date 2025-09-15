@@ -22,7 +22,8 @@ app.use(cors({
     'http://localhost:4173',
     'http://localhost:4174',
     'https://braziconnect.netlify.app',
-    'https://braziconnect.rw'
+    'https://braziconnect.rw',
+    'https://braziconnect.rw/'
   ],
 
   credentials: true,
