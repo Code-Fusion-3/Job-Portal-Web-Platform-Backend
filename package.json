@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "start:pre": "npm --scripts-prepend-node-path=auto start",
     "dev": "nodemon index.js",
     "seed": "node prisma/seed.js",
     "test": "jest",
