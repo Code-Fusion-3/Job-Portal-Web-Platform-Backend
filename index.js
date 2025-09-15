@@ -18,18 +18,18 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = [
-      'http://localhost:5174', 
-      'http://localhost:3000', 
-      'http://localhost:5173', 
-      'http://localhost:4173', 
+      'http://localhost:5174',
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:4173',
       'http://localhost:4174',
       'https://braziconnect.netlify.app',
       'https://braziconnect.rw',
       'https://braziconnect.rw/'
     ];
-    
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -77,7 +77,17 @@ app.use('/employer', require('./routes/employerRoutes'));
 app.use('/admin', require('./routes/adminRoutes'));
 
 app.get('/', (req, res) => {
-  res.send('Job Portal Backend is running!');
+  res.send('Job Portal Backend is running! CORS Updated v2.0');
+});
+
+// Test endpoint to verify CORS configuration
+app.get('/cors-test', (req, res) => {
+  res.json({
+    message: 'CORS test endpoint',
+    timestamp: new Date().toISOString(),
+    origin: req.headers.origin,
+    corsVersion: '2.0'
+  });
 });
 
 // Profile routes
