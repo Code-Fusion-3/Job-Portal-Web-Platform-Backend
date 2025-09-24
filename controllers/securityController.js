@@ -140,8 +140,8 @@ exports.requestPasswordReset = async (req, res) => {
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
     await sendPasswordResetEmail(
       user.email,
-      user.profile?.firstName || 'User',
       resetUrl,
+      user.profile?.firstName || 'User',
       `Email: ${adminEmail} | Phone: ${adminPhone}`
     );
 
