@@ -650,10 +650,10 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"email\": \"admin@Brazi Connect Portal.com\",\n  \"password\": \"admin123\"\n}"
+					"raw": "{\n  \"email\": \"info@braziconnect.rw\",\n  \"password\": \"admin123\"\n}"
 				},
 				"url": "http://localhost:3000/login",
-				"description": "Login as admin user. Use the seeded admin credentials: admin@Brazi Connect Portal.com / admin123. Returns JWT token for authentication."
+				"description": "Login as admin user. Use the seeded admin credentials: info@braziconnect.rw / admin123. Returns JWT token for authentication."
 			},
 			"response": [
 				{
@@ -668,7 +668,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"admin@Brazi Connect Portal.com\",\n  \"password\": \"admin123\"\n}"
+							"raw": "{\n  \"email\": \"info@braziconnect.rw\",\n  \"password\": \"admin123\"\n}"
 						},
 						"url": "http://localhost:3000/login"
 					},
@@ -682,7 +682,7 @@
 						}
 					],
 					"cookie": [],
-					"body": "{\n  \"message\": \"Login successful\",\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"admin@Brazi Connect Portal.com\",\n    \"role\": \"admin\",\n    \"profile\": null,\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  },\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5Aam9icG9ydGFsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTczMjU0NjgwMCwiZXhwIjoxNzMyNjMzMjAwfQ.example\"\n}"
+					"body": "{\n  \"message\": \"Login successful\",\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"info@braziconnect.rw\",\n    \"role\": \"admin\",\n    \"profile\": null,\n    \"createdAt\": \"2024-07-26T08:32:24.000Z\",\n    \"updatedAt\": \"2024-07-26T08:32:24.000Z\"\n  },\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiYWRtaW5Aam9icG9ydGFsLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTczMjU0NjgwMCwiZXhwIjoxNzMyNjMzMjAwfQ.example\"\n}"
 				},
 				{
 					"name": "Invalid Credentials",
@@ -696,10 +696,10 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"admin@Brazi Connect Portal.com\",\n  \"password\": \"admin123\"\n}"
+							"raw": "{\n  \"email\": \"info@braziconnect.rw\",\n  \"password\": \"admin123\"\n}"
 						},
 						"url": "http://localhost:3000/login",
-						"description": "Login as admin user. Use the seeded admin credentials: admin@Brazi Connect Portal.com / admin123. Returns JWT token for authentication."
+						"description": "Login as admin user. Use the seeded admin credentials: info@braziconnect.rw / admin123. Returns JWT token for authentication."
 					},
 					"status": "Unauthorized",
 					"code": 401,
@@ -725,10 +725,10 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"admin@Brazi Connect Portal.com\",\n  \"password\": \"admin123\"\n}"
+							"raw": "{\n  \"email\": \"info@braziconnect.rw\",\n  \"password\": \"admin123\"\n}"
 						},
 						"url": "http://localhost:3000/login",
-						"description": "Login as admin user. Use the seeded admin credentials: admin@Brazi Connect Portal.com / admin123. Returns JWT token for authentication."
+						"description": "Login as admin user. Use the seeded admin credentials: info@braziconnect.rw / admin123. Returns JWT token for authentication."
 					},
 					"status": "Bad Request",
 					"code": 400,

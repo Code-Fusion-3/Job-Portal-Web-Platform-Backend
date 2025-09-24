@@ -42,7 +42,7 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
             <p>If you have any questions or need further assistance, please don't hesitate to contact us.</p>
             <p>Best regards,<br>Brazi Connect Portal Team</p>
             <p style="color: #7f8c8d; font-size: 12px;">
-              This is an automated response from Brazi Connect Portal.
+              This is an automated response from jobPortal
             </p>
           </div>
         `
@@ -77,7 +77,7 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
             ${attachmentName ? `<p><strong>📎 Attachment:</strong> ${attachmentName}</p>` : ''}
             <p>Please log in to your admin dashboard to respond to this message.</p>
             <p style="color: #7f8c8d; font-size: 12px;">
-              This is an automated notification from Brazi Connect Portal.
+              This is an automated notification from jobPortal
             </p>
           </div>
         `
@@ -158,7 +158,7 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
             
             <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
               <p style="margin: 0; font-size: 12px; opacity: 0.8;">
-                This is an automated notification from Brazi Connect Portal. Please do not reply to this email.
+                This is an automated notification from jobPortal Please do not reply to this email.
               </p>
             </div>
           </div>
@@ -292,7 +292,7 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
             
             <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
               <p style="margin: 0; font-size: 12px; opacity: 0.8;">
-                This is an automated notification from Brazi Connect Portal. Please do not reply to this email.
+                This is an automated notification from jobPortal Please do not reply to this email.
               </p>
             </div>
           </div>
@@ -361,8 +361,8 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
               <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
                 <p><strong>Brazi Connect Portal Security Team</strong></p>
                 <p>If you didn't request this password reset, please contact us immediately.</p>
-                <p>${footerContact ? footerContact : 'Email: security@Brazi Connect Portal.com | Phone: +250 788 123 456'}</p>
-                <p>© 2024 Brazi Connect Portal. All rights reserved.</p>
+                <p>${footerContact ? footerContact : 'Email: info@braziconnect.rw | Phone: +250 789 176 625'}</p>
+                <p>© 2024 jobPortal All rights reserved.</p>
               </div>
             </div>
           </div>
@@ -418,8 +418,8 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
               
               <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
                 <p><strong>Brazi Connect Portal Security Team</strong></p>
-                <p>Email: security@Brazi Connect Portal.com | Phone: +250 788 123 456</p>
-                <p>© 2024 Brazi Connect Portal. All rights reserved.</p>
+                <p>Email: info@braziconnect.rw | Phone: +250 789 176 625</p>
+                <p>© 2024 jobPortal All rights reserved.</p>
               </div>
             </div>
           </div>

@@ -892,7 +892,7 @@ const getSystemSettings = async (req, res) => {
       sessionTimeout: 30,
       maxLoginAttempts: 5,
       systemName: 'Job Portal Admin',
-      contactEmail: 'admin@Brazi Connect Portal.rw',
+      contactEmail: 'info@braziconnect.rw',
       timezone: 'Africa/Kigali',
       // System statistics
       totalUsers,

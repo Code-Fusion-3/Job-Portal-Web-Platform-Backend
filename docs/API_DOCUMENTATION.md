@@ -807,7 +807,7 @@ JWT_REFRESH_SECRET="your-jwt-refresh-secret"
 # Email
 GMAIL_USER="your-email@gmail.com"
 GMAIL_APP_PASSWORD="your-app-password"
-ADMIN_EMAIL="admin@Brazi Connect Portal.com"
+ADMIN_EMAIL="info@braziconnect.rw"
 
 # Redis
 REDIS_URL="redis://localhost:6379"
@@ -934,6 +934,6 @@ docker run -p 3000:3000 --env-file .env job-portal-backend
 
 For API support and questions:
 
-- Email: support@Brazi Connect Portal.com
-- Documentation: https://docs.Brazi Connect Portal.com
+- Email: info@braziconnect.rw
+- Documentation: https://docs.jobPortalcom
 - GitHub Issues: https://github.com/Brazi Connect Portal/backend/issues

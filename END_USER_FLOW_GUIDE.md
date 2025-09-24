@@ -458,15 +458,15 @@ Payment Request
 
 #### **For Employers**:
 
-- **Email Support**: support@Brazi Connect Portal.com
+- **Email Support**: info@braziconnect.rw
 - **Phone Support**: +250 788 123 456
 - **Live Chat**: Available on dashboard
 - **Help Center**: Comprehensive guides and FAQs
 
 #### **For Administrators**:
 
-- **Technical Support**: tech@Brazi Connect Portal.com
-- **System Admin**: admin@Brazi Connect Portal.com
+- **Technical Support**: tech@jobPortalcom
+- **System Admin**: info@braziconnect.rw
 - **Emergency Contact**: +250 788 999 999
 
 ### **Response Times**

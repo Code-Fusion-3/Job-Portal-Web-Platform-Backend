@@ -29,10 +29,10 @@ async function main() {
   // Create admin user
   const adminPassword = await bcrypt.hash('admin123', 10);
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@Brazi Connect Portal.com' },
+    where: { email: 'info@braziconnect.rw' },
     update: {},
     create: {
-      email: 'admin@Brazi Connect Portal.com',
+      email: 'info@braziconnect.rw',
       password: adminPassword,
       role: 'admin',
       profile: {
@@ -167,7 +167,7 @@ async function main() {
   console.log('🎉 Database seeding completed successfully!');
   console.log('');
   console.log('📋 Test Accounts:');
-  console.log('👤 Admin: admin@Brazi Connect Portal.com / admin123');
+  console.log('👤 Admin: info@braziconnect.rw / admin123');
   console.log('👤 Job Seeker 1: john.doe@example.com / password123');
   console.log('👤 Job Seeker 2: sarah.johnson@example.com / password123');
   console.log('👤 Job Seeker 3: mike.gardener@example.com / password123');

@@ -133,8 +133,8 @@ exports.requestPasswordReset = async (req, res) => {
       where: { role: 'admin' },
       include: { profile: true }
     });
-    const adminEmail = admin?.email || 'security@Brazi Connect Portal.com';
-    const adminPhone = admin?.profile?.contactNumber || '+250 788 123 456';
+    const adminEmail = admin?.email || 'info@braziconneect.rw';
+    const adminPhone = admin?.profile?.contactNumber || '+250 789 176 625';
 
     // Send password reset email
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;

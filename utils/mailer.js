@@ -195,8 +195,8 @@ const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword = null) =>
           <div class="contact-info">
             <p><strong>Brazi Connect Portal</strong></p>
             <p>📍 Kigali, Rwanda</p>
-            <p>📧 support@Brazi Connect Portal.com</p>
-            <p>📞 +250 788 123 456</p>
+            <p>📧 info@braziconnect.rw</p>
+            <p>📞 +250 789 176 625</p>
           </div>
           
           <div class="social-links">
@@ -206,7 +206,7 @@ const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword = null) =>
           </div>
           
           <p style="font-size: 12px; opacity: 0.8; margin-top: 20px;">
-            © 2024 Brazi Connect Portal. All rights reserved.<br>
+            © 2024 jobPortal All rights reserved.<br>
             This email was sent to ${userEmail}. If you didn't sign up for Brazi Connect Portal, please ignore this email.
           </p>
         </div>
@@ -333,7 +333,7 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
             </div>
             <p>Please log in to your admin dashboard to respond to this request.</p>
             <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
-              <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Brazi Connect Portal. Please do not reply to this email.</p>
+              <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from jobPortal Please do not reply to this email.</p>
             </div>
           </div>
         `
@@ -424,7 +424,7 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
             </div>
           </div>
           <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
-            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Brazi Connect Portal. Please do not reply to this email.</p>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from jobPortal Please do not reply to this email.</p>
           </div>
         </div>
       `
@@ -525,7 +525,7 @@ const sendPaymentRequestEmail = async (employerName, employerEmail, requestId, c
           </div>
           
           <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
-            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Brazi Connect Portal. Please do not reply to this email.</p>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from jobPortal Please do not reply to this email.</p>
           </div>
         </div>
       `
@@ -691,8 +691,8 @@ const getProfileApprovalTemplate = (userName, userEmail) => {
           <div class="contact-info">
             <p><strong>Brazi Connect Portal</strong></p>
             <p>📍 Kigali, Rwanda</p>
-            <p>📧 support@Brazi Connect Portal.com</p>
-            <p>📞 +250 788 123 456</p>
+            <p>📧 info@braziconnect.rw</p>
+            <p>📞 +250 789 176 625</p>
           </div>
           
           <div class="social-links">
@@ -702,7 +702,7 @@ const getProfileApprovalTemplate = (userName, userEmail) => {
           </div>
           
           <p style="font-size: 12px; opacity: 0.8; margin-top: 20px;">
-            © 2024 Brazi Connect Portal. All rights reserved.<br>
+            © 2024 jobPortal All rights reserved.<br>
             This email was sent to ${userEmail}. If you have any questions about your profile status, please contact us.
           </p>
         </div>
@@ -844,7 +844,7 @@ const getProfileRejectionTemplate = (userName, userEmail, reason) => {
             Dear <strong>${userName}</strong>,
           </div>
           
-          <p>Thank you for submitting your profile to Brazi Connect Portal. After careful review, we need to inform you that your profile requires some improvements before it can be approved.</p>
+          <p>Thank you for submitting your profile to jobPortal After careful review, we need to inform you that your profile requires some improvements before it can be approved.</p>
           
           <div class="rejection-box">
             <h3>⚠️ Profile Review Result</h3>
@@ -881,8 +881,8 @@ const getProfileRejectionTemplate = (userName, userEmail, reason) => {
           <div class="contact-info">
             <p><strong>Brazi Connect Portal</strong></p>
             <p>📍 Kigali, Rwanda</p>
-            <p>📧 support@Brazi Connect Portal.com</p>
-            <p>📞 +250 788 123 456</p>
+            <p>📧 info@braziconnect.rw</p>
+            <p>📞 +250 789 176 625</p>
           </div>
           
           <div class="social-links">
@@ -892,7 +892,7 @@ const getProfileRejectionTemplate = (userName, userEmail, reason) => {
           </div>
           
           <p style="font-size: 12px; opacity: 0.8; margin-top: 20px;">
-            © 2024 Brazi Connect Portal. All rights reserved.<br>
+            © 2024 jobPortal All rights reserved.<br>
             This email was sent to ${userEmail}. If you have any questions about your profile review, please contact us.
           </p>
         </div>
