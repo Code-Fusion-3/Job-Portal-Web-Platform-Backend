@@ -244,7 +244,7 @@ class NotificationService {
       });
 
       const mailOptions = {
-        from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+        from: `"Braziconnect Portal" <${process.env.GMAIL_USER}>`,
         to: emailData.to,
         subject: emailData.subject,
         html: emailData.html

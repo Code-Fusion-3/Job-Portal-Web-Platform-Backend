@@ -97,7 +97,7 @@ exports.confirmPayment = async (req, res) => {
       if (payment.employerRequest.employerAccount?.user?.email) {
         await NotificationService.sendEmail({
           to: payment.employerRequest.employerAccount.user.email,
-          subject: 'Payment Confirmation Received - Job Portal',
+          subject: 'Payment Confirmation Received - Braziconnect Portal',
           html: `
             <h2>Payment Confirmation Received</h2>
             <p>Dear ${payment.employerRequest.employerAccount.user.name},</p>
@@ -115,7 +115,7 @@ exports.confirmPayment = async (req, res) => {
               <li>Access will be granted after approval</li>
               <li>You will be notified when access is granted</li>
             </ul>
-            <p>Thank you for using our job portal service.</p>
+            <p>Thank you for using our Braziconnect Portal service.</p>
           `
         });
       }

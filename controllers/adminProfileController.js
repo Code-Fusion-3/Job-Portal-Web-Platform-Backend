@@ -141,7 +141,7 @@ exports.updateAdminProfile = async (req, res) => {
               location: profileData.location || 'Kigali, Rwanda',
               email: profileData.email || 'info@braziconnect.rw',
               phone: profileData.phone || '',
-              aboutMe: profileData.bio || 'System Administrator for Job Portal Platform'
+              aboutMe: profileData.bio || 'System Administrator for Braziconnect Portal Platform'
             },
             skills: {
               frontend: ['React.js', 'Vue.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Next.js'],
@@ -302,12 +302,12 @@ exports.getPublicAdminProfile = async (req, res) => {
           },
           experience: [
             {
-              company: 'Job Portal Platform',
+              company: 'Braziconnect Portal Platform',
               position: 'Lead Developer & System Admin',
               period: '2023 - Present',
-              description: 'Leading development of comprehensive job portal platform with modern technologies.',
+              description: 'Leading development of comprehensive Braziconnect Portal platform with modern technologies.',
               achievements: [
-                'Built full-stack job portal with React and Node.js',
+                'Built full-stack Braziconnect Portal with React and Node.js',
                 'Implemented secure authentication and role-based access control',
                 'Managed database design and optimization',
                 'Integrated payment systems and messaging functionality'
@@ -342,7 +342,7 @@ exports.getPublicAdminProfile = async (req, res) => {
           ],
           projects: [
             {
-              name: 'Job Portal Platform',
+              name: 'Braziconnect Portal Platform',
               description: 'Comprehensive job matching platform for employers and job seekers with payment integration',
               tech: 'React, Node.js, PostgreSQL, Redis, Prisma ORM',
               status: 'live'

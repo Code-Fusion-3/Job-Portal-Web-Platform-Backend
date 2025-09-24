@@ -27,7 +27,7 @@ const sendContactNotification = async (contact, adminEmail = null) => {
       const recipientEmail = adminEmail || process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
   
       const mailOptions = {
-        from: `"Brazi Connect Portal Contact System" <${process.env.GMAIL_USER}>`,
+        from: `"Braziconnect Portal Contact System" <${process.env.GMAIL_USER}>`,
         to: recipientEmail,
         subject: `New Contact Message: ${contact.subject}`,
         html: `
@@ -57,7 +57,7 @@ const sendContactNotification = async (contact, adminEmail = null) => {
               </div>
               
               <p style="color: #7f8c8d; font-size: 12px; text-align: center;">
-                This is an automated notification from the Brazi Connect Portal Contact System.
+                This is an automated notification from the Braziconnect Portal Contact System.
               </p>
             </div>
           </div>
@@ -77,7 +77,7 @@ const sendContactNotification = async (contact, adminEmail = null) => {
   const sendContactConfirmation = async (contact) => {
     try {
       const mailOptions = {
-        from: `"Brazi Connect Portal Support" <${process.env.GMAIL_USER}>`,
+        from: `"Braziconnect Portal Support" <${process.env.GMAIL_USER}>`,
         to: contact.email,
         subject: `Message Received: ${contact.subject}`,
         html: `
@@ -118,7 +118,7 @@ const sendContactNotification = async (contact, adminEmail = null) => {
               <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 30px 0;">
               
               <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
-                <p><strong>Brazi Connect Portal Support Team</strong></p>
+                <p><strong>Braziconnect Portal Support Team</strong></p>
                 <p>Email: info@braziconnect.rw | Phone: +250 789 176 625</p>
                 <p>© 2024 jobPortal All rights reserved.</p>
               </div>
@@ -140,7 +140,7 @@ const sendContactNotification = async (contact, adminEmail = null) => {
   const sendContactResponse = async (contact) => {
     try {
       const mailOptions = {
-        from: `"Brazi Connect Portal Support" <${process.env.GMAIL_USER}>`,
+        from: `"Braziconnect Portal Support" <${process.env.GMAIL_USER}>`,
         to: contact.email,
         subject: `Re: ${contact.subject}`,
         html: `
@@ -178,7 +178,7 @@ const sendContactNotification = async (contact, adminEmail = null) => {
               <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 30px 0;">
               
               <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
-                <p><strong>Brazi Connect Portal Support Team</strong></p>
+                <p><strong>Braziconnect Portal Support Team</strong></p>
                 <p>Email: info@braziconnect.rw | Phone: +250 789 176 625</p>
                 <p>© 2024 jobPortal All rights reserved.</p>
               </div>

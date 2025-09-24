@@ -106,7 +106,7 @@ app.use('/employer', require('./routes/employerRoutes'));
 app.use('/admin', require('./routes/adminRoutes'));
 
 app.get('/', (req, res) => {
-  res.send('Job Portal Backend is running! CORS Updated v2.0');
+  res.send('Braziconnect Portal Backend is running! CORS Updated v2.0');
 });
 
 // Test endpoint to verify CORS configuration

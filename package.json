@@ -1,7 +1,7 @@
 {
   "name": "job-portal-backend",
   "version": "1.0.0",
-  "description": "Job Portal Backend API",
+  "description": "Braziconnect Portal Backend API",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

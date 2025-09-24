@@ -32,7 +32,7 @@ exports.getSystemSettings = async (req, res) => {
     // Default system settings
     const defaultSettings = {
       system: {
-        name: 'Job Portal',
+        name: 'Braziconnect Portal',
         version: '1.0.0',
         maintenance: false,
         registrationEnabled: true,
@@ -139,22 +139,22 @@ exports.getEmailTemplates = async (req, res) => {
 
     const templates = {
       welcomeEmail: {
-        subject: 'Welcome to Job Portal - Your Account is Ready! 🎉',
+        subject: 'Welcome to Braziconnect Portal - Your Account is Ready! 🎉',
         template: 'welcome_email_template.html',
         variables: ['userName', 'userEmail', 'loginUrl']
       },
       adminReply: {
-        subject: 'Response to Your Job Request - Job Portal',
+        subject: 'Response to Your Job Request - Braziconnect Portal',
         template: 'admin_reply_template.html',
         variables: ['employerName', 'adminMessage', 'attachmentName']
       },
       employerReply: {
-        subject: 'Employer Reply - Job Portal',
+        subject: 'Employer Reply - Braziconnect Portal',
         template: 'employer_reply_template.html',
         variables: ['employerName', 'employerEmail', 'employerMessage', 'attachmentName']
       },
       employerRequest: {
-        subject: 'New Employer Request - Job Portal',
+        subject: 'New Employer Request - Braziconnect Portal',
         template: 'employer_request_template.html',
         variables: ['employerName', 'employerEmail', 'employerMessage']
       }
