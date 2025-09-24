@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter with Gmail SMTP
+// // Create transporter with Gmail SMTP
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -8,15 +8,28 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_APP_PASSWORD
   }
 });
+// Create transporter with domain SMTP
+// const transporter = nodemailer.createTransport({
+//   host: "mail.braziconnect.rw",   // SMTP server
+//   port: 465,                      // Secure SSL/TLS port
+//   secure: true,                   // true for port 465, false for 587
+//   auth: {
+//     user: "info@braziconnect.rw", //  domain email
+//     pass: process.env.EMAIL_PASS  // email password 
+//   },
+//   tls: {
+//     rejectUnauthorized: false // optional, sometimes needed with self-signed certs
+//   }
+// });
 // Send notification email to admin when admin replies
 const sendAdminReplyNotification = async (employerEmail, employerName, adminMessage, attachmentName = null) => {
     try {
       const attachmentText = attachmentName ? `\n\n📎 Attachment: ${attachmentName}` : '';
   
       const mailOptions = {
-        from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
+        from: `"Brazi Connect Portal Admin" <${process.env.GMAIL_USER}>`,
         to: employerEmail,
-        subject: 'Response to Your Job Request - Job Portal',
+        subject: 'Response to Your Job Request - Brazi Connect Portal',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #2c3e50;">Response to Your Job Request</h2>
@@ -27,9 +40,9 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
             </div>
             ${attachmentName ? `<p><strong>📎 Attachment:</strong> ${attachmentName}</p>` : ''}
             <p>If you have any questions or need further assistance, please don't hesitate to contact us.</p>
-            <p>Best regards,<br>Job Portal Team</p>
+            <p>Best regards,<br>Brazi Connect Portal Team</p>
             <p style="color: #7f8c8d; font-size: 12px;">
-              This is an automated response from Job Portal.
+              This is an automated response from Brazi Connect Portal.
             </p>
           </div>
         `
@@ -50,9 +63,9 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
       const attachmentText = attachmentName ? `\n\n📎 Attachment: ${attachmentName}` : '';
   
       const mailOptions = {
-        from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+        from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
         to: process.env.ADMIN_EMAIL || process.env.GMAIL_USER,
-        subject: 'Employer Reply - Job Portal',
+        subject: 'Employer Reply - Brazi Connect Portal',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #2c3e50;">Employer Reply Received</h2>
@@ -64,7 +77,7 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
             ${attachmentName ? `<p><strong>📎 Attachment:</strong> ${attachmentName}</p>` : ''}
             <p>Please log in to your admin dashboard to respond to this message.</p>
             <p style="color: #7f8c8d; font-size: 12px;">
-              This is an automated notification from Job Portal.
+              This is an automated notification from Brazi Connect Portal.
             </p>
           </div>
         `
@@ -105,9 +118,9 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
       ` : '';
   
       const mailOptions = {
-        from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
+        from: `"Brazi Connect Portal Admin" <${process.env.GMAIL_USER}>`,
         to: employerEmail,
-        subject: 'Your Job Request Has Been Approved - Job Portal',
+        subject: 'Your Job Request Has Been Approved - Brazi Connect Portal',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
@@ -140,12 +153,12 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
               </div>
               
               <p>Thank you for choosing our platform for your hiring needs.</p>
-              <p>Best regards,<br><strong>Job Portal Team</strong></p>
+              <p>Best regards,<br><strong>Brazi Connect Portal Team</strong></p>
             </div>
             
             <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
               <p style="margin: 0; font-size: 12px; opacity: 0.8;">
-                This is an automated notification from Job Portal. Please do not reply to this email.
+                This is an automated notification from Brazi Connect Portal. Please do not reply to this email.
               </p>
             </div>
           </div>
@@ -166,7 +179,7 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
     try {
       if (newStatus === 'request_received') {
         const name = candidateName || 'Candidate';
-        const subject = 'Status Update - Job Portal';
+        const subject = 'Status Update - Brazi Connect Portal';
         const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #2c3e50;">Status Update</h2>
@@ -245,11 +258,11 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
       ` : '';
   
       const mailOptions = {
-        from: `"Job Portal Admin" <${process.env.GMAIL_USER}>`,
+        from: `"Brazi Connect Portal Admin" <${process.env.GMAIL_USER}>`,
         to: to,
         subject: adminNotes
-          ? `Job Request Update - Admin Notes - Job Portal`
-          : `Job Request Status Update - ${newStatus.toUpperCase()} - Job Portal`,
+          ? `Job Request Update - Admin Notes - Brazi Connect Portal`
+          : `Job Request Status Update - ${newStatus.toUpperCase()} - Brazi Connect Portal`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, ${config.color} 0%, ${config.color}dd 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
@@ -274,12 +287,12 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
               ${notesInfo}
               
               <p>If you have any questions about this status update, please contact our support team.</p>
-              <p>Best regards,<br><strong>Job Portal Team</strong></p>
+              <p>Best regards,<br><strong>Brazi Connect Portal Team</strong></p>
             </div>
             
             <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
               <p style="margin: 0; font-size: 12px; opacity: 0.8;">
-                This is an automated notification from Job Portal. Please do not reply to this email.
+                This is an automated notification from Brazi Connect Portal. Please do not reply to this email.
               </p>
             </div>
           </div>
@@ -309,9 +322,9 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
   const sendPasswordResetEmail = async (email, firstName, resetUrl, footerContact = null) => {
     try {
       const mailOptions = {
-        from: `"Job Portal Security" <${process.env.GMAIL_USER}>`,
+        from: `"Brazi Connect Portal Security" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: 'Password Reset Request - Job Portal',
+        subject: 'Password Reset Request - Brazi Connect Portal',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8f9fa; padding: 20px;">
             <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -320,7 +333,7 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
               <p style="color: #34495e; font-size: 16px; line-height: 1.6;">Dear ${firstName},</p>
               
               <p style="color: #34495e; font-size: 16px; line-height: 1.6;">
-                We received a request to reset your password for your Job Portal account. 
+                We received a request to reset your password for your Brazi Connect Portal account. 
                 If you didn't make this request, you can safely ignore this email.
               </p>
               
@@ -346,10 +359,10 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
               <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 30px 0;">
               
               <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
-                <p><strong>Job Portal Security Team</strong></p>
+                <p><strong>Brazi Connect Portal Security Team</strong></p>
                 <p>If you didn't request this password reset, please contact us immediately.</p>
-                <p>${footerContact ? footerContact : 'Email: security@jobportal.com | Phone: +250 788 123 456'}</p>
-                <p>© 2024 Job Portal. All rights reserved.</p>
+                <p>${footerContact ? footerContact : 'Email: security@Brazi Connect Portal.com | Phone: +250 788 123 456'}</p>
+                <p>© 2024 Brazi Connect Portal. All rights reserved.</p>
               </div>
             </div>
           </div>
@@ -369,9 +382,9 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
   const sendPasswordResetConfirmation = async (email) => {
     try {
       const mailOptions = {
-        from: `"Job Portal Security" <${process.env.GMAIL_USER}>`,
+        from: `"Brazi Connect Portal Security" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: 'Password Reset Successful - Job Portal',
+        subject: 'Password Reset Successful - Brazi Connect Portal',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8f9fa; padding: 20px;">
             <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -404,9 +417,9 @@ const sendAdminReplyNotification = async (employerEmail, employerName, adminMess
               <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 30px 0;">
               
               <div style="text-align: center; color: #7f8c8d; font-size: 12px;">
-                <p><strong>Job Portal Security Team</strong></p>
-                <p>Email: security@jobportal.com | Phone: +250 788 123 456</p>
-                <p>© 2024 Job Portal. All rights reserved.</p>
+                <p><strong>Brazi Connect Portal Security Team</strong></p>
+                <p>Email: security@Brazi Connect Portal.com | Phone: +250 788 123 456</p>
+                <p>© 2024 Brazi Connect Portal. All rights reserved.</p>
               </div>
             </div>
           </div>

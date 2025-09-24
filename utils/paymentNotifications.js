@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter with Gmail SMTP
+// // Create transporter with Gmail SMTP
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -8,6 +8,19 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_APP_PASSWORD
   }
 });
+// Create transporter with domain SMTP
+// const transporter = nodemailer.createTransport({
+//   host: "mail.braziconnect.rw",   // SMTP server
+//   port: 465,                      // Secure SSL/TLS port
+//   secure: true,                   // true for port 465, false for 587
+//   auth: {
+//     user: "info@braziconnect.rw", //  domain email
+//     pass: process.env.EMAIL_PASS  // email password 
+//   },
+//   tls: {
+//     rejectUnauthorized: false // optional, sometimes needed with self-signed certs
+//   }
+// });
 
 // Unified template
 function paymentEmailTemplate({ title, subtitle, greeting, intro, sections = [], footerNote }) {
@@ -33,14 +46,14 @@ function paymentEmailTemplate({ title, subtitle, greeting, intro, sections = [],
 
         <div class="signature" style="border-top: 2px solid #667eea; padding-top: 20px; margin-top: 30px;">
           <p>Best regards,</p>
-          <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Job Portal Team</div>
+          <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Brazi Connect Portal Team</div>
           <div class="signature-title" style="color: #667eea; font-size: 14px;">Customer Success Manager</div>
         </div>
       </div>
 
       <!-- Footer -->
       <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
-        <p style="margin: 0; font-size: 12px; opacity: 0.8;">${footerNote || 'This is an automated notification from Job Portal. Please do not reply to this email.'}</p>
+        <p style="margin: 0; font-size: 12px; opacity: 0.8;">${footerNote || 'This is an automated notification from Brazi Connect Portal. Please do not reply to this email.'}</p>
       </div>
     </div>
   `;
@@ -54,14 +67,14 @@ const sendPaymentRequestNotification = async (employerEmail, employerName, payme
     const { amount, currency, paymentType, paymentMethod } = paymentDetails;
 
     const mailOptions = {
-      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
       to: employerEmail,
       subject: `Payment Request - ${paymentType === 'photo_access' ? 'Photo Access' : 'Full Details'}`,
       html: paymentEmailTemplate({
         title: 'Payment Request',
         subtitle: 'Action required: complete your payment',
         greeting: employerName,
-        intro: 'We have generated a payment request for your job portal transaction. Please review the details below and complete the payment to proceed.',
+        intro: 'We have generated a payment request for your Brazi Connect Portal transaction. Please review the details below and complete the payment to proceed.',
         sections: [
           {
             title: '💰 Payment Details',
@@ -106,7 +119,7 @@ const sendPaymentRequestNotification = async (employerEmail, employerName, payme
 const sendPaymentConfirmationNotification = async (adminEmail, paymentDetails) => {
   try {
     const mailOptions = {
-      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
       to: adminEmail,
       subject: `Payment Confirmation Received`,
       html: paymentEmailTemplate({
@@ -151,7 +164,7 @@ const sendPaymentConfirmationNotification = async (adminEmail, paymentDetails) =
 const sendPaymentApprovalNotification = async (employerEmail, employerName, accessGranted) => {
   try {
     const mailOptions = {
-      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
       to: employerEmail,
       subject: `Payment Approved - Access Granted`,
       html: paymentEmailTemplate({

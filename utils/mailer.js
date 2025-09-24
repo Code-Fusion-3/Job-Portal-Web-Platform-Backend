@@ -8,6 +8,19 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_APP_PASSWORD
   }
 });
+// // Create transporter with domain SMTP
+// const transporter = nodemailer.createTransport({
+//   host: "mail.braziconnect.rw",   // SMTP server
+//   port: 465,                      // Secure SSL/TLS port
+//   secure: true,                   // true for port 465, false for 587
+//   auth: {
+//     user: "info@braziconnect.rw", //  domain email
+//     pass: process.env.EMAIL_PASS  // email password 
+//   },
+//   tls: {
+//     rejectUnauthorized: false // optional, sometimes needed with self-signed certs
+//   }
+// });
 
 // Resolve a stored file path (e.g. "uploads/profiles/xxx.png") to a fully-qualified URL
 const resolveImageUrl = (path) => {
@@ -37,7 +50,7 @@ const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword = null) =>
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Welcome to Job Portal</title>
+      <title>Welcome to Brazi Connect Portal</title>
       <style>
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -141,7 +154,7 @@ const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword = null) =>
     <body>
       <div class="container">
         <div class="header">
-          <div class="logo">Job Portal</div>
+          <div class="logo">Brazi Connect Portal</div>
           <div class="tagline">Connecting Talent with Opportunity</div>
         </div>
         
@@ -150,7 +163,7 @@ const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword = null) =>
             Dear <strong>${userName}</strong>,
           </div>
           
-          <p>Welcome to <strong>Job Portal</strong>! We're thrilled to have you join our community of professionals and employers.</p>
+          <p>Welcome to <strong>Brazi Connect Portal</strong>! We're thrilled to have you join our community of professionals and employers.</p>
           
           <p>Your account has been successfully created with the email: <strong>${userEmail}</strong></p>
           ${defaultPassword ? `<p>Your temporary password is: <strong>${defaultPassword}</strong></p>` : ''}
@@ -173,16 +186,16 @@ const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword = null) =>
           
           <div class="signature">
             <p>Best regards,</p>
-            <div class="signature-name">The Job Portal Team</div>
+            <div class="signature-name">The Brazi Connect Portal Team</div>
             <div class="signature-title">Customer Success Manager</div>
           </div>
         </div>
         
         <div class="footer">
           <div class="contact-info">
-            <p><strong>Job Portal</strong></p>
+            <p><strong>Brazi Connect Portal</strong></p>
             <p>📍 Kigali, Rwanda</p>
-            <p>📧 support@jobportal.com</p>
+            <p>📧 support@Brazi Connect Portal.com</p>
             <p>📞 +250 788 123 456</p>
           </div>
           
@@ -193,8 +206,8 @@ const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword = null) =>
           </div>
           
           <p style="font-size: 12px; opacity: 0.8; margin-top: 20px;">
-            © 2024 Job Portal. All rights reserved.<br>
-            This email was sent to ${userEmail}. If you didn't sign up for Job Portal, please ignore this email.
+            © 2024 Brazi Connect Portal. All rights reserved.<br>
+            This email was sent to ${userEmail}. If you didn't sign up for Brazi Connect Portal, please ignore this email.
           </p>
         </div>
       </div>
@@ -207,9 +220,9 @@ const getWelcomeEmailTemplate = (userName, userEmail, defaultPassword = null) =>
 const sendWelcomeEmail = async (userEmail, userName = 'User', defaultPassword) => {
   try {
     const mailOptions = {
-      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
       to: userEmail,
-      subject: 'Welcome to Job Portal - Your Account is Ready! 🎉',
+      subject: 'Welcome to Brazi Connect Portal - Your Account is Ready! 🎉',
       html: getWelcomeEmailTemplate(userName, userEmail, defaultPassword)
     };
 
@@ -290,9 +303,9 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
     if (adminEmail && adminEmail !== employerEmail) {
       // Send to admin: New Employer Request (no anonymization)
       const adminMailOptions = {
-        from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+        from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
         to: adminEmail,
-        subject: 'New Employer Request - Job Portal',
+        subject: 'New Employer Request - Brazi Connect Portal',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #2c3e50;">New Employer Request</h2>
@@ -320,7 +333,7 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
             </div>
             <p>Please log in to your admin dashboard to respond to this request.</p>
             <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
-              <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Job Portal. Please do not reply to this email.</p>
+              <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Brazi Connect Portal. Please do not reply to this email.</p>
             </div>
           </div>
         `
@@ -330,9 +343,9 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
 
     // Send to employer: Request Received
     const employerMailOptions = {
-      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
       to: employerEmail,
-      subject: 'Request Received - Job Portal',
+      subject: 'Request Received - Brazi Connect Portal',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
@@ -406,12 +419,12 @@ const sendEmployerRequestNotification = async (employerName, employerEmail, mess
             <p>If you have any questions, please reply to this email or contact our support team.</p>
             <div class="signature" style="border-top: 2px solid #667eea; padding-top: 20px; margin-top: 30px;">
               <p>Best regards,</p>
-              <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Job Portal Team</div>
+              <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Brazi Connect Portal Team</div>
               <div class="signature-title" style="color: #667eea; font-size: 14px;">Customer Success Manager</div>
             </div>
           </div>
           <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
-            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Job Portal. Please do not reply to this email.</p>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Brazi Connect Portal. Please do not reply to this email.</p>
           </div>
         </div>
       `
@@ -436,9 +449,9 @@ const sendPaymentRequestEmail = async (employerName, employerEmail, requestId, c
     ` : '';
 
     const mailOptions = {
-      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
       to: employerEmail,
-      subject: 'Payment Required - Job Portal',
+      subject: 'Payment Required - Brazi Connect Portal',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0;">
@@ -506,13 +519,13 @@ const sendPaymentRequestEmail = async (employerName, employerEmail, requestId, c
             
             <div class="signature" style="border-top: 2px solid #dc3545; padding-top: 20px; margin-top: 30px;">
               <p>Best regards,</p>
-              <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Job Portal Team</div>
+              <div class="signature-name" style="font-weight: bold; color: #2c3e50;">The Brazi Connect Portal Team</div>
               <div class="signature-title" style="color: #dc3545; font-size: 14px;">Payment & Customer Success</div>
             </div>
           </div>
           
           <div style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px;">
-            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Job Portal. Please do not reply to this email.</p>
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">This is an automated notification from Brazi Connect Portal. Please do not reply to this email.</p>
           </div>
         </div>
       `
@@ -535,7 +548,7 @@ const getProfileApprovalTemplate = (userName, userEmail) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Profile Approved - Job Portal</title>
+      <title>Profile Approved - Brazi Connect Portal</title>
       <style>
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -639,7 +652,7 @@ const getProfileApprovalTemplate = (userName, userEmail) => {
     <body>
       <div class="container">
         <div class="header">
-          <div class="logo">Job Portal</div>
+          <div class="logo">Brazi Connect Portal</div>
           <div class="tagline">Connecting Talent with Opportunity</div>
         </div>
         
@@ -669,16 +682,16 @@ const getProfileApprovalTemplate = (userName, userEmail) => {
           
           <div class="signature">
             <p>Best regards,</p>
-            <div class="signature-name">The Job Portal Team</div>
+            <div class="signature-name">The Brazi Connect Portal Team</div>
             <div class="signature-title">Profile Review Department</div>
           </div>
         </div>
         
         <div class="footer">
           <div class="contact-info">
-            <p><strong>Job Portal</strong></p>
+            <p><strong>Brazi Connect Portal</strong></p>
             <p>📍 Kigali, Rwanda</p>
-            <p>📧 support@jobportal.com</p>
+            <p>📧 support@Brazi Connect Portal.com</p>
             <p>📞 +250 788 123 456</p>
           </div>
           
@@ -689,7 +702,7 @@ const getProfileApprovalTemplate = (userName, userEmail) => {
           </div>
           
           <p style="font-size: 12px; opacity: 0.8; margin-top: 20px;">
-            © 2024 Job Portal. All rights reserved.<br>
+            © 2024 Brazi Connect Portal. All rights reserved.<br>
             This email was sent to ${userEmail}. If you have any questions about your profile status, please contact us.
           </p>
         </div>
@@ -707,7 +720,7 @@ const getProfileRejectionTemplate = (userName, userEmail, reason) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Profile Review Result - Job Portal</title>
+      <title>Profile Review Result - Brazi Connect Portal</title>
       <style>
         body {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -822,7 +835,7 @@ const getProfileRejectionTemplate = (userName, userEmail, reason) => {
     <body>
       <div class="container">
         <div class="header">
-          <div class="logo">Job Portal</div>
+          <div class="logo">Brazi Connect Portal</div>
           <div class="tagline">Connecting Talent with Opportunity</div>
         </div>
         
@@ -831,7 +844,7 @@ const getProfileRejectionTemplate = (userName, userEmail, reason) => {
             Dear <strong>${userName}</strong>,
           </div>
           
-          <p>Thank you for submitting your profile to Job Portal. After careful review, we need to inform you that your profile requires some improvements before it can be approved.</p>
+          <p>Thank you for submitting your profile to Brazi Connect Portal. After careful review, we need to inform you that your profile requires some improvements before it can be approved.</p>
           
           <div class="rejection-box">
             <h3>⚠️ Profile Review Result</h3>
@@ -859,16 +872,16 @@ const getProfileRejectionTemplate = (userName, userEmail, reason) => {
           
           <div class="signature">
             <p>Best regards,</p>
-            <div class="signature-name">The Job Portal Team</div>
+            <div class="signature-name">The Brazi Connect Portal Team</div>
             <div class="signature-title">Profile Review Department</div>
           </div>
         </div>
         
         <div class="footer">
           <div class="contact-info">
-            <p><strong>Job Portal</strong></p>
+            <p><strong>Brazi Connect Portal</strong></p>
             <p>📍 Kigali, Rwanda</p>
-            <p>📧 support@jobportal.com</p>
+            <p>📧 support@Brazi Connect Portal.com</p>
             <p>📞 +250 788 123 456</p>
           </div>
           
@@ -879,7 +892,7 @@ const getProfileRejectionTemplate = (userName, userEmail, reason) => {
           </div>
           
           <p style="font-size: 12px; opacity: 0.8; margin-top: 20px;">
-            © 2024 Job Portal. All rights reserved.<br>
+            © 2024 Brazi Connect Portal. All rights reserved.<br>
             This email was sent to ${userEmail}. If you have any questions about your profile review, please contact us.
           </p>
         </div>
@@ -893,9 +906,9 @@ const sendProfileApprovedEmail = async (toEmail, name) => {
   if (!toEmail) return false;
   try {
     await transporter.sendMail({
-      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
       to: toEmail,
-      subject: 'Profile Approved - Welcome to Job Portal! 🎉',
+      subject: 'Profile Approved - Welcome to Brazi Connect Portal! 🎉',
       html: getProfileApprovalTemplate(name, toEmail)
     });
     return true;
@@ -906,7 +919,7 @@ const sendProfileRejectedEmail = async (toEmail, name, reason) => {
   if (!toEmail) return false;
   try {
     await transporter.sendMail({
-      from: `"Job Portal" <${process.env.GMAIL_USER}>`,
+      from: `"Brazi Connect Portal" <${process.env.GMAIL_USER}>`,
       to: toEmail,
       subject: 'Profile Review Result - Action Required 📝',
       html: getProfileRejectionTemplate(name, toEmail, reason)

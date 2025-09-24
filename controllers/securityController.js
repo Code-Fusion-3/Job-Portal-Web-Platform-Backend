@@ -133,7 +133,7 @@ exports.requestPasswordReset = async (req, res) => {
       where: { role: 'admin' },
       include: { profile: true }
     });
-    const adminEmail = admin?.email || 'security@jobportal.com';
+    const adminEmail = admin?.email || 'security@Brazi Connect Portal.com';
     const adminPhone = admin?.profile?.contactNumber || '+250 788 123 456';
 
     // Send password reset email

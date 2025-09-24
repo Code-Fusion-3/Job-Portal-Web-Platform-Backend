@@ -233,7 +233,7 @@ exports.submitEmployerRequest = async (req, res) => {
     // Send WebSocket notification
     if (global.wsServer) {
       global.wsServer.notifyNewRequest(employerRequest);
-      // global.wsServer.notifyDashboardUpdate();
+      global.wsServer.notifyDashboardUpdate();
     }
 
     // Prepare response with login credentials if new account was created
@@ -255,7 +255,7 @@ exports.submitEmployerRequest = async (req, res) => {
         message: 'Your account has been created. Please save these credentials to access your dashboard.'
       };
     }
-
+console.log('Final response: ',response);
     res.status(201).json(response);
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to submit request.' });
