@@ -66,19 +66,47 @@ exports.confirmPayment = async (req, res) => {
       }
     });
 
-    // Update employer request status
+    // Determine the correct status based on payment type
+    const newStatus = payment.paymentType === 'first_installment' || payment.paymentType === 'photo_access'
+      ? 'first_payment_confirmed'
+      : payment.paymentType === 'second_installment' || payment.paymentType === 'full_details'
+        ? 'second_payment_confirmed'
+        : 'payment_confirmed'; // fallback for legacy payments
+
+    // Update employer request status with appropriate payment confirmation status
+    const updateData = { status: newStatus };
+    
+    // Update payment-specific fields based on installment type
+    if (payment.paymentType === 'first_installment' || payment.paymentType === 'photo_access') {
+      updateData.firstPaymentConfirmed = true;
+      updateData.firstPaymentConfirmedAt = new Date();
+    } else if (payment.paymentType === 'second_installment' || payment.paymentType === 'full_details') {
+      updateData.secondPaymentConfirmed = true;
+      updateData.secondPaymentConfirmedAt = new Date();
+    }
+
     await prisma.employerRequest.update({
       where: { id: payment.employerRequestId },
-      data: { status: 'payment_confirmed' }
+      data: updateData
     });
 
-    // Create progress tracking
+    // Create progress tracking with correct stage
+    const stage = payment.paymentType === 'first_installment' || payment.paymentType === 'photo_access'
+      ? 'first_payment_confirmed'
+      : payment.paymentType === 'second_installment' || payment.paymentType === 'full_details'
+        ? 'second_payment_confirmed'
+        : 'payment_confirmed';
+
+    const isFirstPayment = payment.paymentType === 'first_installment' || payment.paymentType === 'photo_access';
+    const isSecondPayment = payment.paymentType === 'second_installment' || payment.paymentType === 'full_details';
+    const paymentLabel = isFirstPayment ? 'First' : isSecondPayment ? 'Second' : '';
+
     await prisma.requestProgress.create({
       data: {
         employerRequestId: payment.employerRequestId,
-        stage: 'payment_confirmed',
+        stage: stage,
         status: 'completed',
-        description: `Payment confirmed by ${confirmationName} (${confirmationPhone})`,
+        description: `${paymentLabel} payment confirmed by ${confirmationName} (${confirmationPhone})`,
         completedAt: new Date()
       }
     });
@@ -86,10 +114,27 @@ exports.confirmPayment = async (req, res) => {
     // Send email notifications (don't let email failures affect the main response)
     try {
       // Email to Admin - Payment confirmation received
+      const isFirstPayment = payment.paymentType === 'first_installment' || payment.paymentType === 'photo_access';
+      const isSecondPayment = payment.paymentType === 'second_installment' || payment.paymentType === 'full_details';
+      
+      const notificationType = isFirstPayment
+        ? 'first_payment_confirmed'
+        : isSecondPayment
+          ? 'second_payment_confirmed'
+          : 'payment_confirmed';
+          
+      const paymentDescription = isFirstPayment
+        ? 'first installment'
+        : isSecondPayment
+          ? 'second installment'
+          : 'payment';
+
+      const paymentLabel = isFirstPayment ? 'First' : isSecondPayment ? 'Second' : '';
+
       await NotificationService.sendAdminNotification({
-        type: 'payment_confirmed',
-        title: 'Payment Confirmation Received',
-        message: `Employer ${payment.employerRequest.employerAccount.user.name} has confirmed payment for request #${payment.employerRequestId}. Amount: ${payment.amount} ${payment.currency}`,
+        type: notificationType,
+        title: `${paymentLabel} Payment Confirmation Received`,
+        message: `Employer ${payment.employerRequest.employerAccount.user.name} has confirmed ${paymentDescription} payment for request #${payment.employerRequestId}. Amount: ${payment.amount} ${payment.currency}`,
         employerRequestId: payment.employerRequestId
       });
 

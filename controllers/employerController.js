@@ -844,19 +844,39 @@ exports.confirmSecondPayment = async (req, res) => {
   try {
     const prisma = await getPrismaClient();
     const { requestId } = req.body;
-    // Confirm second payment
+    
+    // Validate that the request is in the correct status for second payment confirmation
+    const request = await prisma.employerRequest.findUnique({ 
+      where: { id: parseInt(requestId, 10) } 
+    });
+    
+    if (!request) {
+      return res.status(404).json({ error: 'Employer request not found.' });
+    }
+    
+    if (request.status !== 'second_payment_required') {
+      return res.status(400).json({ 
+        error: 'Request must be in second_payment_required status to confirm payment.' 
+      });
+    }
+    
+    // Confirm second payment - ONLY set status to second_payment_confirmed
+    // Do NOT grant full access yet - that should be done by admin after approval
     await prisma.employerRequest.update({
       where: { id: parseInt(requestId, 10) },
-      data: { status: 'second_payment_confirmed', secondPaymentConfirmed: true, secondPaymentConfirmedAt: new Date() }
+      data: { 
+        status: 'second_payment_confirmed', 
+        secondPaymentConfirmed: true, 
+        secondPaymentConfirmedAt: new Date() 
+      }
     });
-    // TODO: Trigger admin notification (second payment confirmed)
-    // Move to full access granted
-    await prisma.employerRequest.update({
-      where: { id: parseInt(requestId, 10) },
-      data: { status: 'full_access_granted', fullAccessGranted: true, accessGrantedAt: new Date() }
+    
+    // TODO: Trigger admin notification (second payment confirmed, needs approval)
+    res.json({ 
+      message: 'Second payment confirmed successfully. Awaiting admin approval for full access.',
+      status: 'second_payment_confirmed',
+      nextStep: 'Admin will review and approve your payment confirmation'
     });
-    // TODO: Trigger employer notification (full access granted)
-    res.json({ message: 'Second payment confirmed and full access granted.' });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Failed to confirm second payment.' });
   }
