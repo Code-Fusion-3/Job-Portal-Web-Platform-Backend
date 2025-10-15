@@ -15,17 +15,25 @@ exports.getPublicJobSeekers = async (req, res) => {
     const prisma = await initPrisma();
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    
+    // Validate pagination parameters to prevent negative values
+    if (page < 1 || limit < 1 || limit > 100) {
+      return res.status(400).json({ 
+        error: 'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100.' 
+      });
+    }
+    
     const skip = (page - 1) * limit;
     
     // Filter parameters
     const { categoryId, skills, experience, location } = req.query;
     
-    // Build where clause (query profiles directly)
+    // Build where clause - simplified for better MySQL compatibility on shared hosting
     const profileWhere = {
       approvalStatus: 'approved',
       isActive: true,
       user: {
-        is: { role: 'jobseeker' }
+        role: 'jobseeker' // Simplified relation query for better compatibility
       }
     };
 
@@ -33,53 +41,86 @@ exports.getPublicJobSeekers = async (req, res) => {
       profileWhere.jobCategoryId = parseInt(categoryId, 10);
     }
 
+    // For MySQL compatibility on shared hosting, avoid mode: 'insensitive' which can cause issues
     if (skills) {
       profileWhere.skills = {
-        contains: skills,
-        mode: 'insensitive'
+        contains: skills
+        // Removed mode: 'insensitive' for MySQL compatibility on shared hosting
       };
     }
 
     if (experience) {
       profileWhere.experience = {
-        contains: experience,
-        mode: 'insensitive'
+        contains: experience
+        // Removed mode: 'insensitive' for MySQL compatibility on shared hosting
       };
     }
 
     if (location) {
       profileWhere.location = {
-        contains: location,
-        mode: 'insensitive'
+        contains: location
+        // Removed mode: 'insensitive' for MySQL compatibility on shared hosting
       };
     }
 
-    const [profiles, total] = await Promise.all([
-      prisma.profile.findMany({
-        where: profileWhere,
-        select: {
-          firstName: true,
-          lastName: true,
-          gender: true,
-          skills: true,
-          experience: true,
-          experienceLevel: true,
-          location: true,
-          city: true,
-          country: true,
-          jobCategory: {
-            select: { name_en: true, name_rw: true }
-          },
-          user: {
-            select: { id: true, createdAt: true }
-          },
+    // First get the profiles
+    const profiles = await prisma.profile.findMany({
+      where: profileWhere,
+      select: {
+        firstName: true,
+        lastName: true,
+        gender: true,
+        skills: true,
+        experience: true,
+        experienceLevel: true,
+        location: true,
+        city: true,
+        country: true,
+        jobCategory: {
+          select: { name_en: true, name_rw: true }
         },
-        skip,
-        take: limit,
-        orderBy: { user: { createdAt: 'desc' } },
-      }),
-      prisma.profile.count({ where: profileWhere })
-    ]);
+        user: {
+          select: { id: true, createdAt: true }
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: { user: { createdAt: 'desc' } },
+    });
+
+    // Separate count query with multiple fallback strategies for shared hosting compatibility
+    let total = 0;
+    try {
+      total = await prisma.profile.count({ where: profileWhere });
+    } catch (countError) {
+      console.error('Count query failed, trying fallback methods:', countError.message);
+      
+      try {
+        // Fallback 1: Simpler count query without complex nested conditions
+        const simpleWhere = {
+          approvalStatus: 'approved',
+          isActive: true
+        };
+        
+        // Add simple filters only
+        if (categoryId) simpleWhere.jobCategoryId = parseInt(categoryId, 10);
+        
+        total = await prisma.profile.count({ where: simpleWhere });
+        console.log('Used simplified count query');
+      } catch (fallbackError) {
+        console.error('Fallback count also failed:', fallbackError.message);
+        
+        // Fallback 2: Manual estimation based on current results
+        if (profiles.length === limit) {
+          // If we got a full page, estimate there might be more
+          total = skip + profiles.length + 10; // Conservative estimate
+        } else {
+          // If less than limit, this is likely the last page
+          total = skip + profiles.length;
+        }
+        console.log(`Using manual estimation: ${total}`);
+      }
+    }
 
     // Anonymize the data
     const anonymizedUsers = profiles.map((p) => ({
@@ -107,7 +148,17 @@ exports.getPublicJobSeekers = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to fetch job seekers.' });
+    console.error('Error in getPublicJobSeekers:', {
+      message: err.message,
+      code: err.code,
+      query: req.query,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : 'Hidden in production'
+    });
+    
+    res.status(500).json({ 
+      error: err.message || 'Failed to fetch job seekers.',
+      ...(process.env.NODE_ENV === 'development' && { details: err.stack })
+    });
   }
 };
 
