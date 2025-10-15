@@ -11,22 +11,35 @@ const initPrisma = async () => {
 
 // Public: Get anonymized job seekers with filtering
 exports.getPublicJobSeekers = async (req, res) => {
+  console.log('🎯 [DEBUG] ===== PUBLIC JOB SEEKERS API CALLED =====');
+  console.log('🎯 [DEBUG] Route hit successfully at:', new Date().toISOString());
+  console.log('🎯 [DEBUG] Request query parameters:', req.query);
+  console.log('🎯 [DEBUG] Request headers:', req.headers);
+  console.log('🎯 [DEBUG] =====================================');
+  
   try {
+    console.log('🔌 [DEBUG] Step 1: Initializing Prisma client...');
     const prisma = await initPrisma();
+    console.log('✅ [DEBUG] Prisma client initialized successfully');
+    
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
+    console.log(`📊 [DEBUG] Step 2: Pagination - page: ${page}, limit: ${limit}`);
     
     // Validate pagination parameters to prevent negative values
     if (page < 1 || limit < 1 || limit > 100) {
+      console.log('❌ [DEBUG] Invalid pagination parameters');
       return res.status(400).json({ 
         error: 'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100.' 
       });
     }
     
     const skip = (page - 1) * limit;
+    console.log(`📝 [DEBUG] Step 3: Skip calculation - skip: ${skip}`);
     
     // Filter parameters
     const { categoryId, skills, experience, location } = req.query;
+    console.log('🔍 [DEBUG] Step 4: Filters extracted:', { categoryId, skills, experience, location });
     
     // Build where clause - simplified for better MySQL compatibility on shared hosting
     const profileWhere = {
@@ -36,6 +49,7 @@ exports.getPublicJobSeekers = async (req, res) => {
         role: 'jobseeker' // Simplified relation query for better compatibility
       }
     };
+    console.log('🏗️  [DEBUG] Step 5: Base where clause built:', JSON.stringify(profileWhere, null, 2));
 
     if (categoryId) {
       profileWhere.jobCategoryId = parseInt(categoryId, 10);
@@ -63,6 +77,7 @@ exports.getPublicJobSeekers = async (req, res) => {
       };
     }
 
+    console.log('🔎 [DEBUG] Step 6: Attempting to fetch profiles...');
     // First get the profiles
     const profiles = await prisma.profile.findMany({
       where: profileWhere,
@@ -87,15 +102,26 @@ exports.getPublicJobSeekers = async (req, res) => {
       take: limit,
       orderBy: { user: { createdAt: 'desc' } },
     });
+    console.log(`✅ [DEBUG] Step 7: Profiles fetched successfully. Count: ${profiles.length}`);
 
     // Separate count query with multiple fallback strategies for shared hosting compatibility
+    console.log('🔢 [DEBUG] Step 8: Starting count query...');
     let total = 0;
     try {
+      console.log('🎯 [DEBUG] Attempting primary count query with where:', JSON.stringify(profileWhere, null, 2));
       total = await prisma.profile.count({ where: profileWhere });
+      console.log(`✅ [DEBUG] Primary count query successful. Total: ${total}`);
     } catch (countError) {
-      console.error('Count query failed, trying fallback methods:', countError.message);
+      console.error('❌ [DEBUG] Count query failed, trying fallback methods:', countError.message);
+      console.error('❌ [DEBUG] Count error details:', {
+        name: countError.name,
+        code: countError.code,
+        meta: countError.meta,
+        stack: countError.stack
+      });
       
       try {
+        console.log('🔄 [DEBUG] Fallback 1: Trying simplified count query...');
         // Fallback 1: Simpler count query without complex nested conditions
         const simpleWhere = {
           approvalStatus: 'approved',
@@ -105,23 +131,35 @@ exports.getPublicJobSeekers = async (req, res) => {
         // Add simple filters only
         if (categoryId) simpleWhere.jobCategoryId = parseInt(categoryId, 10);
         
+        console.log('🎯 [DEBUG] Fallback 1 where clause:', JSON.stringify(simpleWhere, null, 2));
         total = await prisma.profile.count({ where: simpleWhere });
-        console.log('Used simplified count query');
+        console.log(`✅ [DEBUG] Fallback 1 successful. Total: ${total}`);
       } catch (fallbackError) {
-        console.error('Fallback count also failed:', fallbackError.message);
+        console.error('❌ [DEBUG] Fallback 1 also failed:', fallbackError.message);
+        console.error('❌ [DEBUG] Fallback 1 error details:', {
+          name: fallbackError.name,
+          code: fallbackError.code,
+          meta: fallbackError.meta
+        });
         
+        console.log('🔄 [DEBUG] Fallback 2: Using manual estimation...');
         // Fallback 2: Manual estimation based on current results
         if (profiles.length === limit) {
           // If we got a full page, estimate there might be more
           total = skip + profiles.length + 10; // Conservative estimate
+          console.log(`📊 [DEBUG] Full page detected, estimating: ${total}`);
         } else {
           // If less than limit, this is likely the last page
           total = skip + profiles.length;
+          console.log(`📊 [DEBUG] Partial page detected, calculating: ${total}`);
         }
-        console.log(`Using manual estimation: ${total}`);
+        console.log(`✅ [DEBUG] Manual estimation complete: ${total}`);
       }
     }
+    
+    console.log(`🎯 [DEBUG] Step 9: Final total count determined: ${total}`);
 
+    console.log('🔐 [DEBUG] Step 10: Starting data anonymization...');
     // Anonymize the data
     const anonymizedUsers = profiles.map((p) => ({
       id: `JS${p.user.id.toString().padStart(4, '0')}`, // Anonymized ID
@@ -137,8 +175,10 @@ exports.getPublicJobSeekers = async (req, res) => {
       jobCategory: p.jobCategory,
       memberSince: p.user.createdAt
     }));
+    console.log(`✅ [DEBUG] Data anonymized successfully. ${anonymizedUsers.length} users processed.`);
 
-    res.json({
+    console.log('📊 [DEBUG] Step 11: Preparing final response...');
+    const response = {
       jobSeekers: anonymizedUsers,
       pagination: {
         page,
@@ -146,18 +186,33 @@ exports.getPublicJobSeekers = async (req, res) => {
         total,
         totalPages: Math.ceil(total / limit)
       }
+    };
+    
+    console.log('📤 [DEBUG] Step 12: Sending response:', {
+      jobSeekersCount: response.jobSeekers.length,
+      pagination: response.pagination
     });
+    
+    res.json(response);
   } catch (err) {
-    console.error('Error in getPublicJobSeekers:', {
+    console.error('💥 [DEBUG] CRITICAL ERROR in getPublicJobSeekers:', {
       message: err.message,
       code: err.code,
+      name: err.name,
       query: req.query,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : 'Hidden in production'
+      stack: err.stack
     });
+    
+    // Check if total is -1 and provide specific debugging info
+    if (err.message && err.message.includes('Invalid count value: -1')) {
+      console.error('🚨 [DEBUG] DETECTED -1 COUNT ERROR - This should not happen with our fallbacks!');
+      console.error('🔍 [DEBUG] This error suggests the issue is elsewhere in the code');
+    }
     
     res.status(500).json({ 
       error: err.message || 'Failed to fetch job seekers.',
-      ...(process.env.NODE_ENV === 'development' && { details: err.stack })
+      debug: process.env.NODE_ENV === 'development' ? err.stack : 'Check server logs for details',
+      timestamp: new Date().toISOString()
     });
   }
 };
