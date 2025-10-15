@@ -22,19 +22,31 @@ exports.getPublicJobSeekers = async (req, res) => {
     const prisma = await initPrisma();
     console.log('✅ [DEBUG] Prisma client initialized successfully');
     
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    console.log(`📊 [DEBUG] Step 2: Pagination - page: ${page}, limit: ${limit}`);
+    // Check if "all" parameter is set to return all candidates
+    const fetchAll = req.query.all === 'true' || req.query.all === '1';
     
-    // Validate pagination parameters to prevent negative values
-    if (page < 1 || limit < 1 || limit > 100) {
-      console.log('❌ [DEBUG] Invalid pagination parameters');
-      return res.status(400).json({ 
-        error: 'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100.' 
-      });
+    let page, limit, skip;
+    
+    if (fetchAll) {
+      console.log('📊 [DEBUG] Step 2: Fetch ALL mode enabled - no pagination limits');
+      page = 1;
+      limit = 10000; // Very high limit to ensure we get all records
+      skip = 0;
+    } else {
+      page = parseInt(req.query.page) || 1;
+      limit = parseInt(req.query.limit) || 1000; // Default to high limit to get all records
+      console.log(`📊 [DEBUG] Step 2: Pagination - page: ${page}, limit: ${limit}`);
+      
+      // Validate pagination parameters - increased max limit for "get all" functionality
+      if (page < 1 || limit < 1 || limit > 2000) {
+        console.log('❌ [DEBUG] Invalid pagination parameters');
+        return res.status(400).json({ 
+          error: 'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 2000.' 
+        });
+      }
+      
+      skip = (page - 1) * limit;
     }
-    
-    const skip = (page - 1) * limit;
     console.log(`📝 [DEBUG] Step 3: Skip calculation - skip: ${skip}`);
     
     // Filter parameters
