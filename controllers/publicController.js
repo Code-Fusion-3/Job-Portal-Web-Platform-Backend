@@ -161,20 +161,33 @@ exports.getPublicJobSeekers = async (req, res) => {
 
     console.log('🔐 [DEBUG] Step 10: Starting data anonymization...');
     // Anonymize the data
-    const anonymizedUsers = profiles.map((p) => ({
-      id: `JS${p.user.id.toString().padStart(4, '0')}`, // Anonymized ID
-      firstName: p.firstName.charAt(0) + '*'.repeat(p.firstName.length - 1),
-      lastName: p.lastName.charAt(0) + '*'.repeat(p.lastName.length - 1),
-      gender: p.gender,
-      skills: p.skills,
-      experience: p.experience,
-      experienceLevel: p.experienceLevel,
-      location: p.location,
-      city: p.city,
-      country: p.country,
-      jobCategory: p.jobCategory,
-      memberSince: p.user.createdAt
-    }));
+    const anonymizedUsers = profiles.map((p) => {
+      // Safe anonymization with null/undefined/empty string checks
+      const safeFirstName = p.firstName && p.firstName.length > 0 
+        ? p.firstName.charAt(0) + '*'.repeat(Math.max(0, p.firstName.length - 1))
+        : 'N*';
+        
+      const safeLastName = p.lastName && p.lastName.length > 0
+        ? p.lastName.charAt(0) + '*'.repeat(Math.max(0, p.lastName.length - 1))
+        : 'N*';
+        
+      console.log(`🔐 [DEBUG] Anonymizing user ${p.user.id}: firstName="${p.firstName}" -> "${safeFirstName}", lastName="${p.lastName}" -> "${safeLastName}"`);
+        
+      return {
+        id: `JS${p.user.id.toString().padStart(4, '0')}`, // Anonymized ID
+        firstName: safeFirstName,
+        lastName: safeLastName,
+        gender: p.gender,
+        skills: p.skills,
+        experience: p.experience,
+        experienceLevel: p.experienceLevel,
+        location: p.location,
+        city: p.city,
+        country: p.country,
+        jobCategory: p.jobCategory,
+        memberSince: p.user.createdAt
+      };
+    });
     console.log(`✅ [DEBUG] Data anonymized successfully. ${anonymizedUsers.length} users processed.`);
 
     console.log('📊 [DEBUG] Step 11: Preparing final response...');
