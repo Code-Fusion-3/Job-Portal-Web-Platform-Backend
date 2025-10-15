@@ -15,6 +15,28 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+// Helper function to parse DATABASE_URL
+function parseDatabaseUrl(url) {
+  if (!url) return null;
+  
+  try {
+    // Example: mysql://user:password@host:port/database
+    const match = url.match(/mysql:\/\/([^:]+):([^@]*)@([^:]+):(\d+)\/(.+)/);
+    if (!match) return null;
+    
+    return {
+      user: match[1],
+      password: match[2],
+      host: match[3],
+      port: parseInt(match[4]),
+      database: match[5].split('?')[0] // Remove any query parameters
+    };
+  } catch (error) {
+    console.error('Error parsing DATABASE_URL:', error.message);
+    return null;
+  }
+}
+
 // Test configurations
 const tests = [
   {
@@ -123,17 +145,27 @@ async function runTests() {
   try {
     console.log('🔍 Starting Production Database Tests...\n');
     
-    // Create MySQL connection
-    connection = await mysql.createConnection({
-      host: process.env.DATABASE_HOST || 'localhost',
-      user: process.env.DATABASE_USERNAME,
-      password: process.env.DATABASE_PASSWORD,
-      database: process.env.DATABASE_NAME,
-      port: process.env.DATABASE_PORT || 3306
+    // Parse database configuration
+    const dbConfig = parseDatabaseUrl(process.env.DATABASE_URL);
+    
+    if (!dbConfig) {
+      console.log('DATABASE_URL:', process.env.DATABASE_URL);
+      throw new Error('Could not parse DATABASE_URL. Please check your .env file.');
+    }
+    
+    console.log('📋 Database Config:', {
+      host: dbConfig.host,
+      user: dbConfig.user,
+      database: dbConfig.database,
+      port: dbConfig.port,
+      passwordSet: !!dbConfig.password
     });
     
+    // Create MySQL connection
+    connection = await mysql.createConnection(dbConfig);
+    
     console.log('✅ Database connection established');
-    console.log(`📊 Database: ${process.env.DATABASE_NAME} on ${process.env.DATABASE_HOST}\n`);
+    console.log(`📊 Database: ${dbConfig.database} on ${dbConfig.host}\n`);
     
     // Run each test
     for (const testCase of tests) {
@@ -160,7 +192,7 @@ async function runTests() {
       const offset = (page - 1) * limit;
       
       // The count query that's been failing
-      const [countResult] = await connection.execute(`
+      const countResult = await connection.execute(`
         SELECT COUNT(*) as total
         FROM Profile p
         INNER JOIN User u ON p.userId = u.id
@@ -170,13 +202,27 @@ async function runTests() {
           AND u.role = 'jobseeker'
       `);
       
-      const total = Number(countResult.total);
+      console.log('🔍 Raw count result:', countResult);
+      console.log('🔍 First row:', countResult[0]);
+      console.log('🔍 First row first element:', countResult[0]?.[0]);
+      
+      // Try different ways to access the count
+      let total;
+      if (countResult[0] && Array.isArray(countResult[0])) {
+        // mysql2 sometimes returns array of rows
+        total = countResult[0][0]['COUNT(*)'] || countResult[0][0]['total'] || countResult[0][0][0];
+      } else {
+        // Direct object access
+        total = countResult[0]?.total || countResult.total;
+      }
+      
+      total = Number(total);
       console.log('📊 Total count for API:', total);
       
       if (total === -1) {
         console.log('❌ FOUND THE ISSUE: Count is returning -1');
       } else if (isNaN(total)) {
-        console.log('❌ FOUND THE ISSUE: Count is NaN:', countResult.total);
+        console.log('❌ FOUND THE ISSUE: Count is NaN, original value:', total);
       } else {
         console.log('✅ Count query works fine');
       }
